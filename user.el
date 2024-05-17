@@ -5,7 +5,7 @@
       core/editor-layer
       core/coding-layer
       core/aesthetic-layer
-      ;; core/bling-layer
-      ;; core/ide-layer
+      core/bling-layer
+      core/ide-layer
       core/markdown-layer
       core/emacs-lisp-layer))

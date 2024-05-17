@@ -11,7 +11,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BASE EMACS CONFIG ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 ;; A few more useful configurations...
 (use-package emacs
     :init
@@ -253,8 +252,6 @@
 		     :wk "Open framework config")
 	    "Pu"   `(,(+cmdfy! (find-file "~/.emacs.d/user.el"))
 		     :wk "Open user config")
-	    "Pr"   `(,(+cmdfy! (load-file "~/.emacs.d/init.el"))
-		     :wk "Reload user config")
 
 	    ;; ====== Buffers ======
 	    "b"    '(nil :wk "buffer")
@@ -315,6 +312,8 @@
 	    ;; ====== Applications (Open) ======
 	    "o"    '(nil :wk "open")
 	    "o-"   '(dired :wk "Dired") ;; Will be overwritten if dirvish is used
+	    "ot"   #'treemacs
+	    "oT"   #'centaur-tabs-mode
 	    "o="   #'calc
 
 	    ;; ====== Search ======
@@ -511,7 +510,9 @@
 	:hook (eldoc-mode . eldoc-box-hover-at-point-mode))
 
     (use-package breadcrumb
-	:hook (eglot-managed-mode . breadcrumb-local-mode)))
+	:hook (eglot-managed-mode . breadcrumb-local-mode))
+
+    (use-package spacious-padding))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; OPTIONAL AESTHETIC BLING ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -578,13 +579,13 @@
 
     (use-package centaur-tabs
 	:commands (centaur-tabs-mode)
-	:init
-	(setq centaur-tabs-style "wave"
-	      centaur-tabs-height 32
-	      centaur-tabs-set-icons t
-	      centaur-tabs-gray-out-icons 'buffer
-	      centaur-tabs-set-modified-marker t
-	      centaur-tabs-label-fixed-length 15)
+	:custom
+	(centaur-tabs-style "wave")
+	(centaur-tabs-height 32)
+	(centaur-tabs-set-icons t)
+	(centaur-tabs-gray-out-icons 'buffer)
+	(centaur-tabs-set-modified-marker t)
+	(centaur-tabs-label-fixed-length 15)
 	:config
 	(centaur-tabs-change-fonts "Cantarell" 120)))
 
@@ -596,9 +597,7 @@
 	:mode ("\\.md\\'" . markdown-ts-mode)
 	:config
 	(add-to-list 'treesit-language-source-alist '(markdown "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown/src"))
-	(add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown-inline/src"))
-	(treesit-install-language-grammar "markdown")
-	(treesit-install-language-grammar "markdown-inline"))
+	(add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown-inline/src")))
 
     ;; In case you want something fancier/slower (also needed for eldoc-box)
     (use-package markdown-mode
@@ -635,9 +634,9 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
+   '("e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
  '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)))
- '(package-selected-packages '(esup markdown-ts-mode doom-themes)))
+ '(package-selected-packages '(centaur-tabs treemacs esup markdown-ts-mode doom-themes)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
