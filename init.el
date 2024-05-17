@@ -1,3 +1,5 @@
+;; -*- lexical-binding: t; -*-
+
 (defmacro +cmdfy! (&rest body)
     "Convert BODY to an interactive command."
     `(lambda () (interactive) ,@body))
@@ -196,7 +198,15 @@
 	(evil-set-leader nil (kbd "C-SPC"))
 
 	;; set leader key in normal state
-	(evil-set-leader 'normal (kbd "SPC")))
+	(evil-set-leader 'normal (kbd "SPC"))
+
+	(add-hook 'emacs-lisp-mode-hook
+		  (lambda ()
+		      (+core--internal-local-map!
+			  "e" #'eval-last-sexp
+			  "d" #'eval-defun
+			  "b" #'eval-buffer
+			  "r" #'eval-region))))
 
     (defun core/dont-arrow-me-sis ()
 	(interactive)
@@ -230,6 +240,12 @@
 	;; aliases (like `nmap') for VIM mapping functions.
 	(general-evil-setup t)
 
+	(general-create-definer +core--internal-local-map!
+	    :states '(insert emacs visual normal)
+	    :keymaps 'override              
+	    :prefix "SPC m"      
+	    :global-prefix "C-SPC m")
+	
 	;; Define the built-in global keybindings
 	(general-nmap
 	    :prefix "SPC"
@@ -356,12 +372,15 @@
 	    "tf"   #'flymake-mode
 
 	    ;; ====== Code ======
-	    "l"    '(nil :wk "eglot lsp")
+	    "l"    '(nil :wk "lsp and flymake")
 	    "le"    #'eglot
 	    "lr"    #'eglot-rename
 	    "la"    #'eglot-code-actions
 	    "lx"    #'eglot-code-action-extract
 	    "lf"    #'eglot-code-action-quickfix
+	    "l!"    #'consult-flymake
+	    "ln"    #'flymake-goto-next-error
+	    "lp"    #'flymake-goto-prev-error
 
 	    ;; ====== Debug ======
 	    "d"    '(nil :wk "debug")
@@ -614,6 +633,10 @@
 	:hook (prog-mode . ligature-mode)))
 
 (defun core/ide-layer ()
+    ;; This wouldn't be Quake emacs without the preconfigured ability
+    ;; to have a Quake style dropdown terminal!
+    (use-package equake)
+    
     ;; Integrate nerd icons with dired (I never use dired)
     (use-package nerd-icons-dired
 	:after (nerd-icons)
@@ -665,24 +688,37 @@
 	:commands (darkroom-mode darkroom-tentative-mode)
 	:config
 	(add-hook 'darkroom-mode-hook (lambda ()
+					  (if (fboundp 'visual-fill-column-mode)
+						  (visual-fill-column-mode)
+					      (visual-line-mode))
 					  (if darkroom-mode
 						  (buffer-face-mode 1)
 					      (buffer-face-mode -1)))))
 
-    ;; Use flymake instead of flycheck for compatibility with eglot,
-    ;; and fewer packages
-    (use-package flymake-proselint
-	:demand t
-	;; Run proselint automatically only if we're actually fully immersed in writing
+    (use-package flymake-quickdef
 	:config
+	(flymake-quickdef-backend
+	    flymake-proselint-backend
+	    :pre-let ((proselint-exec (executable-find "proselint")))
+	    :pre-check (unless proselint-exec (error "proselint not found on PATH, try installing it with pip?"))
+	    :write-type 'pipe
+	    :proc-form (list proselint-exec "-")
+	    :search-regexp "^.+:\\([[:digit:]]+\\):\\([[:digit:]]+\\): \\(.+\\)$"
+	    :prep-diagnostic
+	    (let* ((lnum (string-to-number (match-string 1)))
+		   (lcol (string-to-number (match-string 2)))
+		   (msg (match-string 3))
+		   (pos (flymake-diag-region fmqd-source lnum lcol))
+		   (beg (car pos))
+		   (end (cdr pos)))
+		(list fmqd-source beg end :warning msg)))
+
+	(defun flymake-proselint-setup ()
+	    "Enable flymake backend."
+	    (message "Initializing proselint flymake backend")
+	    (add-hook 'flymake-diagnostic-functions #'flymake-proselint-backend nil t))
+
 	(add-hook 'darkroom-mode-hook (lambda ()
-					  ;; 65 characters is
-					  ;; optimal for reading
-					  ;; prose, according to
-					  ;; some studies
-					  (if (fboundp 'visual-fill-column-mode)
-						  (visual-fill-column-mode)
-					      (visual-line-mode))
 					  (flymake-mode)
 					  (flymake-proselint-setup)))))
 

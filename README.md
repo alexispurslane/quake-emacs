@@ -27,7 +27,7 @@ then Quake Emacs is for you.
 git clone https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
 ```
 
-2. Then copy the example `user.el` provided with Quake `~/.quake.d/user.el`:
+2. Then copy the example `user.el` provided with Quake to your Quake Emacs configuration directory at `~/.quake.d/user.el`:
 
 ```bash
 mkdir -p ~/.quake.d/ && cp user.el ~/.quake.d/
