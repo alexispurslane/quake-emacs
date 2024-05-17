@@ -3,7 +3,6 @@
     `(lambda () (interactive) ,@body))
 
 ;; Package setup
-
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
@@ -151,6 +150,7 @@
 	(setq evil-want-C-u-scroll t)
 	(setq evil-want-C-i-jump nil)
 	(setq evil-respect-visual-line-mode t)
+	(setq evil-undo-system 'undo-redo)
 	:config
 	(evil-mode 1)
 	(define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
@@ -501,6 +501,9 @@
 			   (projects  . 5)))
 	(dashboard-item-shortcuts '((recents   . "r")
 				    (projects  . "p")))
+	(dashboard-icon-type 'nerd-icons) ; use `nerd-icons' package
+	(dashboard-set-heading-icons t)
+	(dashboard-set-file-icons t)
 	:config
 	(dashboard-setup-startup-hook))
 
@@ -524,6 +527,25 @@
     ;; I like being able to distinguish parenthesis
     (use-package rainbow-delimiters
 	:hook (prog-mode . rainbow-delimiters-mode))
+
+    ;; Icons are nice to have! Nerd icons is faster and better
+    ;; integrated (so less icon duplication between packages) with the
+    ;; packages I'm using than all-the-icons
+    (use-package nerd-icons
+	:if (display-graphic-p)
+	:custom (nerd-icons-font-family "Symbols Nerd Font Mono"))
+
+    ;; Integrate these icons with marginalia
+    (use-package nerd-icons-completion
+	:after (marginalia nerd-icons)
+	:config
+	(nerd-icons-completion-mode)
+	(add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
+
+    ;; Integrate them with corfu
+    (use-package nerd-icons-corfu
+	:after (corfu nerd-icons)
+	:config (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
 
     (use-package emojify
 	:config
@@ -556,6 +578,11 @@
 	:hook (prog-mode . ligature-mode)))
 
 (defun core/ide-layer ()
+    ;; Integrate nerd icons with dired (I never use dired)
+    (use-package nerd-icons-dired
+	:after (nerd-icons)
+	:hook (dired-mode . nerd-icons-dired-mode))
+
     (use-package treemacs
 	:commands (treemacs)
 	:config
