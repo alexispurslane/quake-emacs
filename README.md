@@ -31,7 +31,7 @@ Then modify `user.el` to your heart's content. To update, just `git pull`!
 
 ## Key Features
 
-- 🎯 **Lean and focused**: Quake Emacs includes just the packages you need for a beautiful, modern IDE-lite experience when coding and a focused, ergonomic experience when writing, and *nothing else*. What is there is configured opinionatedly, but consider Quake Emacs part of your editor — it's just there to give you a good out of the box experience, like [Helix](https://helix-editor.com/). The rest is up to you! 
+- 🎯 **Lean and focused**: Quake Emacs includes just the packages and configuration you need for a beautiful, modern IDE-lite experience when coding and a focused, ergonomic experience when writing, and *nothing else*. Consider Quake Emacs part of your editor — it's just there to give you a good out of the box experience, like [Helix](https://helix-editor.com/). The rest is up to you! 
 - 🚀 **Fast**: On my machine, Quake Emacs loads in 0.66 seconds, and Doom loads in 0.78. If you want minimal bloat, this is for you.
 - 🥇 **Just one single file**: The configuration framework itself is only one simple, clear, few-hundred line file, and that's it. No thousands of lines of Lisp scattered throughout hundreds of files across interminable layers of abstraction. If you want to know where something is, or how it works, it's easy to find, and the configuration framework is as self-contained as it gets. Just plop the file down, create a user config file, and it'll build itself up for you.
 - 🌐 **Vanilla-first**: Quake Emacs prioritizes using packages that integrate well with existing Emacs functionality, and with each other, and only introduces layers of abstraction over built-in vanilla Emacs when *absolutely necessary*. Vanilla Emacs instructions should still work in Quake Emacs!
@@ -48,7 +48,7 @@ Similarly, with the creation of amazing packages like `vertico`, `orderless`, an
 
 ## Screenshots
 
-> ![NOTE]
+> [!NOTE]
 > These screenshots were taken in the middle of an icon overhaul, so just keep in mind that all files, completion suggestions, etc should have pretty icons as well.
 
 Quake Emacs has fast autocompletion with [Corfu](https://elpa.gnu.org/packages/doc/corfu.html) and Orderless enabled everywhere, including in the Lisp Eval line (`M-:`).
