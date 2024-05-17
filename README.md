@@ -51,9 +51,13 @@ Similarly, with the creation of amazing packages like `vertico`, `orderless`, an
 > [!NOTE]
 > These screenshots were taken in the middle of an icon overhaul, so just keep in mind that all files, completion suggestions, etc should have pretty icons as well.
 
-Quake Emacs has fast autocompletion with [Corfu](https://elpa.gnu.org/packages/doc/corfu.html) and Orderless enabled everywhere, including in the Lisp Eval line (`M-:`).
+Quake Emacs has fast autocompletion with [Corfu](https://elpa.gnu.org/packages/doc/corfu.html) and Orderless enabled everywhere.
 
-![](./screenshots/fast-autocompletion-everywhere.png)
+![](./screenshots/fast-autocompletion-everywhere1.png)
+
+Full autocompletion even works in the Lisp Eval line (`M-:`). It's a real repl, so why not have a real coding experience in it?
+
+![](./screenshots/fast-autocompletion-everywhere2.png)
 
 Fuzzy searching with [Vertico](https://github.com/minad/vertico), [Marginalia](https://github.com/minad/marginalia), [Consult](https://github.com/minad/consult) and [Orderless](https://github.com/oantolin/orderless) is enabled in every selection menu and prompt. 
 
