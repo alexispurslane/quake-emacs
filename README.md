@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./load/banner-quake.png" height="128" style="display: block; margin: 0 auto"/>
+  <img src="./banner-quake.png" height="128" style="display: block; margin: 0 auto"/>
   <h1>Quake Emacs</h1>
   <p>Lean, fast, focused, and based on the latest Emacs tech</p>
 </div>
