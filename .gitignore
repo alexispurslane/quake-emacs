@@ -9,3 +9,14 @@
 
 # Undo-tree save-files
 *.~undo-tree
+
+# Individual emacs stuff
+eln-cache/
+eln-cache/*
+elpa/
+elpa/*
+recentf
+transient/
+transient/*
+tree-sitter/
+tree-sitter/*
