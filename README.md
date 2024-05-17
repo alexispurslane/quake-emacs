@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/alexispurslane/bloc/blob/develop/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png?raw=true" width="128" height="128" style="display: block; margin: 0 auto"/>
+  <img src="./load/banner-quake.png" width="128" height="128" style="display: block; margin: 0 auto"/>
   <h1>Quake Emacs</h1>
   <p>## Lean, fast, focused, opinionated, and built for modern Emacs</p>
 </div>
