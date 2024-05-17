@@ -35,6 +35,7 @@ Then modify `user.el` to your heart's content. To update, just `git pull`!
 - 🚀 **Fast**: Every single package is carefully chosen with performance and memory usage partly in mind, and the default load order is tuned within an inch of its life to ensure Emacs starts as fast as possible. (On my machine, Quake Emacs loads in 0.66 seconds with icons turned off and 0.72 with them turned on, and Doom loads in 0.78, for comparison.)
 - 🥇 **Just one single file**: The configuration framework itself is only one simple, clear, few-hundred line file, and that's it. No thousands of lines of Lisp scattered throughout hundreds of files across interminable layers of abstraction. If you want to know where something is, or how it works, it's easy to find, and the configuration framework is as self-contained as it gets. Just plop the file down, create a user config file, and it'll build itself up for you.
 - 🌐 **Vanilla-first**: Quake Emacs prioritizes using packages that integrate well with existing Emacs functionality, and with each other, and only introduces layers of abstraction over built-in vanilla Emacs when *absolutely necessary*. Vanilla Emacs instructions should still work in Quake Emacs!
+- 🖱 **GUI-maximalist**: One of Emacs's most unique features as an editor is its ability to combine the compactness, focus, and performance of a text-mode interface with embedded images, multiple fonts and font sizes, etc to give you a modern editor experience. Quake Emacs is designed to maximize its use of that right out of the box!
 
 ## Justification
 
@@ -49,7 +50,7 @@ Similarly, with the creation of amazing packages like `vertico`, `orderless`, an
 ## Screenshots
 
 > [!NOTE]
-> These screenshots were taken in the middle of an icon overhaul, so just keep in mind that all files, completion suggestions, etc should have pretty icons as well.
+> Some of these screenshots were taken with icons off, and some with them on.
 
 Quake Emacs has fast autocompletion with [Corfu](https://elpa.gnu.org/packages/doc/corfu.html) and Orderless enabled everywhere.
 
