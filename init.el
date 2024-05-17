@@ -23,7 +23,8 @@
     ;; Emacs 28 and newer: Hide commands in M-x which do not apply to the current
     ;; mode. Corfu commands are hidden, since they are not used via M-x. This
     ;; setting is useful beyond Corfu.
-    (setq read-extended-command-predicate #'command-completion-default-include-p)
+    ;; (setq read-extended-command-predicate #'command-completion-default-include-p)
+
     ;; Less annoying emacs
     (setq inhibit-startup-message t
 	  visible-bell t
@@ -33,8 +34,15 @@
 	  fill-column 65)
     (customize-set-variable 'treesit-font-lock-level 4)
 
+    ;; Fonts
+    (when (find-font (font-spec :name "JetBrains Mono"))
+	(set-face-attribute 'default nil :font "JetBrains Mono" :height 120))
+    (when (find-font (font-spec :name "Cantarell"))
+	(set-face-attribute 'variable-pitch nil :font "Cantarell" :height 120))
+    (when (find-font (font-spec :name "iA Writer Quattro V"))
+	(setq buffer-face-mode-face '(:family "iA Writer Quattro V")))
+
     ;; Nicer appearance
-    (set-face-attribute 'default nil :font "JetBrains Mono" :height 120)
     (menu-bar-mode -1)  ; Leave this one on if you're a beginner!
     (tool-bar-mode -1)
     (scroll-bar-mode -1)
@@ -150,7 +158,6 @@
 	(setq evil-want-keybinding nil)
 	(setq evil-want-C-u-scroll t)
 	(setq evil-want-C-i-jump nil)
-	(setq evil-respect-visual-line-mode t)
 	(setq evil-undo-system 'undo-redo)
 	:config
 	(evil-mode 1)
@@ -173,6 +180,14 @@
 	;; Nice commenting
 	(define-key evil-normal-state-map (kbd "g c") 'comment-region)
 	(define-key evil-normal-state-map (kbd "g C") 'uncomment-region)
+
+	;; Support for visual fill column mode and visual line mode
+	;; Make evil-mode up/down operate in screen lines instead of logical lines
+	(define-key evil-motion-state-map "j" 'evil-next-visual-line)
+	(define-key evil-motion-state-map "k" 'evil-previous-visual-line)
+	;; Also in visual mode
+	(define-key evil-visual-state-map "j" 'evil-next-visual-line)
+	(define-key evil-visual-state-map "k" 'evil-previous-visual-line)
 
 	;; Override evil mode's exceptions to defaulting to normal-mode
 	(evil-set-initial-state 'messages-buffer-mode 'normal)
@@ -251,7 +266,7 @@
 	    "P"    '(nil :wk "profile")
 	    "Pf"   `(,(+cmdfy! (find-file "~/.emacs.d/init.el"))
 		     :wk "Open framework config")
-	    "Pu"   `(,(+cmdfy! (find-file "~/.emacs.d/user.el"))
+	    "Pu"   `(,(+cmdfy! (find-file "~/.emacs.d/load/user.el"))
 		     :wk "Open user config")
 
 	    ;; ====== Buffers ======
@@ -315,6 +330,7 @@
 	    "o-"   '(dired :wk "Dired") ;; Will be overwritten if dirvish is used
 	    "ot"   #'treemacs
 	    "oT"   #'centaur-tabs-mode
+	    "od"   #'darkroom-mode
 	    "o="   #'calc
 
 	    ;; ====== Search ======
@@ -406,17 +422,17 @@
 	    "psf" #'project-find-regexp))
 
     (use-package hydra
-	:after evil)
-
-    ;; Emacs' entire selling point right here!
-    (use-package magit
-	:commands (magit-status magit-get-current-branch)
-	:custom
-	(magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)))
+	:after evil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE CODE PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun core/coding-layer ()
+    ;; Emacs' entire selling point right here!
+    (use-package magit
+	:commands (magit-status magit-get-current-branch)
+	:custom
+	(magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
     ;; We like syntax highlighting in this house
     (use-package treesit-auto
 	:custom
@@ -480,7 +496,7 @@
 	;; Enable flashing mode-line on errors
 	(doom-themes-visual-bell-config))
 
-    ;; A modeline that won't make me wish I didn't have eyes
+    ;; Using doom's modeline for now because it looks really nice
     (use-package doom-modeline
 	:init (doom-modeline-mode 1)
 
@@ -489,13 +505,26 @@
 	(doom-modeline-height 33)
 
 	:config
-	(set-face-attribute 'mode-line nil :family "Cantarell" :height 120)
-	(set-face-attribute 'mode-line-inactive nil :family "Cantarell" :height 120))
+	(set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
+	(set-face-attribute 'mode-line-inactive nil :inherit 'variable-pitch :height 120))
 
+    ;; A super-fast modeline that also won't make me wish I didn't have eyes
+    ;; (use-package mood-line
+    ;; 	;; Enable mood-line
+    ;; 	:config
+    ;; 	(mood-line-mode)
+    ;; 	(set-face-attribute 'mode-line nil :family "Cantarell" :height 120)
+    ;; 	(set-face-attribute 'mode-line-inactive nil :family "Cantarell" :height 120)
+
+    ;; 	;; Use pretty Fira Code-compatible glyphs
+    ;; 	:custom
+    ;; 	(mood-line-glyph-alist mood-line-glyphs-unicode))
+
+    
     (use-package dashboard
 	:custom
 	(dashboard-banner-logo-title "Lean, fast, focused, based on the latest tech. Welcome to Quake Emacs")
-	(dashboard-startup-banner "~/.emacs.d/load/banner-quake.png")
+	(dashboard-startup-banner "~/.emacs.d/banner-quake.png")
 	(dashboard-center-content t)
 	(dashboard-vertically-center-content t)
 	(dashboard-items '((recents   . 5)
@@ -513,6 +542,11 @@
 	(set-face-attribute 'eldoc-box-body nil :font "Cantarell-12")
 	:hook (eldoc-mode . eldoc-box-hover-at-point-mode))
 
+    ;; Pretty markdown formatting for eldoc-box
+    (use-package markdown-mode
+	:after (eldoc-box)
+	:commands (markdown-mode))
+
     (use-package breadcrumb
 	:hook (eglot-managed-mode . breadcrumb-local-mode))
 
@@ -528,6 +562,7 @@
     ;; I like being able to distinguish parenthesis
     (use-package rainbow-delimiters
 	:hook (prog-mode . rainbow-delimiters-mode))
+
 
     ;; Icons are nice to have! Nerd icons is faster and better
     ;; integrated (so less icon duplication between packages) with the
@@ -599,7 +634,7 @@
 			treemacs-directory-collapsed-face
 			treemacs-file-face
 			treemacs-tags-face))
-	    (set-face-attribute face nil :family "Cantarell" :height 120)))
+	    (set-face-attribute face nil :inherit 'variable-pitch :height 120)))
 
     (use-package treemacs-evil
 	:after (treemacs evil)
@@ -615,35 +650,49 @@
 	(centaur-tabs-set-modified-marker t)
 	(centaur-tabs-label-fixed-length 15)
 	:config
-	(centaur-tabs-change-fonts "Cantarell" 120)))
+	(centaur-tabs-change-fonts (face-attribute 'variable-pitch :font) 120)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; LANGUAGE SPECIFIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun core/markdown-layer ()
-    ;; Markdown and writing
+(defun core/writing-layer ()
+    ;; Ability to fill words into the width of the screen as proper
+    ;; WYSIWYG editors do
     (use-package visual-fill-column
 	:commands (visual-fill-column-mode))
 
+    ;; Distraction free writing mode
     (use-package darkroom
-	:commands (darkroom-mode darkroom-tentative-mode))
+	:commands (darkroom-mode darkroom-tentative-mode)
+	:config
+	(add-hook 'darkroom-mode-hook (lambda ()
+					  (if darkroom-mode
+						  (buffer-face-mode 1)
+					      (buffer-face-mode -1)))))
 
+    ;; Use flymake instead of flycheck for compatibility with eglot,
+    ;; and fewer packages
+    (use-package flymake-proselint
+	:demand t
+	;; Run proselint automatically only if we're actually fully immersed in writing
+	:config
+	(add-hook 'darkroom-mode-hook (lambda ()
+					  ;; 65 characters is
+					  ;; optimal for reading
+					  ;; prose, according to
+					  ;; some studies
+					  (if (fboundp 'visual-fill-column-mode)
+						  (visual-fill-column-mode)
+					      (visual-line-mode))
+					  (flymake-mode)
+					  (flymake-proselint-setup)))))
+
+(defun core/markdown-layer ()
+    ;; Main markdown mode
     (use-package markdown-ts-mode
 	:mode ("\\.md\\'" . markdown-ts-mode)
 	:config
 	(add-to-list 'treesit-language-source-alist '(markdown "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown/src"))
-	(add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown-inline/src"))
-	(add-hook 'markdown-ts-mode-hook (lambda ()
-					     (darkroom-tentative-mode)
-					     (visual-line-mode 1)
-					     ;; 65 characters is
-					     ;; optimal for reading
-					     ;; prose, according to
-					     ;; some studies
-					     (visual-fill-column-mode))))
-
-    ;; In case you want something fancier/slower (also needed for eldoc-box)
-    (use-package markdown-mode
-	:commands (markdown-mode)))
+	(add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown-inline/src"))))
 
 (defun core/emacs-lisp-layer ()
     ;; Emacs Lisp
@@ -661,7 +710,7 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; RUN LAYERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(load "~/.emacs.d/user.el")
+(load "~/.emacs.d/load/user.el")
 (defvar enabled-layers (user/enabled-layers))
 
 (defun core/enable-layer (layer)

@@ -23,3 +23,5 @@ tree-sitter/*
 .cache
 .cache/*
 projects
+load
+load/*

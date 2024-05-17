@@ -6,6 +6,7 @@
       core/coding-layer
       core/aesthetic-layer
       core/bling-layer
-      core/ide-layer
+      ;; core/ide-layer
+      core/writing-layer
       core/markdown-layer
       core/emacs-lisp-layer))

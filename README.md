@@ -21,13 +21,19 @@ then Quake Emacs is for you.
 
 ## How to install
 
-Like usual:
+1. First, you install Quake Emacs like usual:
 
 ```bash
 git clone https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
 ```
 
-Then modify `user.el` to your heart's content. To update, just `git pull`!
+2. Then copy the example `user.el` provided with Quake to your `load` directory and modify it to your heart's content:
+
+```bash
+mkdir -p load/ && cp user.el load/
+```
+
+To update, just `git pull` to the latest tag.
 
 ## Key Features
 
