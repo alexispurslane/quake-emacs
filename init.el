@@ -29,7 +29,8 @@
 	  visible-bell t
 	  vc-follow-symlinks t
 	  warning-minimum-level :emergency
-	  display-line-numbers 'relative)
+	  display-line-numbers 'relative
+	  fill-column 65)
     (customize-set-variable 'treesit-font-lock-level 4)
 
     ;; Nicer appearance
@@ -619,12 +620,26 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; LANGUAGE SPECIFIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun core/markdown-layer ()
-    ;; Markdown
+    ;; Markdown and writing
+    (use-package visual-fill-column
+	:commands (visual-fill-column-mode))
+
+    (use-package darkroom
+	:commands (darkroom-mode darkroom-tentative-mode))
+
     (use-package markdown-ts-mode
 	:mode ("\\.md\\'" . markdown-ts-mode)
 	:config
 	(add-to-list 'treesit-language-source-alist '(markdown "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown/src"))
-	(add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown-inline/src")))
+	(add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown-inline/src"))
+	(add-hook 'markdown-ts-mode-hook (lambda ()
+					     (darkroom-tentative-mode)
+					     (visual-line-mode 1)
+					     ;; 65 characters is
+					     ;; optimal for reading
+					     ;; prose, according to
+					     ;; some studies
+					     (visual-fill-column-mode))))
 
     ;; In case you want something fancier/slower (also needed for eldoc-box)
     (use-package markdown-mode
