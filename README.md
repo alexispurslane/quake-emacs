@@ -19,6 +19,16 @@ If you want to use Emacs, but you also:
 
 then Quake Emacs is for you.
 
+## How to install
+
+Like usual:
+
+```bash
+git clone https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
+```
+
+Then modify `user.el` to your heart's content. To update, just `git pull`!
+
 ## Key Features
 
 - 🎯 **Lean and focused**: Quake Emacs includes just the packages you need for a beautiful, modern IDE-lite experience when coding and a focused, ergonomic experience when writing, and *nothing else*. What is there is configured opinionatedly, but consider Quake Emacs part of your editor — it's just there to give you a good out of the box experience, like [Helix](https://helix-editor.com/). The rest is up to you! 
