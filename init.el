@@ -4,11 +4,13 @@
     "Convert BODY to an interactive command."
     `(lambda () (interactive) ,@body))
 
+(require 'cl-lib)
+
 ;; Package setup
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
-(setq use-package-always-ensure t)
+(setq use-package-always-ensure t) ; we care about performance here!
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BASE EMACS CONFIG ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,6 +36,7 @@
 	  warning-minimum-level :emergency
 	  display-line-numbers 'relative
 	  fill-column 65)
+    (setopt use-short-answers t)   ;; Since Emacs 29, `yes-or-no-p' will use `y-or-n-p'
     (customize-set-variable 'treesit-font-lock-level 4)
 
     ;; Fonts
@@ -257,6 +260,7 @@
 	    "C"    #'universal-coding-system-argument
 	    "O"    #'other-window-prefix
 	    "r"    #'restart-emacs
+	    "~"    #'shell-toggle
 
 	    ;; ====== Quit/Session ======
 	    "q"    '(nil :wk "quit/session")
@@ -425,8 +429,6 @@
 	    "pc" #'project-compile
 	    ;; run
 	    "pr"  '(nil :wk "run")
-	    "pre" #'project-eshell
-	    "prs" #'project-shell
 	    "prc" #'project-shell-command
 	    "prC" #'project-async-shell-command
 	    ;; forget
@@ -446,6 +448,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE CODE PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun core/coding-layer ()
+    ;; This wouldn't be Quake emacs without the preconfigured ability
+    ;; to have a Quake style dropdown terminal!
+    (add-to-list 'display-buffer-alist
+		 '("\\*terminal\\*"
+		   (display-buffer-in-side-window)
+		   (side . top)
+		   (window-height . 10)))
+    
     ;; Emacs' entire selling point right here!
     (use-package magit
 	:commands (magit-status magit-get-current-branch)
@@ -504,7 +514,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE AESTHETIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun core/aesthetic-layer ()
-    ;; Some non-insane themes, please
+    ;; Although this is big and relatively slow (one of the slowest
+    ;; things I include) doom's themes are just too good to pass up
     (use-package doom-themes
 	:config
 	;; Global settings (defaults)
@@ -515,31 +526,48 @@
 	;; Enable flashing mode-line on errors
 	(doom-themes-visual-bell-config))
 
-    ;; Using doom's modeline for now because it looks really nice
-    (use-package doom-modeline
-	:init (doom-modeline-mode 1)
+    ;; Extremely pretty, but extremely slow, modeline
+    ;; (use-package doom-modeline
+    ;; 	:init (doom-modeline-mode 1)
 
-	:custom
-	(doom-modeline-major-mode-icon t)
-	(doom-modeline-height 33)
-
-	:config
-	(set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
-	(set-face-attribute 'mode-line-inactive nil :inherit 'variable-pitch :height 120))
-
-    ;; A super-fast modeline that also won't make me wish I didn't have eyes
-    ;; (use-package mood-line
-    ;; 	;; Enable mood-line
-    ;; 	:config
-    ;; 	(mood-line-mode)
-    ;; 	(set-face-attribute 'mode-line nil :family "Cantarell" :height 120)
-    ;; 	(set-face-attribute 'mode-line-inactive nil :family "Cantarell" :height 120)
-
-    ;; 	;; Use pretty Fira Code-compatible glyphs
     ;; 	:custom
-    ;; 	(mood-line-glyph-alist mood-line-glyphs-unicode))
+    ;; 	(doom-modeline-major-mode-icon t)
+    ;; 	(doom-modeline-height 33)
 
-    
+    ;; 	:config
+    ;; 	(set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
+    ;; 	(set-face-attribute 'mode-line-inactive nil :inherit 'variable-pitch :height 120))
+
+    ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
+    (use-package mood-line
+	:custom
+	(mood-line-glyph-alist mood-line-glyphs-unicode)
+	(mood-line-segment-modal-evil-state-alist 
+	 '((normal . ("Ⓝ" . font-lock-variable-name-face))
+	   (insert . ("Ⓘ" . font-lock-string-face))
+	   (visual . ("Ⓥ" . font-lock-keyword-face))
+	   (replace . ("Ⓡ" . font-lock-type-face))
+	   (motion . ("Ⓜ" . font-lock-constant-face))
+	   (operator . ("Ⓞ" . font-lock-function-name-face))
+	   (emacs . ("Ⓔ" . font-lock-builtin-face))) )
+	(mood-line-format
+	 (mood-line-defformat
+	  :left
+	  (((mood-line-segment-modal) . " ")
+	   ((or (mood-line-segment-buffer-status) " ") . " ")
+	   ((mood-line-segment-buffer-name) . " ")
+	   ((mood-line-segment-cursor-position) . " ")
+	   (mood-line-segment-scroll))
+	  :right
+	  (((mood-line-segment-vc) . " ")
+	   ((mood-line-segment-major-mode) . " ")
+	   ((mood-line-segment-checker) . " ")
+	   ((mood-line-segment-process) . " "))))
+	:config
+	(mood-line-mode)
+	(set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120 :box `(:line-width 8 :color ,(face-background 'mode-line)))
+	(set-face-attribute 'mode-line-inactive nil :inherit 'mode-line))
+
     (use-package dashboard
 	:custom
 	(dashboard-banner-logo-title "Lean, fast, focused, based on the latest tech. Welcome to Quake Emacs")
@@ -633,10 +661,6 @@
 	:hook (prog-mode . ligature-mode)))
 
 (defun core/ide-layer ()
-    ;; This wouldn't be Quake emacs without the preconfigured ability
-    ;; to have a Quake style dropdown terminal!
-    (use-package equake)
-    
     ;; Integrate nerd icons with dired (I never use dired)
     (use-package nerd-icons-dired
 	:after (nerd-icons)
@@ -695,34 +719,17 @@
 						  (buffer-face-mode 1)
 					      (buffer-face-mode -1)))))
 
-    (use-package flymake-quickdef
-	:config
-	(flymake-quickdef-backend
-	    flymake-proselint-backend
-	    :pre-let ((proselint-exec (executable-find "proselint")))
-	    :pre-check (unless proselint-exec (error "proselint not found on PATH, try installing it with pip?"))
-	    :write-type 'pipe
-	    :proc-form (list proselint-exec "-")
-	    :search-regexp "^.+:\\([[:digit:]]+\\):\\([[:digit:]]+\\): \\(.+\\)$"
-	    :prep-diagnostic
-	    (let* ((lnum (string-to-number (match-string 1)))
-		   (lcol (string-to-number (match-string 2)))
-		   (msg (match-string 3))
-		   (pos (flymake-diag-region fmqd-source lnum lcol))
-		   (beg (car pos))
-		   (end (cdr pos)))
-		(list fmqd-source beg end :warning msg)))
+    (defun flymake-proselint-setup ()
+	"Enable flymake backend."
+	(message "Initializing proselint flymake backend")
+	(add-hook 'flymake-diagnostic-functions #'flymake-proselint-backend nil t))
 
-	(defun flymake-proselint-setup ()
-	    "Enable flymake backend."
-	    (message "Initializing proselint flymake backend")
-	    (add-hook 'flymake-diagnostic-functions #'flymake-proselint-backend nil t))
-
-	(add-hook 'darkroom-mode-hook (lambda ()
-					  (flymake-mode)
-					  (flymake-proselint-setup)))))
+    (add-hook 'darkroom-mode-hook (lambda ()
+				      (flymake-mode)
+				      (flymake-proselint-setup))))
 
 (defun core/markdown-layer ()
+    "Tree-Sitter markdown requires more setup than the other tree-sitter modes"
     ;; Main markdown mode
     (use-package markdown-ts-mode
 	:mode ("\\.md\\'" . markdown-ts-mode)
@@ -731,6 +738,11 @@
 	(add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown-inline/src"))))
 
 (defun core/emacs-lisp-layer ()
+    "Although the goal of Quake Emacs is to rely exclusively on
+Tree-Sitter and Eglot for language support, obviating the need
+for language-specific layers, there is no such support for Emacs
+Lisp, and if you're using Emacs, you must use Elisp, so an
+exception must be made."
     ;; Emacs Lisp
     (use-package elisp-def
 	:hook (emacs-lisp-mode-hook . elisp-def-mode))
@@ -755,13 +767,100 @@
 
 (mapcar #'core/enable-layer enabled-layers)
 
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;; CODE MOVED IN-TREE FOR PERFORMANCE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar-local flymake-proselint-backend--proc nil)
+
+;; See https://www.gnu.org/software/emacs//manual/html_node/flymake/An-annotated-example-backend.html
+(defun flymake-proselint-backend (report-fn &rest _args)
+    ;; Not having a proselint interpreter is a serious problem which
+    ;; should cause the backend to disable itself, so an error is
+    ;; signaled.
+    (unless (executable-find "proselint") 
+	(error "Cannot find a suitable proselint executable. Try installing it with pip?"))
+
+    ;; If a live process launched in an earlier check was found, that
+    ;; process is killed.  When that process's sentinel eventually runs,
+    ;; it will notice its obsoletion, since it have since reset
+    ;; `flymake-proselint-backend-proc' to a different value
+    ;;
+    (when (process-live-p flymake-proselint-backend--proc)
+	(kill-process flymake-proselint-backend--proc))
+
+    ;; Save the current buffer, the narrowing restriction, remove any
+    ;; narrowing restriction.
+    (let ((source (current-buffer)))
+	(save-restriction
+	    (widen)
+	    ;; Reset the `flymake-proselint-backend--proc' process to a new process
+	    ;; calling the proselint tool.
+	    (setq
+	     flymake-proselint-backend--proc
+	     (make-process
+	      :name "proselint-flymake" :noquery t :connection-type 'pipe
+	      ;; Make output go to a temporary buffer.
+	      ;;
+	      :buffer (generate-new-buffer " *proselint-flymake*")
+	      :command '("proselint")
+	      :sentinel
+	      (lambda (proc _event)
+		  ;; Check that the process has indeed exited, as it might
+		  ;; be simply suspended.
+		  (when (memq (process-status proc) '(exit signal))
+		      (unwind-protect
+			      ;; Only proceed if `proc' is the same as
+			      ;; `flymake-proselint-backend--proc', which indicates that
+			      ;; `proc' is not an obsolete process.
+			      (if (with-current-buffer source (eq proc flymake-proselint-backend--proc))
+				      (with-current-buffer (process-buffer proc)
+					  (goto-char (point-min))
+					  ;; Parse the output buffer for diagnostic's
+					  ;; messages and locations, collect them in a list
+					  ;; of objects, and call `report-fn'.
+					  ;;
+					  (cl-loop
+					   while (search-forward-regexp
+						  "^.+:\\([[:digit:]]+\\):\\([[:digit:]]+\\): \\(.+\\)$"
+						  nil t)
+					   for lnum = (string-to-number (match-string 1))
+					   for lcol = (string-to-number (match-string 2))
+					   for msg = (match-string 3)
+					   for (beg . end) = (flymake-diag-region source lnum lcol)
+					   when (and beg end)
+					   collect (flymake-make-diagnostic source
+									    beg
+									    end
+									    :warning
+									    msg)
+					   into diags
+					   finally (funcall report-fn diags)))
+				  (flymake-log :warning "Canceling obsolete check %s"
+					       proc))
+			  ;; Cleanup the temporary buffer used to hold the
+			  ;; check's output.
+			  (kill-buffer (process-buffer proc)))))))
+	    ;; Send the buffer contents to the process's stdin, followed by
+	    ;; an EOF.
+	    (process-send-region flymake-proselint-backend--proc (point-min) (point-max))
+	    (process-send-eof flymake-proselint-backend--proc))))
+
+(defvar existing-shell nil)
+
+(defun shell-toggle ()
+    (interactive)
+    (let* ((existing-window (get-buffer-window existing-shell)))
+	(cond
+	 ((and existing-shell existing-window) (delete-window existing-window))
+	 ((and existing-shell (not existing-window)) (display-buffer existing-shell))
+	 (t (setq existing-shell (term (getenv "SHELL")))))))
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
+   '("7b8f5bbdc7c316ee62f271acf6bcd0e0b8a272fdffe908f8c920b0ba34871d98" "e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
  '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)))
  '(package-selected-packages '(centaur-tabs treemacs esup markdown-ts-mode doom-themes)))
 (custom-set-faces

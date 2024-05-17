@@ -9,4 +9,5 @@
       ;; core/ide-layer
       core/writing-layer
       core/markdown-layer
-      core/emacs-lisp-layer))
+      core/emacs-lisp-layer
+      core/web-layer))
