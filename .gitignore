@@ -20,3 +20,6 @@ transient/
 transient/*
 tree-sitter/
 tree-sitter/*
+.cache
+.cache/*
+projects
