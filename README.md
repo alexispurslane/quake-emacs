@@ -27,10 +27,10 @@ then Quake Emacs is for you.
 git clone https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
 ```
 
-2. Then copy the example `user.el` provided with Quake to your `load` directory and modify it to your heart's content:
+2. Then copy the example `user.el` provided with Quake `~/.quake.d/user.el`:
 
 ```bash
-mkdir -p load/ && cp user.el load/
+mkdir -p ~/.quake.d/ && cp user.el ~/.quake.d/
 ```
 
 To update, just `git pull` to the latest tag.

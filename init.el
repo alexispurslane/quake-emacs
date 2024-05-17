@@ -266,7 +266,7 @@
 	    "P"    '(nil :wk "profile")
 	    "Pf"   `(,(+cmdfy! (find-file "~/.emacs.d/init.el"))
 		     :wk "Open framework config")
-	    "Pu"   `(,(+cmdfy! (find-file "~/.emacs.d/load/user.el"))
+	    "Pu"   `(,(+cmdfy! (find-file "~/.quake.d/user.el"))
 		     :wk "Open user config")
 
 	    ;; ====== Buffers ======
@@ -710,7 +710,7 @@
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; RUN LAYERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(load "~/.emacs.d/load/user.el")
+(load "~/.quake.d/user.el")
 (defvar enabled-layers (user/enabled-layers))
 
 (defun core/enable-layer (layer)
