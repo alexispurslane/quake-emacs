@@ -10,13 +10,12 @@
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
-(setq use-package-always-ensure t
-      use-package-compute-statistics t) ; we care about performance here!
+(setq use-package-always-ensure t) ; we care about performance here!
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USER TUNABLE PARAMETERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defvar quake-color-theme
-    'gruvbox
+    'doom-gruvbox
     "The theme quake loads and uses at startup.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BASE EMACS CONFIG ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -483,8 +482,6 @@
 	(global-treesit-auto-mode))
 
     (use-package corfu
-	;;:config
-	;;(set-face-attribute 'corfu-popupinfo nil :family "Cantarell" :height 120)
 	;; Optional customizations
 	:custom
 	(corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
@@ -495,17 +492,21 @@
 	(corfu-auto-prefix 3)
 	(corfu-popupinfo-delay 0.22)
 	(corfu-popupinfo-direction 'right)
-	:init
+	:config
 	(global-corfu-mode)
 	(defun corfu-enable-in-minibuffer ()
 	    "Enable Corfu in the minibuffer."
 	    (when (local-variable-p 'completion-at-point-functions)
-		;; (setq-local corfu-auto nil) ;; Enable/disable auto completion
 		(setq-local corfu-echo-delay nil ;; Disable automatic echo and popup
 			    corfu-popupinfo-delay nil)
 		(corfu-mode 1)))
 	(add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer)
-	(add-hook 'corfu-mode-hook #'corfu-popupinfo-mode))
+
+	(defun corfu-popupinfo-start ()
+	    (require 'corfu-popupinfo)
+	    (set-face-attribute 'corfu-popupinfo nil :inherit 'variable-pitch)
+	    (corfu-popupinfo-mode))
+	(add-hook 'corfu-mode-hook #'corfu-popupinfo-start))
 
     (with-eval-after-load 'eglot
 	(add-to-list 'eglot-server-programs
@@ -540,9 +541,10 @@
     (use-package doom-themes
 	:config
 	;; Global settings (defaults)
-	(setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
-	      doom-themes-enable-italic t) ; if nil, italics is universally disabled
-	(load-theme quake-color-theme t))
+	(setq doom-themes-enable-bold t
+	      doom-themes-enable-italic t))
+
+    (load-theme quake-color-theme t)
 
     (use-package spacious-padding
 	:after (doom-themes)
@@ -876,23 +878,10 @@ exception must be made."
    '("7b8f5bbdc7c316ee62f271acf6bcd0e0b8a272fdffe908f8c920b0ba34871d98" "e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
  '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)))
  '(package-selected-packages
-   '(latex-preview-pane yasnippet-capf which-key visual-fill-column vertico treesit-auto spacious-padding rainbow-delimiters orderless nerd-icons-corfu nerd-icons-completion mood-line markdown-ts-mode markdown-mode marginalia magit ligature hydra hl-todo highlight-defined helpful gruvbox-theme general flymake-quickdef flymake-proselint evil-collection equake emojify elisp-demos elisp-def eldoc-box doom-themes doom-modeline dashboard darkroom corfu consult breadcrumb apheleia)))
+   '(esup latex-preview-pane yasnippet-capf which-key visual-fill-column vertico treesit-auto spacious-padding rainbow-delimiters orderless nerd-icons-corfu nerd-icons-completion mood-line markdown-ts-mode markdown-mode marginalia magit ligature hydra hl-todo highlight-defined helpful gruvbox-theme general flymake-quickdef flymake-proselint evil-collection equake emojify elisp-demos elisp-def eldoc-box doom-themes doom-modeline dashboard darkroom corfu consult breadcrumb apheleia)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(fringe ((t :background "#282828")))
- '(header-line ((t :box (:line-width 4 :color "#282828" :style nil))))
- '(header-line-highlight ((t :box (:color "#ebdbb2"))))
- '(keycast-key ((t)))
- '(line-number ((t :background "#282828")))
- '(tab-bar-tab ((t :box (:line-width 4 :color "#504945" :style nil))))
- '(tab-bar-tab-inactive ((t :box (:line-width 4 :color "#282828" :style nil))))
- '(tab-line-tab ((t)))
- '(tab-line-tab-active ((t)))
- '(tab-line-tab-inactive ((t)))
- '(vertical-border ((t :background "#282828" :foreground "#282828")))
- '(window-divider ((t (:background "#282828" :foreground "#282828"))))
- '(window-divider-first-pixel ((t (:background "#282828" :foreground "#282828"))))
- '(window-divider-last-pixel ((t (:background "#282828" :foreground "#282828")))))
+ )
