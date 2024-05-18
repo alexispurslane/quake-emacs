@@ -1,5 +1,3 @@
-;; -*- lexical-binding: t; -*-
-
 (defmacro +cmdfy! (&rest body)
     "Convert BODY to an interactive command."
     `(lambda () (interactive) ,@body))
@@ -201,15 +199,7 @@
 	(evil-set-leader nil (kbd "C-SPC"))
 
 	;; set leader key in normal state
-	(evil-set-leader 'normal (kbd "SPC"))
-
-	(add-hook 'emacs-lisp-mode-hook
-		  (lambda ()
-		      (+core--internal-local-map!
-			  "e" #'eval-last-sexp
-			  "d" #'eval-defun
-			  "b" #'eval-buffer
-			  "r" #'eval-region))))
+	(evil-set-leader 'normal (kbd "SPC")))
 
     (defun core/dont-arrow-me-sis ()
 	(interactive)
@@ -235,7 +225,7 @@
 
     (use-package general
 	;; PERF: Loading `general' early make Emacs very slow on startup.
-	:after evil
+	:after (evil evil-collection)
 	:config
 	;; Advise `define-key' to automatically unbind keys when necessary.
 	(general-auto-unbind-keys)
@@ -248,7 +238,15 @@
 	    :keymaps 'override              
 	    :prefix "SPC m"      
 	    :global-prefix "C-SPC m")
-	
+
+    (add-hook 'emacs-lisp-mode-hook
+              (lambda ()
+                (+core--internal-local-map!
+                  "e" #'eval-last-sexp
+                  "d" #'eval-defun
+                  "b" #'eval-buffer
+                  "r" #'eval-region)))
+
 	;; Define the built-in global keybindings
 	(general-nmap
 	    :prefix "SPC"
