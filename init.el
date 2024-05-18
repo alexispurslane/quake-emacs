@@ -1,3 +1,5 @@
+;; -*- lexical-binding: t; -*-
+
 (defmacro +cmdfy! (&rest body)
     "Convert BODY to an interactive command."
     `(lambda () (interactive) ,@body))
@@ -245,13 +247,13 @@
 	    :prefix "SPC m"      
 	    :global-prefix "C-SPC m")
 
-    (add-hook 'emacs-lisp-mode-hook
-              (lambda ()
-                (+core--internal-local-map!
-                  "e" #'eval-last-sexp
-                  "d" #'eval-defun
-                  "b" #'eval-buffer
-                  "r" #'eval-region)))
+	(add-hook 'emacs-lisp-mode-hook
+		  (lambda ()
+                      (+core--internal-local-map!
+			  "e" #'eval-last-sexp
+			  "d" #'eval-defun
+			  "b" #'eval-buffer
+			  "r" #'eval-region)))
 
 	;; Define the built-in global keybindings
 	(general-nmap
@@ -620,7 +622,6 @@
     (use-package rainbow-delimiters
 	:hook (prog-mode . rainbow-delimiters-mode))
 
-
     ;; Icons are nice to have! Nerd icons is faster and better
     ;; integrated (so less icon duplication between packages) with the
     ;; packages I'm using than all-the-icons
@@ -707,7 +708,7 @@
 	(centaur-tabs-set-modified-marker t)
 	(centaur-tabs-label-fixed-length 15)
 	:config
-	(centaur-tabs-change-fonts (face-attribute 'variable-pitch :font) 120)))
+	(centaur-tabs-change-fonts "Cantarell" 120)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; LANGUAGE SPECIFIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
