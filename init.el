@@ -10,7 +10,14 @@
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
-(setq use-package-always-ensure t) ; we care about performance here!
+(setq use-package-always-ensure t
+      use-package-compute-statistics t) ; we care about performance here!
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USER TUNABLE PARAMETERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar quake-color-theme
+    'gruvbox
+    "The theme quake loads and uses at startup.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BASE EMACS CONFIG ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -460,7 +467,12 @@
     (use-package magit
 	:commands (magit-status magit-get-current-branch)
 	:custom
-	(magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+	(magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+	:config
+					; Escape quits magit help mode like I expect
+	(general-define-key
+	 :keymaps 'transient-base-map
+	 "<escape>" 'transient-quit-one))
 
     ;; We like syntax highlighting in this house
     (use-package treesit-auto
@@ -495,7 +507,6 @@
 	(add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer)
 	(add-hook 'corfu-mode-hook #'corfu-popupinfo-mode))
 
-
     (with-eval-after-load 'eglot
 	(add-to-list 'eglot-server-programs
 		     '((typescript-ts-mode js-ts-mode) . ("typescript-language-server" "--stdio")))
@@ -509,7 +520,17 @@
 	      '("prettier" file))
 	(add-to-list 'apheleia-mode-alist '(typescript-ts-mode . prettier))
 	(add-to-list 'apheleia-mode-alist '(js-ts-mode . prettier))
-	:hook (prog-mode . apheleia-mode)))
+	:hook (prog-mode . apheleia-mode))
+
+    ;; Snippets are useful for an IDE-lite experience!
+    (use-package yasnippet
+	:hook (prog-mode . yas-minor-mode)
+	:config (yas-reload-all))
+    
+    (use-package yasnippet-capf
+	:after (corfu yasnippet)
+	:config
+	(add-to-list 'completion-at-point-functions #'yasnippet-capf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE AESTHETIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -521,25 +542,18 @@
 	;; Global settings (defaults)
 	(setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
 	      doom-themes-enable-italic t) ; if nil, italics is universally disabled
-	(load-theme 'doom-gruvbox t)
+	(load-theme quake-color-theme t))
 
-	;; Enable flashing mode-line on errors
-	(doom-themes-visual-bell-config))
-
-    ;; Extremely pretty, but extremely slow, modeline
-    ;; (use-package doom-modeline
-    ;; 	:init (doom-modeline-mode 1)
-
-    ;; 	:custom
-    ;; 	(doom-modeline-major-mode-icon t)
-    ;; 	(doom-modeline-height 33)
-
-    ;; 	:config
-    ;; 	(set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
-    ;; 	(set-face-attribute 'mode-line-inactive nil :inherit 'variable-pitch :height 120))
+    (use-package spacious-padding
+	:after (doom-themes)
+	:config
+	(spacious-padding-mode 1)
+	(set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
+	(set-face-attribute 'mode-line-inactive nil :inherit 'mode-line))
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
+	:after (doom-themes)
 	:custom
 	(mood-line-glyph-alist mood-line-glyphs-unicode)
 	(mood-line-segment-modal-evil-state-alist 
@@ -564,9 +578,7 @@
 	   ((mood-line-segment-checker) . " ")
 	   ((mood-line-segment-process) . " "))))
 	:config
-	(mood-line-mode)
-	(set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120 :box `(:line-width 8 :color ,(face-background 'mode-line)))
-	(set-face-attribute 'mode-line-inactive nil :inherit 'mode-line))
+	(mood-line-mode))
 
     (use-package dashboard
 	:custom
@@ -595,9 +607,7 @@
 	:commands (markdown-mode))
 
     (use-package breadcrumb
-	:hook (eglot-managed-mode . breadcrumb-local-mode))
-
-    (use-package spacious-padding))
+	:hook (eglot-managed-mode . breadcrumb-local-mode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; OPTIONAL AESTHETIC BLING ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -726,7 +736,10 @@
 
     (add-hook 'darkroom-mode-hook (lambda ()
 				      (flymake-mode)
-				      (flymake-proselint-setup))))
+				      (flymake-proselint-setup)))
+
+    (use-package latex-preview-pane
+	:commands (latex-preview-pane-mode latex-preview-pane-enable)))
 
 (defun core/markdown-layer ()
     "Tree-Sitter markdown requires more setup than the other tree-sitter modes"
@@ -862,10 +875,24 @@ exception must be made."
  '(custom-safe-themes
    '("7b8f5bbdc7c316ee62f271acf6bcd0e0b8a272fdffe908f8c920b0ba34871d98" "e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
  '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)))
- '(package-selected-packages '(centaur-tabs treemacs esup markdown-ts-mode doom-themes)))
+ '(package-selected-packages
+   '(latex-preview-pane yasnippet-capf which-key visual-fill-column vertico treesit-auto spacious-padding rainbow-delimiters orderless nerd-icons-corfu nerd-icons-completion mood-line markdown-ts-mode markdown-mode marginalia magit ligature hydra hl-todo highlight-defined helpful gruvbox-theme general flymake-quickdef flymake-proselint evil-collection equake emojify elisp-demos elisp-def eldoc-box doom-themes doom-modeline dashboard darkroom corfu consult breadcrumb apheleia)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(fringe ((t :background "#282828")))
+ '(header-line ((t :box (:line-width 4 :color "#282828" :style nil))))
+ '(header-line-highlight ((t :box (:color "#ebdbb2"))))
+ '(keycast-key ((t)))
+ '(line-number ((t :background "#282828")))
+ '(tab-bar-tab ((t :box (:line-width 4 :color "#504945" :style nil))))
+ '(tab-bar-tab-inactive ((t :box (:line-width 4 :color "#282828" :style nil))))
+ '(tab-line-tab ((t)))
+ '(tab-line-tab-active ((t)))
+ '(tab-line-tab-inactive ((t)))
+ '(vertical-border ((t :background "#282828" :foreground "#282828")))
+ '(window-divider ((t (:background "#282828" :foreground "#282828"))))
+ '(window-divider-first-pixel ((t (:background "#282828" :foreground "#282828"))))
+ '(window-divider-last-pixel ((t (:background "#282828" :foreground "#282828")))))
