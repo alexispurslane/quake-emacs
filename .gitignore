@@ -25,3 +25,4 @@ tree-sitter/*
 projects
 load
 load/*
+custom.el
