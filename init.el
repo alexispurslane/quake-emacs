@@ -11,6 +11,7 @@
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
 (setq use-package-always-ensure t) ; we care about performance here!
+(setq use-package-compute-statistics t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USER TUNABLE PARAMETERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -89,6 +90,21 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE USABILITY PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun core/usability-layer ()
+    "Loads the core packages needed to make Emacs more usable in the
+modern day.
+
+Loads:
+- `which-key' to show what keys can be pressed next at each stage of a
+  key combination
+- `hydra' to allow grouping commands so that you don't have to repeat
+  their prefix
+- `helpful' to give slower, but better, documentation for Emacs Lisp
+- `vertico' for a pervasive vertical completion UI that should be
+  familar to VSCode users
+- `marginalia', to add crucial metadata to vertico completion candidates
+- `orderless', for fuzzy searching in vertico
+- `consult', for the ability to use vertico to find things in
+  minibuffers (useful for xref)"
     ;; Where to next, boss?
     (use-package which-key
 	:init (which-key-mode)
@@ -97,6 +113,8 @@
 	(which-key-idle-delay 0.1)
 	(which-key-idle-secondary-delay nil)
 	(which-key-sort-order #'which-key-key-order-alpha))
+
+    (use-package hydra)
 
     ;; Better docs are always good
     (use-package helpful
@@ -160,6 +178,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE EDITING PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun core/editor-layer ()
+    "'Emacs is a great OS, if only it had a good editor.' With
+ the powerful text-object based command language of Vim, and the
+ flexibility of Emacs, at your command, Evil is that editor.
+
+Loads:
+
+- `evil', the Emacs editor of choice
+- `evil-collection', to integrate Evil mode with everything else
+- `general', and an extensive set of leader key keybindings, so you
+  can control Emacs from the comfort of your leader key"
     ;; Join the vim side :evil_grin:
     ;; TODO: build list of places where evil mode isn't good and add a hook to
     ;; avoid them
@@ -409,6 +437,7 @@
 	    "hem"  #'info-emacs-manual
 	    "hei"  #'Info-search
 
+	    "hh"  #'hyperbole
 	    "hv"  #'helpful-variable
 	    "hk"  #'helpful-key
 	    "hc"  #'helpful-command
@@ -446,14 +475,28 @@
 	    "pss" #'project-search
 	    "psn" '(fileloop-continue :wk "Next match")
 	    "psr" #'project-query-replace-regexp
-	    "psf" #'project-find-regexp))
-
-    (use-package hydra
-	:after evil))
+	    "psf" #'project-find-regexp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE CODE PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun core/coding-layer ()
+    "All the basic components needed for a Visual Studio Code-style
+IDE-lite experience in Emacs... but better.
+
+Loads:
+- `magit', the powerful Git user interface that lets you do
+  anything from trivial to complex git commands with just a few
+  mnemonic keypresses, all with helpful command palettes to guide
+  you on your way
+- `treesit-auto', to automatically install and use the tree-sitter mode
+  for any recognized language, so you have IDE-class syntax
+  highlighting for nearly anything, out of the box.
+- `corfu', the faster, slimmer, yet more featureful
+  universal (available anywhere) auto-completion UI for Emacs
+- `apheleia', as an auto-formatter, so you never need to worry about your
+  formatting not matching a project's again.
+- `yasnippet' and `yasnippet-corfu', so you don't have to type all
+  that rote boilerplate"
     ;; This wouldn't be Quake emacs without the preconfigured ability
     ;; to have a Quake style dropdown terminal!
     (add-to-list 'display-buffer-alist
@@ -536,6 +579,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE AESTHETIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun core/aesthetic-layer ()
+    "If you're going to be staring at your editor all day, it might as well look nice.
+
+Loads:
+- `doom-themes', for an unparalleled collection of excellent
+  themes, so you never have to go searching for a theme again
+- `spacious-padding', so your user interface feels less like a
+  cramped TTY and more like a modern editor. We can afford the
+  screen real-estate
+- `mood-line', for an incredibly fast and lightweight emacs modeline
+  that offers just the features you need for a great experience
+- `dashboard', because a launchpad is always welcome
+- `eldoc-box', because documentation needs to look nice and appear
+  next to your cursor so you don't have to move your eyes
+- `breadcrumb', so you don't get lost"
     ;; Although this is big and relatively slow (one of the slowest
     ;; things I include) doom's themes are just too good to pass up
     (use-package doom-themes
@@ -614,6 +671,17 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; OPTIONAL AESTHETIC BLING ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun core/bling-layer ()
+    "If you want your editor to wow the hipsters, or you just like
+looking at the fancy pretty colors, you need some bling.
+
+Loads:
+- `hl-todo', so you never miss those TODOs and FIXMEs
+- `rainbow-delimiters', to liven up nested parenthesis
+- `nerd-icons', `nerd-icons-completion', and `nerd-icons-corfu',
+  because there's really nothing better than a nice set of icons to
+  spice things up, and we want integration *everywhere*
+- `emojify', because emojis are cool
+- `ligature', because ligatures are cool"
     (use-package hl-todo
 	:commands (hl-todo-mode)
 	:init (add-hook 'prog-mode-hook #'hl-todo-mode))
@@ -672,6 +740,16 @@
 	:hook (prog-mode . ligature-mode)))
 
 (defun core/ide-layer ()
+    "If you want your editor to feel even more like a GUI-based IDE,
+but faster and more flexible, this layer is for you.
+
+Loads:
+- `nerd-icons-dired', because a fully-iconified file manager
+  seems like an IDE sort of thing
+- `treemacs' and `treemacs-evil', for a fully graphical project tree explorer sidebar
+- `centaur-tabs', because nothing screams 'this isn't a regular
+  text editor, this is an IDE' like fully-GUI tabs, curved in a
+  way text could never emulate"
     ;; Integrate nerd icons with dired (I never use dired)
     (use-package nerd-icons-dired
 	:after (nerd-icons)
@@ -713,6 +791,15 @@
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; LANGUAGE SPECIFIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun core/writing-layer ()
+    "If you're like me and you use Emacs to write blog posts and/or
+fiction, a good focus mode is priceless.
+
+Loads:
+- `visual-fill-column' for dealing with those line-paragraphs
+- `darkroom', the focus mode of your dreams
+- `flymake-proselint', to help you improve your prose
+- `latex-preview-pane', so if you're writing LaTeX, you can see
+  what it will produce"
     ;; Ability to fill words into the width of the screen as proper
     ;; WYSIWYG editors do
     (use-package visual-fill-column
@@ -741,6 +828,13 @@
 
     (use-package latex-preview-pane
 	:commands (latex-preview-pane-mode latex-preview-pane-enable)))
+
+(defun core/notes-layer ()
+    "WARNING: Under construction. If you take notes in Emacs, this layer is designed for you."
+    (use-package hyperbole
+	:commands (hyperbole hyperbole-mode)
+	:config
+	(hyperbole-mode 1)))
 
 (defun core/markdown-layer ()
     "Tree-Sitter markdown requires more setup than the other tree-sitter modes"
@@ -877,10 +971,27 @@ exception must be made."
    '("7b8f5bbdc7c316ee62f271acf6bcd0e0b8a272fdffe908f8c920b0ba34871d98" "e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
  '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)))
  '(package-selected-packages
-   '(esup latex-preview-pane yasnippet-capf which-key visual-fill-column vertico treesit-auto spacious-padding rainbow-delimiters orderless nerd-icons-corfu nerd-icons-completion mood-line markdown-ts-mode markdown-mode marginalia magit ligature hydra hl-todo highlight-defined helpful gruvbox-theme general flymake-quickdef flymake-proselint evil-collection equake emojify elisp-demos elisp-def eldoc-box doom-themes doom-modeline dashboard darkroom corfu consult breadcrumb apheleia)))
+   '(yasnippet-capf which-key visual-fill-column vertico treesit-auto treemacs-evil spacious-padding rainbow-delimiters orderless nerd-icons-dired nerd-icons-corfu nerd-icons-completion mood-line markdown-ts-mode markdown-mode marginalia magit ligature latex-preview-pane hyperbole hl-todo highlight-defined helpful general evil-collection emojify elisp-demos elisp-def eldoc-box doom-themes dashboard darkroom corfu consult centaur-tabs breadcrumb apheleia)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(fringe ((t :background "#282828")))
+ '(header-line ((t :box (:line-width 4 :color "#37302f" :style nil))))
+ '(header-line-highlight ((t :box (:color "#ebdbb2"))))
+ '(keycast-key ((t)))
+ '(line-number ((t :background "#282828")))
+ '(mode-line ((t :box (:line-width 6 :color "#37302f" :style nil))))
+ '(mode-line-active ((t :box (:line-width 6 :color "#37302f" :style nil))))
+ '(mode-line-highlight ((t :box (:color "#ebdbb2"))))
+ '(mode-line-inactive ((t :box (:line-width 6 :color "#282828" :style nil))))
+ '(tab-bar-tab ((t :box (:line-width 4 :color "#282828" :style nil))))
+ '(tab-bar-tab-inactive ((t :box (:line-width 4 :color "#1d2021" :style nil))))
+ '(tab-line-tab ((t)))
+ '(tab-line-tab-active ((t)))
+ '(tab-line-tab-inactive ((t)))
+ '(vertical-border ((t :background "#282828" :foreground "#282828")))
+ '(window-divider ((t (:background "#282828" :foreground "#282828"))))
+ '(window-divider-first-pixel ((t (:background "#282828" :foreground "#282828"))))
+ '(window-divider-last-pixel ((t (:background "#282828" :foreground "#282828")))))
