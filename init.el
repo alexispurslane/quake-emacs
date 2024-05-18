@@ -1,3 +1,5 @@
+;; -*- lexical-binding: t; -*-
+
 (defmacro +cmdfy! (&rest body)
     "Convert BODY to an interactive command."
     `(lambda () (interactive) ,@body))
@@ -9,6 +11,12 @@
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
 (setq use-package-always-ensure t) ; we care about performance here!
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USER TUNABLE PARAMETERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar quake-color-theme
+    'doom-gruvbox
+    "The theme quake loads and uses at startup.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BASE EMACS CONFIG ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -239,13 +247,13 @@
 	    :prefix "SPC m"      
 	    :global-prefix "C-SPC m")
 
-    (add-hook 'emacs-lisp-mode-hook
-              (lambda ()
-                (+core--internal-local-map!
-                  "e" #'eval-last-sexp
-                  "d" #'eval-defun
-                  "b" #'eval-buffer
-                  "r" #'eval-region)))
+	(add-hook 'emacs-lisp-mode-hook
+		  (lambda ()
+                      (+core--internal-local-map!
+			  "e" #'eval-last-sexp
+			  "d" #'eval-defun
+			  "b" #'eval-buffer
+			  "r" #'eval-region)))
 
 	;; Define the built-in global keybindings
 	(general-nmap
@@ -458,7 +466,12 @@
     (use-package magit
 	:commands (magit-status magit-get-current-branch)
 	:custom
-	(magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+	(magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+	:config
+					; Escape quits magit help mode like I expect
+	(general-define-key
+	 :keymaps 'transient-base-map
+	 "<escape>" 'transient-quit-one))
 
     ;; We like syntax highlighting in this house
     (use-package treesit-auto
@@ -469,8 +482,6 @@
 	(global-treesit-auto-mode))
 
     (use-package corfu
-	;;:config
-	;;(set-face-attribute 'corfu-popupinfo nil :family "Cantarell" :height 120)
 	;; Optional customizations
 	:custom
 	(corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
@@ -481,18 +492,21 @@
 	(corfu-auto-prefix 3)
 	(corfu-popupinfo-delay 0.22)
 	(corfu-popupinfo-direction 'right)
-	:init
+	:config
 	(global-corfu-mode)
 	(defun corfu-enable-in-minibuffer ()
 	    "Enable Corfu in the minibuffer."
 	    (when (local-variable-p 'completion-at-point-functions)
-		;; (setq-local corfu-auto nil) ;; Enable/disable auto completion
 		(setq-local corfu-echo-delay nil ;; Disable automatic echo and popup
 			    corfu-popupinfo-delay nil)
 		(corfu-mode 1)))
 	(add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer)
-	(add-hook 'corfu-mode-hook #'corfu-popupinfo-mode))
 
+	(defun corfu-popupinfo-start ()
+	    (require 'corfu-popupinfo)
+	    (set-face-attribute 'corfu-popupinfo nil :inherit 'variable-pitch)
+	    (corfu-popupinfo-mode))
+	(add-hook 'corfu-mode-hook #'corfu-popupinfo-start))
 
     (with-eval-after-load 'eglot
 	(add-to-list 'eglot-server-programs
@@ -507,7 +521,17 @@
 	      '("prettier" file))
 	(add-to-list 'apheleia-mode-alist '(typescript-ts-mode . prettier))
 	(add-to-list 'apheleia-mode-alist '(js-ts-mode . prettier))
-	:hook (prog-mode . apheleia-mode)))
+	:hook (prog-mode . apheleia-mode))
+
+    ;; Snippets are useful for an IDE-lite experience!
+    (use-package yasnippet
+	:hook (prog-mode . yas-minor-mode)
+	:config (yas-reload-all))
+    
+    (use-package yasnippet-capf
+	:after (corfu yasnippet)
+	:config
+	(add-to-list 'completion-at-point-functions #'yasnippet-capf)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE AESTHETIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -517,27 +541,21 @@
     (use-package doom-themes
 	:config
 	;; Global settings (defaults)
-	(setq doom-themes-enable-bold t    ; if nil, bold is universally disabled
-	      doom-themes-enable-italic t) ; if nil, italics is universally disabled
-	(load-theme 'doom-gruvbox t)
+	(setq doom-themes-enable-bold t
+	      doom-themes-enable-italic t))
 
-	;; Enable flashing mode-line on errors
-	(doom-themes-visual-bell-config))
+    (load-theme quake-color-theme t)
 
-    ;; Extremely pretty, but extremely slow, modeline
-    ;; (use-package doom-modeline
-    ;; 	:init (doom-modeline-mode 1)
-
-    ;; 	:custom
-    ;; 	(doom-modeline-major-mode-icon t)
-    ;; 	(doom-modeline-height 33)
-
-    ;; 	:config
-    ;; 	(set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
-    ;; 	(set-face-attribute 'mode-line-inactive nil :inherit 'variable-pitch :height 120))
+    (use-package spacious-padding
+	:after (doom-themes)
+	:config
+	(spacious-padding-mode 1)
+	(set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
+	(set-face-attribute 'mode-line-inactive nil :inherit 'mode-line))
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
+	:after (doom-themes)
 	:custom
 	(mood-line-glyph-alist mood-line-glyphs-unicode)
 	(mood-line-segment-modal-evil-state-alist 
@@ -562,9 +580,7 @@
 	   ((mood-line-segment-checker) . " ")
 	   ((mood-line-segment-process) . " "))))
 	:config
-	(mood-line-mode)
-	(set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120 :box `(:line-width 8 :color ,(face-background 'mode-line)))
-	(set-face-attribute 'mode-line-inactive nil :inherit 'mode-line))
+	(mood-line-mode))
 
     (use-package dashboard
 	:custom
@@ -593,9 +609,7 @@
 	:commands (markdown-mode))
 
     (use-package breadcrumb
-	:hook (eglot-managed-mode . breadcrumb-local-mode))
-
-    (use-package spacious-padding))
+	:hook (eglot-managed-mode . breadcrumb-local-mode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; OPTIONAL AESTHETIC BLING ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -607,7 +621,6 @@
     ;; I like being able to distinguish parenthesis
     (use-package rainbow-delimiters
 	:hook (prog-mode . rainbow-delimiters-mode))
-
 
     ;; Icons are nice to have! Nerd icons is faster and better
     ;; integrated (so less icon duplication between packages) with the
@@ -695,7 +708,7 @@
 	(centaur-tabs-set-modified-marker t)
 	(centaur-tabs-label-fixed-length 15)
 	:config
-	(centaur-tabs-change-fonts (face-attribute 'variable-pitch :font) 120)))
+	(centaur-tabs-change-fonts "Cantarell" 120)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; LANGUAGE SPECIFIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -724,7 +737,10 @@
 
     (add-hook 'darkroom-mode-hook (lambda ()
 				      (flymake-mode)
-				      (flymake-proselint-setup))))
+				      (flymake-proselint-setup)))
+
+    (use-package latex-preview-pane
+	:commands (latex-preview-pane-mode latex-preview-pane-enable)))
 
 (defun core/markdown-layer ()
     "Tree-Sitter markdown requires more setup than the other tree-sitter modes"
@@ -860,7 +876,8 @@ exception must be made."
  '(custom-safe-themes
    '("7b8f5bbdc7c316ee62f271acf6bcd0e0b8a272fdffe908f8c920b0ba34871d98" "e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
  '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)))
- '(package-selected-packages '(centaur-tabs treemacs esup markdown-ts-mode doom-themes)))
+ '(package-selected-packages
+   '(esup latex-preview-pane yasnippet-capf which-key visual-fill-column vertico treesit-auto spacious-padding rainbow-delimiters orderless nerd-icons-corfu nerd-icons-completion mood-line markdown-ts-mode markdown-mode marginalia magit ligature hydra hl-todo highlight-defined helpful gruvbox-theme general flymake-quickdef flymake-proselint evil-collection equake emojify elisp-demos elisp-def eldoc-box doom-themes doom-modeline dashboard darkroom corfu consult breadcrumb apheleia)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

@@ -14,8 +14,13 @@ jobs:
       matrix:
         emacs_version:
           - 29.1
+          - 29.2
+          - 29.3
         ignore_warnings:
           - true
+        include:
+          - emacs-version: snapshot
+            experimental: true
     steps:
     - uses: actions/checkout@v3
     - uses: purcell/setup-emacs@master
