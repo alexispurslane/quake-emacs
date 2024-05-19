@@ -594,8 +594,8 @@
 	(setq eglot-autoshutdown t
 	      eglot-events-buffer-size 0
 	      eglot-sync-connect nil)
-	(add-hook 'eglot-server-initialized-hook (lambda (server)
-						     (message "Server mode initialized")))
+	(add-hook 'eglot-connect-hook (lambda (server)
+					  (message "Server connected")))
         (add-to-list 'eglot-server-programs
                      '((typescript-ts-mode js-ts-mode) . ("typescript-language-server" "--stdio")))
         (add-to-list 'eglot-server-programs
