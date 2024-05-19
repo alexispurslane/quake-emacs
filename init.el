@@ -525,7 +525,7 @@
   - `magit', the powerful Git user interface that lets you do
   anything from trivial to complex git commands with just a few
   mnemonic keypresses, all with helpful command palettes to guide
-  you on your way
+  you on your way, and `diff-hl' so you can see what's changed in-editor
   - `treesit-auto', to automatically install and use the tree-sitter mode
   for any recognized language, so you have IDE-class syntax
   highlighting for nearly anything, out of the box.
@@ -553,6 +553,8 @@
         (general-define-key
          :keymaps 'transient-base-map
          "<escape>" 'transient-quit-one))
+
+    (use-package diff-hl :hook (prog-mode . diff-hl-mode))
 
     ;; We like syntax highlighting in this house
     (use-package treesit-auto
@@ -611,6 +613,8 @@
         (add-to-list 'apheleia-mode-alist '(js-ts-mode . prettier))
         :hook (prog-mode . apheleia-mode))
 
+    (use-package editorconfig :hook (prog-mode . editorconfig-mode))
+
     ;; Snippets are useful for an IDE-lite experience!
     (use-package yasnippet
         :hook (prog-mode . yas-minor-mode)
@@ -636,28 +640,32 @@
     (use-package visual-fill-column
         :commands (visual-fill-column-mode))
 
-    ;; Distraction free writing mode
-    (use-package darkroom
-        :commands (darkroom-mode darkroom-tentative-mode)
-        :config
-        (add-hook 'darkroom-mode-hook (lambda ()
-                                          (setq left-fringe-width 0)
-                                          (setq right-fringe-width 0)
-                                          (if (fboundp 'visual-fill-column-mode)
-                                                  (visual-fill-column-mode)
-                                              (visual-line-mode))
-                                          (if darkroom-mode
-                                                  (buffer-face-mode 1)
-                                              (buffer-face-mode -1)))))
-
     (defun flymake-proselint-setup ()
 	"Enable flymake backend."
 	(message "Initializing proselint flymake backend")
 	(add-hook 'flymake-diagnostic-functions #'flymake-proselint-backend nil t))
 
-    (add-hook 'darkroom-mode-hook (lambda ()
-                                      (flymake-mode)
-                                      (flymake-proselint-setup)))
+    ;; Distraction free writing mode
+    (use-package darkroom
+        :commands (darkroom-mode darkroom-tentative-mode)
+        :config
+        (add-hook 'darkroom-mode-hook (lambda ()
+					  ;; Faster performance on long lines
+					  (setq-default bidi-paragraph-direction 'left-to-right
+							bidi-inhibit-bpa t)
+					  (column-number-mode -1)
+					  (ligature-mode -1)
+					  (prettify-symbols-mode -1)
+					  ;; Less distracting fringe
+                                          (setq left-fringe-width 0)
+                                          (setq right-fringe-width 0)
+					  (visual-fill-column-mode)
+                                          (if darkroom-mode
+						  (buffer-face-mode 1) ; enable variable pitch in buffer if entering
+					      (buffer-face-mode -1)) ; disable it if exiting
+					  ;; Proselint
+					  (flymake-mode)
+					  (flymake-proselint-setup))))
 
     (use-package latex-preview-pane
         :commands (latex-preview-pane-mode latex-preview-pane-enable)))
@@ -675,10 +683,11 @@
     (use-package denote
         :commands (denote denote-link-or-create denote-link)
         :custom
+	(denote-known-keywords '())
         (denote-infer-keywords t)
         (denote-prompts-with-history-as-completion t)
         (denote-prompts '(title keywords))
-        (denote-file-type 'markdown-toml)
+        (denote-file-type 'markdown-yaml)
         (denote-backlinks-show-context t)
         ;; display backlinks buffer to the left of the current window,
         ;; which seems cool to me
@@ -787,7 +796,15 @@
     ;; Pretty markdown formatting for eldoc-box
     (use-package markdown-mode
         :after (eldoc-box)
-        :commands (markdown-mode))
+        :commands (markdown-mode)
+	:custom
+	(markdown-asymmetric-header nil)
+	(markdown-header-scaling t)
+	(markdown-marginalize-headers t)
+	(markdown-enable-math t)
+	(markdown-hide-urls t)
+	(markdown-hide-markup t)
+	(markdown-fontify-code-blocks-natively t))
 
     (use-package breadcrumb
         :hook (eglot-managed-mode . breadcrumb-local-mode)))
