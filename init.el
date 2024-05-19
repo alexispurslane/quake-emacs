@@ -24,26 +24,19 @@
 ;; A few more useful configurations...
 (use-package emacs
     :init
-    ;; TAB cycle if there are only few candidates
-    ;; (setq completion-cycle-threshold 3)
-
     ;; Enable indentation+completion using the TAB key.
     ;; `completion-at-point' is often bound to M-TAB.
     (setq tab-always-indent 'complete)
 
-    ;; Emacs 28 and newer: Hide commands in M-x which do not apply to the current
-    ;; mode. Corfu commands are hidden, since they are not used via M-x. This
-    ;; setting is useful beyond Corfu.
-    ;; (setq read-extended-command-predicate #'command-completion-default-include-p)
-
     ;; Less annoying emacs
     (setq inhibit-startup-message t
 	  visible-bell t
+	  lisp-body-indent 4
 	  vc-follow-symlinks t
 	  warning-minimum-level :emergency
 	  display-line-numbers 'relative
 	  fill-column 65)
-    (setopt use-short-answers t)   ;; Since Emacs 29, `yes-or-no-p' will use `y-or-n-p'
+    (setopt use-short-answers t)
     (customize-set-variable 'treesit-font-lock-level 4)
 
     ;; Fonts
@@ -55,7 +48,7 @@
 	(setq buffer-face-mode-face '(:family "iA Writer Quattro V")))
 
     ;; Nicer appearance
-    (menu-bar-mode -1)  ; Leave this one on if you're a beginner!
+    (menu-bar-mode -1)
     (tool-bar-mode -1)
     (scroll-bar-mode -1)
     (set-frame-parameter nil 'undecorated t)
@@ -105,7 +98,7 @@ Loads:
 - `orderless', for fuzzy searching in vertico
 - `consult', for the ability to use vertico to find things in
   minibuffers (useful for xref)"
-    ;; Where to next, boss?
+
     (use-package which-key
 	:init (which-key-mode)
 	:diminish which-key-mode
@@ -332,8 +325,6 @@ Loads:
 	    "bM"   #'view-echo-area-messages
 	    "bk"   `(,(+cmdfy! (kill-buffer (current-buffer)))
 		     :wk "Kill this buffer")
-	    "bK"   `(,(+cmdfy! (+kill-buffer-and-its-windows (current-buffer)))
-		     :wk "Kill this buffer and its windows")
 	    "br"   '(revert-buffer :wk "Revert")
 	    "bR"   '(rename-buffer :wk "Rename")
 	    "bn"    '(switch-to-next-buffer :wk "Next buffer")
@@ -354,9 +345,6 @@ Loads:
 	    "bvP"  '(delete-file-local-variable-prop-line :wk "Delete from prop line")
 	    "bvd"  '(add-dir-local-variable :wk "Add to dir-locals")
 	    "bvD"  '(delete-dir-local-variable :wk "Delete from dir-locals")
-	    "bvr"  '(nil :wk "reload dir-locals for...")
-	    "bvrr" '(+dir-locals-reload-for-this-buffer :wk "This buffer")
-	    "bvrd" '(+dir-locals-reload-for-all-buffers-in-this-directory :wk "All buffers in this directory")
 
 	    ;; ====== Insert ======
 	    "i"    '(nil :wk "insert")
@@ -376,7 +364,7 @@ Loads:
 	    "wk"   #'evil-window-up
 	    "wh"   #'evil-window-left
 	    "wl"   #'evil-window-right
-	    "wh"   #'split-window-horizontally
+	    "ws"   #'split-window-horizontally
 	    "wv"   #'split-window-vertically
 
 	    ;; ====== Applications (Open) ======
@@ -397,9 +385,6 @@ Loads:
 	    ;; ====== VC ======
 	    "g"    '(nil :wk "git/vc")
 	    "gg"   #'magit
-
-	    ;; ====== Workspaces ======
-	    "TAB"  '(nil :wk "workspace")
 
 	    ;; ====== Toggle ======
 	    "t"    '(nil :wk "toggle")
@@ -426,6 +411,16 @@ Loads:
 
 	    ;; ====== Notes ======
 	    "n"    '(nil :wk "notes")
+	    "nc"   #'denote-create-note
+	    "nn"   #'consult-notes
+	    "ni"   #'denote-link-or-create
+	    "nI"   #'denote-link-after-creating
+	    "nr"   #'denote-rename-file
+	    "nk"   #'denote-keywords-add
+	    "nK"   #'denote-keywords-remove
+	    "nb"   #'denote-backlinks
+	    "nB"   #'denote-find-backlink
+	    "nR"   #'denote-region
 
 	    ;; ====== Help ======
 	    "h"    '(nil :wk "help")
@@ -437,7 +432,6 @@ Loads:
 	    "hem"  #'info-emacs-manual
 	    "hei"  #'Info-search
 
-	    "hh"  #'hyperbole
 	    "hv"  #'helpful-variable
 	    "hk"  #'helpful-key
 	    "hc"  #'helpful-command
@@ -830,11 +824,42 @@ Loads:
 	:commands (latex-preview-pane-mode latex-preview-pane-enable)))
 
 (defun core/notes-layer ()
-    "WARNING: Under construction. If you take notes in Emacs, this layer is designed for you."
-    (use-package hyperbole
-	:commands (hyperbole hyperbole-mode)
+    "For those who take notes in Emacs without being tied down to any
+one markup language or program.
+
+- `denote', for a simple, fast but feature-complete zettelkesten
+  note-taking solution that optionally integrates well with org
+  mode, that is more general than org-roam and uses only
+  plain-text files.
+- `consult-notes' to have a metadata-rich, integrated way to find
+  your notes."
+    (use-package denote
+	:commands (denote denote-link-or-create denote-link)
+	:custom
+	(denote-infer-keywords t)
+	(denote-prompts-with-history-as-completion t)
+	(denote-prompts '(title keywords))
+	(denote-file-type 'markdown-toml)
+	(denote-backlinks-show-context t)
+	;; display backlinks buffer to the left of the current window,
+	;; which seems cool to me
+	((denote-link-backlinks-display-buffer-action
+	  '((display-buffer-reuse-window
+	     display-buffer-in-side-window)
+	    (side . left)
+	    (slot . 99)
+	    (window-width . 0.3)
+	    (dedicated . t)
+	    (preserve-size . (t . t)))))
 	:config
-	(hyperbole-mode 1)))
+	(add-hook 'find-file-hook #'denote-link-buttonize-buffer))
+    
+    (use-package consult-notes
+	:after (denote)
+	:config
+	(consult-notes-denote-mode)
+	;; search only for text files in denote dir
+	(setq consult-notes-denote-files-function (function denote-directory-text-only-files))))
 
 (defun core/markdown-layer ()
     "Tree-Sitter markdown requires more setup than the other tree-sitter modes"
@@ -860,9 +885,7 @@ exception must be made."
 	(advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
 
     (use-package highlight-defined
-	:hook (emacs-lisp-mode . highlight-defined-mode))
-
-    (setq lisp-body-indent 4))
+	:hook (emacs-lisp-mode . highlight-defined-mode)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; RUN LAYERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -962,6 +985,7 @@ exception must be made."
 	 ((and existing-shell (not existing-window)) (display-buffer existing-shell))
 	 (t (setq existing-shell (term (getenv "SHELL")))))))
 
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -969,29 +993,11 @@ exception must be made."
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    '("7b8f5bbdc7c316ee62f271acf6bcd0e0b8a272fdffe908f8c920b0ba34871d98" "e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
- '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)))
- '(package-selected-packages
-   '(yasnippet-capf which-key visual-fill-column vertico treesit-auto treemacs-evil spacious-padding rainbow-delimiters orderless nerd-icons-dired nerd-icons-corfu nerd-icons-completion mood-line markdown-ts-mode markdown-mode marginalia magit ligature latex-preview-pane hyperbole hl-todo highlight-defined helpful general evil-collection emojify elisp-demos elisp-def eldoc-box doom-themes dashboard darkroom corfu consult centaur-tabs breadcrumb apheleia)))
+ '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5))))
+
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(fringe ((t :background "#282828")))
- '(header-line ((t :box (:line-width 4 :color "#37302f" :style nil))))
- '(header-line-highlight ((t :box (:color "#ebdbb2"))))
- '(keycast-key ((t)))
- '(line-number ((t :background "#282828")))
- '(mode-line ((t :box (:line-width 6 :color "#37302f" :style nil))))
- '(mode-line-active ((t :box (:line-width 6 :color "#37302f" :style nil))))
- '(mode-line-highlight ((t :box (:color "#ebdbb2"))))
- '(mode-line-inactive ((t :box (:line-width 6 :color "#282828" :style nil))))
- '(tab-bar-tab ((t :box (:line-width 4 :color "#282828" :style nil))))
- '(tab-bar-tab-inactive ((t :box (:line-width 4 :color "#1d2021" :style nil))))
- '(tab-line-tab ((t)))
- '(tab-line-tab-active ((t)))
- '(tab-line-tab-inactive ((t)))
- '(vertical-border ((t :background "#282828" :foreground "#282828")))
- '(window-divider ((t (:background "#282828" :foreground "#282828"))))
- '(window-divider-first-pixel ((t (:background "#282828" :foreground "#282828"))))
- '(window-divider-last-pixel ((t (:background "#282828" :foreground "#282828")))))
+ )
