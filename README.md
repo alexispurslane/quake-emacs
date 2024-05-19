@@ -12,12 +12,12 @@
 
 ## Why?
 
-If you want to use Emacs, but you also:
+If you want to use Emacs, but you:
 
-- just want to sit down and have your shiny new editor work *right away*, and
-- don't want the complexity, abstraction, and isolation of an Emacs distribution,
+1. just want to sit down and have your new editor work well and look good *right away*, and
+2. don't want the complexity, abstraction, and lack of documentation of an Emacs distribution,
 
-then Quake Emacs is for you.
+then Quake Emacs is for you. People tend to use Emacs for three main things: **code editing**, **writing**, and **note-taking**. Quake Emacs aims to provide a lean, fast, focused, and modern experience for all three of those purposes right out of the box, while remaining **one single 1000-line file** by leveraging vanilla Emacs's capabilities as much as possible.
 
 ## How to install
 
@@ -37,28 +37,17 @@ To update, just `git pull` to the latest tag.
 
 ## Key Features
 
-- 🎯 **Lean and focused**: Quake Emacs includes just the packages and configuration you need for a beautiful, modern IDE-lite experience when coding and a focused, ergonomic experience when writing, and *nothing else*. Consider Quake Emacs part of your editor — it's just there to give you a good out of the box experience, like [Helix](https://helix-editor.com/). The rest is up to you! 
-- 🚀 **Fast**: Every single package is carefully chosen with performance and memory usage partly in mind, and the default load order is tuned within an inch of its life to ensure Emacs starts as fast as possible. (On my machine, Quake Emacs loads in 0.666 seconds on average, and Doom loads in 0.78 seconds, for comparison.)
-- 🥇 **Just one single file**: The configuration framework itself is only one simple, clear, self-contained file that will always remain under a thousand lines. That's it. Just put the file in your emacs directory and go. No external commands, no thousands of lines of Lisp scattered throughout hundreds of files across interminable layers of abstraction. If you want to know where something is, or how it works, it's easy to find.
+- 🎯 **Lean and focused**: Quake Emacs includes just the packages and configuration you need for a beautiful, modern IDE-lite experience when coding and a focused, ergonomic experience when writing or taking notes, and *nothing else*. Consider Quake Emacs part of your editor — it's just there to give you a good out of the box experience, like [Helix](https://helix-editor.com/). The rest is up to you! 
+- 🚀 **Fast**: On my machine, Quake Emacs loads in 0.58 seconds on average. Every single package is carefully chosen with performance in mind, and the default load order is tuned obsessively to ensure Emacs starts as fast as possible. Enjoy fast startup times, or use it as extra headroom to add your own packages.
+- 🥇 **Just one single file**: The configuration framework itself is only one simple, clear, self-contained 1000-line file. That's it. Just put the file in your emacs directory and go. No external commands, no multiple thousands of lines of Lisp scattered throughout hundreds of files across interminable layers of abstraction. If you want to know where something is, or how it works, it's easy to find.
 - 🌐 **Vanilla-first**: Quake Emacs prioritizes using Emacs's built-in capabilities as much as possible, and when those fail, using packages that integrate well with that existing Emacs functionality and leverage it strategically. Quake Emacs only introduces layers of abstraction over built-in vanilla Emacs when *absolutely necessary*. Vanilla Emacs instructions should still work in Quake Emacs!
 - 🖱 **GUI-maximalist**: One of Emacs's most unique features as an editor is its ability to combine the compactness, focus, and performance of a text-mode interface with embedded images, multiple fonts and font sizes, etc to give you a modern editor experience. Quake Emacs is designed to maximize its use of that right out of the box!
 
-## Justification
+## Showcase
 
-With the introduction of various modern Emacs features in the last few years, and the emergence of a new generation of Emacs packages focused on integrating with vanilla Emacs, Emacs distributions as we have known them are less and less relevant.
+### Code Editing
 
-Now that `use-package` is included with Emacs by default, configuration frameworks are less necessary then ever, as vanilla Emacs's built-in capabilities are likely clearer, faster, and more powerful than whatever a configuration framework could offer, with the benefit of also being the community standard. In my experience, Doom Emacs's ideosyncratic package management system was less clear, less-organized, less-documented, and much less reliable than what is now built into Emacs 29.
-
-Likewise, with the inclusion of `eglot` and `tree-sitter`, language-specific "layers" that compose five or six packages, together with a lot of configuration, in order to give a decent experience, are mostly a thing of the past. Quake Emacs leverages these powerful built-in modern Emacs features to give you the experience of an Emacs configuration framework and distribution, without all the downsides.
-
-Similarly, with the creation of amazing packages like `vertico`, `orderless`, and `corfu`, the need to manually integrate added features from various packages into your Emacs system and other Emacs packages is basically obsolete: these packages integrate directly with Emacs, by hooking into or outright replacing Emacs's built in functions for performing various actions, so there's no need to do anything. As a result, much of the configuration work Emacs distributions needed to do to wire everything up simply doesn't need to be done.
-
-## Screenshots
-
-> [!NOTE]
-> Some of these screenshots were taken with icons off, and some with them on.
-
-Quake Emacs has fast autocompletion with [Corfu](https://elpa.gnu.org/packages/doc/corfu.html) and Orderless enabled everywhere.
+Quake Emacs has fuzzy autocompletion with [Corfu](https://elpa.gnu.org/packages/doc/corfu.html) and Orderless enabled everywhere.
 
 ![](./screenshots/fast-autocompletion-everywhere1.png)
 
@@ -84,9 +73,31 @@ While also offering IDE-class features besides completion, via [Eglot](https://g
 ![](./screenshots/ide-class-features2.png)
 ![](./screenshots/pretty-doc-tooltips.png)
 
+And, Quake Emacs wouldn't be able to live up to its name unless it had a classic Quake-style popup terminal! So here it is, implemented entirely without any external packages, and bound to `SPC ~`:
+
+![](./screenshots/quake-term.gif)
+
+### Writing
+
 For those of you who prefer to write your prose in Emacs, I've also created an excellent writing mode, which switches to [a variable pitch font](https://github.com/iaolo/iA-Fonts/tree/master) of your choice, enables a [distraction-free writing mode](https://github.com/joaotavora/darkroom), enables [visual fill column mode](https://github.com/joostkremers/visual-fill-column), wrapped at 65 characters, so that lines behave pleasingly like in a WYSIWYG editor, and enables a flymake [proselint](https://github.com/amperser/proselint) backend to help you improve your prose. To enable all of that, just use `SPC o d`! Here's a sneak peak:
 
 ![](./screenshots/proselint-enabled-writing-mode.png)
+
+### Note-taking
+
+For those that want Emacs to serve as their second brain, Quake Emacs uses [Denote](https://protesilaos.com/emacs/denote), a lightweight personal hypertext information manager that can incorporate an extensible list of markup languages (*not just org*), external files (links to and from, including buttonization as a minor-mode), and even non-text-markup files (such as PDFs, images, or code files like iPython Notebooks) directly into its linking and searching system. It offers all of the same basic features as `org-roam` without locking you down to using only Org, or requiring you to use an SQLite database, while also offering optional excellent integration with org if you want it. It also makes deep use of existing Emacs built-ins, as well as integrating explicitly with packages like vertico, marginalia, and consult via [consult-notes](https://github.com/mclear-tools/consult-notes). I've even created a set of convenient leader key keybinds for managing it.
+
+![](./screenshots/denote.png)
+
+## Justification
+
+With the introduction of various modern Emacs features in the last few years, and the emergence of a new generation of Emacs packages focused on integrating with vanilla Emacs, Emacs distributions as we have known them are less and less relevant.
+
+Now that `use-package` is included with Emacs by default, configuration frameworks are less necessary then ever, as vanilla Emacs's built-in capabilities are likely clearer, faster, and more powerful than whatever a configuration framework could offer, with the benefit of also being the community standard. In my experience, Doom Emacs's ideosyncratic package management system was less clear, less-organized, less-documented, and much less reliable than what is now built into Emacs 29.
+
+Likewise, with the inclusion of `eglot` and `tree-sitter`, language-specific "layers" that compose five or six packages, together with a lot of configuration, in order to give a decent experience, are mostly a thing of the past. Quake Emacs leverages these powerful built-in modern Emacs features to give you the experience of an Emacs configuration framework and distribution, without all the downsides.
+
+Similarly, with the creation of amazing packages like `vertico`, `orderless`, and `corfu`, the need to manually integrate added features from various packages into your Emacs system and other Emacs packages is basically obsolete: these packages integrate directly with Emacs, by hooking into or outright replacing Emacs's built in functions for performing various actions, so there's no need to do anything. As a result, much of the configuration work Emacs distributions needed to do to wire everything up simply doesn't need to be done.
 
 ---
 
