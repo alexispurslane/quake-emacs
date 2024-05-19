@@ -75,7 +75,7 @@ While also offering IDE-class features besides completion, via [Eglot](https://g
 
 And, Quake Emacs wouldn't be able to live up to its name unless it had a classic Quake-style popup terminal! So here it is, implemented entirely without any external packages, and bound to `SPC ~`:
 
-![](./screenshots/quake-term.png)
+![](./screenshots/quake-term.gif)
 
 ### Writing
 
@@ -83,8 +83,11 @@ For those of you who prefer to write your prose in Emacs, I've also created an e
 
 ![](./screenshots/proselint-enabled-writing-mode.png)
 
-
 ### Note-taking
+
+For those that want Emacs to serve as their second brain, Quake Emacs uses [Denote](https://protesilaos.com/emacs/denote), a lightweight personal hypertext information manager that can incorporate an extensible list of markup languages (*not just org*), external files (links to and from, including buttonization as a minor-mode), and even non-text-markup files (such as PDFs, images, or code files like iPython Notebooks) directly into its linking and searching system. It offers all of the same basic features as `org-roam` without locking you down to using only Org, or requiring you to use an SQLite database, while also offering optional excellent integration with org if you want it. It also makes deep use of existing Emacs built-ins, as well as integrating explicitly with packages like vertico, marginalia, and consult via [consult-notes](https://github.com/mclear-tools/consult-notes). I've even created a set of convenient leader key keybinds for managing it.
+
+![](./screenshots/denote.png)
 
 ## Justification
 

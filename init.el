@@ -441,7 +441,7 @@
 
             ;; ====== Notes ======
             "n"    '(nil :wk "notes")
-            "nc"   #'denote-create-note
+            "nc"   #'denote
             "nn"   #'consult-notes
             "ni"   #'denote-link-or-create
             "nI"   #'denote-link-after-creating
