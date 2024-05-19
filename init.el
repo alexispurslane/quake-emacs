@@ -184,7 +184,22 @@
         (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
 
     (use-package highlight-defined
-        :hook (emacs-lisp-mode . highlight-defined-mode)))
+        :hook (emacs-lisp-mode . highlight-defined-mode))
+
+    ;; Declare directories with ".project" as a project so we can use
+    ;; project.el to manage non-version controlled projects, such as
+    ;; [Denote
+    ;; silos](https://protesilaos.com/emacs/denote#h:15719799-a5ff-4e9a-9f10-4ca03ef8f6c5)
+    (cl-defmethod project-root ((project (head local)))
+	(cdr project))
+
+    (defun core/project-try-local (dir)
+	"Determine if DIR is a non-Git project.
+DIR must include a .project file to be considered a project."
+	(let ((root (locate-dominating-file dir ".project")))
+	    (and root (cons 'local root))))
+
+    (add-hook 'project-find-functions #'core/project-try-local))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE EDITING PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -276,7 +291,7 @@
         (evil-collection-init))
 
     (use-package evil-textobj-tree-sitter
-        :after evil
+        :after (evil evil-collection)
         :config
         (define-key evil-inner-text-objects-map "p" (evil-textobj-tree-sitter-get-textobj "parameter.inner"))
         (define-key evil-outer-text-objects-map "c" (evil-textobj-tree-sitter-get-textobj "class.outer"))
@@ -681,7 +696,7 @@
   - `consult-notes' to have a metadata-rich, integrated way to find
   your notes."
     (use-package denote
-        :commands (denote denote-link-or-create denote-link)
+        :commands (denote denote-link-or-create denote-link denote-filetype-heuristics)
         :custom
 	(denote-known-keywords '())
         (denote-infer-keywords t)
@@ -700,7 +715,10 @@
            (dedicated . t)
            (preserve-size . (t . t))))
         :config
-        (add-hook 'find-file-hook #'denote-link-buttonize-buffer))
+        (add-hook 'find-file-hook #'denote-link-buttonize-buffer)
+	;; Allow inserting links or buttonizing existing ones in *any*
+	;; file, just treating thema s you would text files
+	(advice-add 'denote-file-has-supported-extension-p :filter-return (lambda (x) t)))
 
     (use-package consult-notes
         :after (denote)
