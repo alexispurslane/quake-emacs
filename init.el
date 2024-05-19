@@ -10,7 +10,9 @@
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
-(setq use-package-always-ensure t)
+(setq use-package-always-ensure t
+      use-package-compute-statistics t
+      package-enable-at-startup nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USER TUNABLE PARAMETERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -78,7 +80,15 @@
     ;; Ignore case!
     (setq read-file-name-completion-ignore-case t
           read-buffer-completion-ignore-case t
-          completion-ignore-case t))
+          completion-ignore-case t)
+
+    (defun setup-fast-minibuffer ()
+	(setq gc-cons-threshold most-positive-fixnum))
+    (defun close-fast-minibuffer ()
+	(setq gc-cons-threshold 800000))
+
+    (add-hook 'minibuffer-setup-hook #'setup-fast-minibuffer)
+    (add-hook 'minibuffer-exit-hook #'close-fast-minibuffer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE USABILITY PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -180,12 +190,12 @@
     ;; TODO: build list of places where evil mode isn't good and add a hook to
     ;; avoid them
     (use-package evil
-        :init
-        (setq evil-want-integration t)
-        (setq evil-want-keybinding nil)
-        (setq evil-want-C-u-scroll t)
-        (setq evil-want-C-i-jump nil)
-        (setq evil-undo-system 'undo-redo)
+        :custom
+        (evil-want-integration t)
+        (evil-want-keybinding nil)
+        (evil-want-C-u-scroll t)
+        (evil-want-C-i-jump nil)
+        (evil-undo-system 'undo-redo)
         :config
         (evil-mode 1)
         (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
@@ -247,7 +257,7 @@
         (evil-set-leader 'normal (kbd "SPC")))
 
     (use-package evil-collection
-        :after evil
+        :after (evil)
         :config
         (evil-collection-init))
 
@@ -568,6 +578,11 @@
         (add-hook 'corfu-mode-hook #'corfu-popupinfo-start))
 
     (with-eval-after-load 'eglot
+	(setq eglot-autoshutdown t
+	      eglot-events-buffer-size 0
+	      eglot-sync-connect nil)
+	(add-hook 'eglot-server-initialized-hook (lambda (server)
+						     (message "Server mode initialized")))
         (add-to-list 'eglot-server-programs
                      '((typescript-ts-mode js-ts-mode) . ("typescript-language-server" "--stdio")))
         (add-to-list 'eglot-server-programs
@@ -628,7 +643,7 @@
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
-        :after (doom-themes)
+        :after (evil doom-themes)
         :custom
         (mood-line-glyph-alist mood-line-glyphs-unicode)
         (mood-line-segment-modal-evil-state-alist 
@@ -901,10 +916,16 @@
     (message (format "Enabling the %s layer" layer))
     (funcall (symbol-function layer)))
 
+;; no garbage collection during startup — we can amortize it later
 (setq gc-cons-threshold-original gc-cons-threshold)
-(setq gc-cons-threshold (* 50 1000 1000))
+(setq gc-cons-threshold most-positive-fixnum)
 (mapcar #'core/enable-layer enabled-layers)
-(setq gc-cons-threshold gc-cons-threshold-original)
+(run-with-idle-timer
+ 5 nil
+ (lambda ()
+     (setq gc-cons-threshold gc-cons-threshold-original)
+     (makunbound 'gc-cons-threshold-original)
+     (message "gc-cons-threshold and file-name-handler-alist restored")))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;; CODE MOVED IN-TREE FOR PERFORMANCE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1000,10 +1021,8 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("7b8f5bbdc7c316ee62f271acf6bcd0e0b8a272fdffe908f8c920b0ba34871d98" "e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
- '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)))
- '(package-selected-packages
-   '(evil-textobj-tree-sitter yasnippet-capf which-key visual-fill-column vertico treesit-auto treemacs-evil spacious-padding rainbow-delimiters orderless nerd-icons-dired nerd-icons-corfu nerd-icons-completion mood-line markdown-ts-mode markdown-mode marginalia magit ligature latex-preview-pane hyperbole hl-todo highlight-defined helpful general evil-collection emojify elisp-demos elisp-def eldoc-box doom-themes denote dashboard darkroom corfu consult-notes centaur-tabs breadcrumb apheleia)))
+   '("a9abd706a4183711ffcca0d6da3808ec0f59be0e8336868669dc3b10381afb6f" "7b8f5bbdc7c316ee62f271acf6bcd0e0b8a272fdffe908f8c920b0ba34871d98" "e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
+ '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5))))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.

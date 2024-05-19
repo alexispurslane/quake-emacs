@@ -45,6 +45,8 @@ To update, just `git pull` to the latest tag.
 
 ## Showcase
 
+### Code Editing
+
 Quake Emacs has fuzzy autocompletion with [Corfu](https://elpa.gnu.org/packages/doc/corfu.html) and Orderless enabled everywhere.
 
 ![](./screenshots/fast-autocompletion-everywhere1.png)
@@ -71,9 +73,18 @@ While also offering IDE-class features besides completion, via [Eglot](https://g
 ![](./screenshots/ide-class-features2.png)
 ![](./screenshots/pretty-doc-tooltips.png)
 
+And, Quake Emacs wouldn't be able to live up to its name unless it had a classic Quake-style popup terminal! So here it is, implemented entirely without any external packages, and bound to `SPC ~`:
+
+![](./screenshots/quake-term.png)
+
+### Writing
+
 For those of you who prefer to write your prose in Emacs, I've also created an excellent writing mode, which switches to [a variable pitch font](https://github.com/iaolo/iA-Fonts/tree/master) of your choice, enables a [distraction-free writing mode](https://github.com/joaotavora/darkroom), enables [visual fill column mode](https://github.com/joostkremers/visual-fill-column), wrapped at 65 characters, so that lines behave pleasingly like in a WYSIWYG editor, and enables a flymake [proselint](https://github.com/amperser/proselint) backend to help you improve your prose. To enable all of that, just use `SPC o d`! Here's a sneak peak:
 
 ![](./screenshots/proselint-enabled-writing-mode.png)
+
+
+### Note-taking
 
 ## Justification
 
