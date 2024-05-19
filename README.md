@@ -14,7 +14,7 @@
 
 If you want to use Emacs, but you:
 
-1. just want to sit down and have your shiny new editor work *right away*, and
+1. just want to sit down and have your new editor work well and look good *right away*, and
 2. don't want the complexity, abstraction, and lack of documentation of an Emacs distribution,
 
 then Quake Emacs is for you. People tend to use Emacs for three main things: **code editing**, **writing**, and **note-taking**. Quake Emacs aims to provide a lean, fast, focused, and modern experience for all three of those purposes right out of the box, while remaining **one single 1000-line file** by leveraging vanilla Emacs's capabilities as much as possible.
