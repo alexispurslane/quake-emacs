@@ -105,7 +105,9 @@
   - `marginalia', to add crucial metadata to vertico completion candidates
   - `orderless', for fuzzy searching in vertico
   - `consult', for the ability to use vertico to find things in
-  minibuffers (useful for xref)"
+  minibuffers (useful for xref)
+  - `elisp-def', `elisp-demos', and `highlight-defined' to make
+  the experience of configuring your editor much nicer."
 
     (use-package which-key
         :init (which-key-mode)
@@ -170,7 +172,18 @@
                   (apply (if vertico-mode
                                  #'consult-completion-in-region
                              #'completion--in-region)
-                         args)))))
+                         args))))
+    ;; Emacs Lisp
+    (use-package elisp-def
+        :hook (emacs-lisp-mode . elisp-def-mode))
+
+    (use-package elisp-demos
+	:after (helpful)
+        :config
+        (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
+
+    (use-package highlight-defined
+        :hook (emacs-lisp-mode . highlight-defined-mode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE EDITING PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -501,9 +514,9 @@
             "psr" #'project-query-replace-regexp
             "psf" #'project-find-regexp)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE CODE PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TASK-SPECIFIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun core/coding-layer ()
+(defun task/coding-layer ()
     "All the basic components needed for a Visual Studio Code-style
   IDE-lite experience in Emacs... but better.
 
@@ -607,7 +620,86 @@
         :config
         (add-to-list 'completion-at-point-functions #'yasnippet-capf)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE AESTHETIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun task/writing-layer ()
+    "If you're like me and you use Emacs to write blog posts and/or
+  fiction, a good focus mode is priceless.
+
+  Loads:
+  - `visual-fill-column' for dealing with those line-paragraphs
+  - `darkroom', the focus mode of your dreams
+  - `flymake-proselint', to help you improve your prose
+  - `latex-preview-pane', so if you're writing LaTeX, you can see
+  what it will produce"
+    ;; Ability to fill words into the width of the screen as proper
+    ;; WYSIWYG editors do
+    (use-package visual-fill-column
+        :commands (visual-fill-column-mode))
+
+    ;; Distraction free writing mode
+    (use-package darkroom
+        :commands (darkroom-mode darkroom-tentative-mode)
+        :config
+        (add-hook 'darkroom-mode-hook (lambda ()
+                                          (setq left-fringe-width 0)
+                                          (setq right-fringe-width 0)
+                                          (if (fboundp 'visual-fill-column-mode)
+                                                  (visual-fill-column-mode)
+                                              (visual-line-mode))
+                                          (if darkroom-mode
+                                                  (buffer-face-mode 1)
+                                              (buffer-face-mode -1)))))
+
+    (defun flymake-proselint-setup ()
+	"Enable flymake backend."
+	(message "Initializing proselint flymake backend")
+	(add-hook 'flymake-diagnostic-functions #'flymake-proselint-backend nil t))
+
+    (add-hook 'darkroom-mode-hook (lambda ()
+                                      (flymake-mode)
+                                      (flymake-proselint-setup)))
+
+    (use-package latex-preview-pane
+        :commands (latex-preview-pane-mode latex-preview-pane-enable)))
+
+(defun task/notes-layer ()
+    "For those who take notes in Emacs without being tied down to any
+  one markup language or program.
+
+  - `denote', for a simple, fast but feature-complete zettelkesten
+  note-taking solution that optionally integrates well with org
+  mode, that is more general than org-roam and uses only
+  plain-text files.
+  - `consult-notes' to have a metadata-rich, integrated way to find
+  your notes."
+    (use-package denote
+        :commands (denote denote-link-or-create denote-link)
+        :custom
+        (denote-infer-keywords t)
+        (denote-prompts-with-history-as-completion t)
+        (denote-prompts '(title keywords))
+        (denote-file-type 'markdown-toml)
+        (denote-backlinks-show-context t)
+        ;; display backlinks buffer to the left of the current window,
+        ;; which seems cool to me
+        (denote-link-backlinks-display-buffer-action
+         '((display-buffer-reuse-window
+            display-buffer-in-side-window)
+           (side . left)
+           (slot . 99)
+           (window-width . 0.3)
+           (dedicated . t)
+           (preserve-size . (t . t))))
+        :config
+        (add-hook 'find-file-hook #'denote-link-buttonize-buffer))
+
+    (use-package consult-notes
+        :after (denote)
+        :config
+        (consult-notes-denote-mode 1)
+        ;; search only for text files in denote dir
+        (setq consult-notes-denote-files-function (function denote-directory-text-only-files))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; RECOMMENDED AESTHETIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun core/aesthetic-layer ()
     "If you're going to be staring at your editor all day, it might as well look nice.
@@ -701,7 +793,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; OPTIONAL AESTHETIC BLING ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun core/bling-layer ()
+(defun optional/bling-layer ()
     "If you want your editor to wow the hipsters, or you just like
   looking at the fancy pretty colors, you need some bling.
 
@@ -765,7 +857,7 @@
                                              "\\\\" "://"))
         :hook (prog-mode . ligature-mode)))
 
-(defun core/ide-layer ()
+(defun optional/ide-layer ()
     "If you want your editor to feel even more like a GUI-based IDE,
   but faster and more flexible, this layer is for you.
 
@@ -807,105 +899,6 @@
         (centaur-tabs-label-fixed-length 15)
         :config
         (centaur-tabs-change-fonts "Cantarell" 120)))
-
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; LANGUAGE SPECIFIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun core/writing-layer ()
-    "If you're like me and you use Emacs to write blog posts and/or
-  fiction, a good focus mode is priceless.
-
-  Loads:
-  - `visual-fill-column' for dealing with those line-paragraphs
-  - `darkroom', the focus mode of your dreams
-  - `flymake-proselint', to help you improve your prose
-  - `latex-preview-pane', so if you're writing LaTeX, you can see
-  what it will produce"
-    ;; Ability to fill words into the width of the screen as proper
-    ;; WYSIWYG editors do
-    (use-package visual-fill-column
-        :commands (visual-fill-column-mode))
-
-    ;; Distraction free writing mode
-    (use-package darkroom
-        :commands (darkroom-mode darkroom-tentative-mode)
-        :config
-        (add-hook 'darkroom-mode-hook (lambda ()
-                                          (setq left-fringe-width 0)
-                                          (setq right-fringe-width 0)
-                                          (if (fboundp 'visual-fill-column-mode)
-                                                  (visual-fill-column-mode)
-                                              (visual-line-mode))
-                                          (if darkroom-mode
-                                                  (buffer-face-mode 1)
-                                              (buffer-face-mode -1)))))
-
-    (defun flymake-proselint-setup ()
-	"Enable flymake backend."
-	(message "Initializing proselint flymake backend")
-	(add-hook 'flymake-diagnostic-functions #'flymake-proselint-backend nil t))
-
-    (add-hook 'darkroom-mode-hook (lambda ()
-                                      (flymake-mode)
-                                      (flymake-proselint-setup)))
-
-    (use-package latex-preview-pane
-        :commands (latex-preview-pane-mode latex-preview-pane-enable)))
-
-(defun core/notes-layer ()
-    "For those who take notes in Emacs without being tied down to any
-  one markup language or program.
-
-  - `denote', for a simple, fast but feature-complete zettelkesten
-  note-taking solution that optionally integrates well with org
-  mode, that is more general than org-roam and uses only
-  plain-text files.
-  - `consult-notes' to have a metadata-rich, integrated way to find
-  your notes."
-    (use-package denote
-        :commands (denote denote-link-or-create denote-link)
-        :custom
-        (denote-infer-keywords t)
-        (denote-prompts-with-history-as-completion t)
-        (denote-prompts '(title keywords))
-        (denote-file-type 'markdown-toml)
-        (denote-backlinks-show-context t)
-        ;; display backlinks buffer to the left of the current window,
-        ;; which seems cool to me
-        (denote-link-backlinks-display-buffer-action
-         '((display-buffer-reuse-window
-            display-buffer-in-side-window)
-           (side . left)
-           (slot . 99)
-           (window-width . 0.3)
-           (dedicated . t)
-           (preserve-size . (t . t))))
-        :config
-        (add-hook 'find-file-hook #'denote-link-buttonize-buffer))
-
-    (use-package consult-notes
-        :after (denote)
-        :config
-        (consult-notes-denote-mode 1)
-        ;; search only for text files in denote dir
-        (setq consult-notes-denote-files-function (function denote-directory-text-only-files))))
-
-(defun core/emacs-lisp-layer ()
-    "Although the goal of Quake Emacs is to rely exclusively on
-  Tree-Sitter and Eglot for language support, obviating the need
-  for language-specific layers, there is no such support for Emacs
-  Lisp, and if you're using Emacs, you must use Elisp, so an
-  exception must be made."
-    ;; Emacs Lisp
-    (use-package elisp-def
-        :hook (emacs-lisp-mode . elisp-def-mode))
-
-    (use-package elisp-demos
-	:after (helpful)
-        :config
-        (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
-
-    (use-package highlight-defined
-        :hook (emacs-lisp-mode . highlight-defined-mode)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; RUN LAYERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1022,11 +1015,30 @@
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    '("a9abd706a4183711ffcca0d6da3808ec0f59be0e8336868669dc3b10381afb6f" "7b8f5bbdc7c316ee62f271acf6bcd0e0b8a272fdffe908f8c920b0ba34871d98" "e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
- '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5))))
+ '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)))
+ '(package-selected-packages
+   '(yasnippet-capf which-key visual-fill-column vertico treesit-auto treemacs-evil spacious-padding rainbow-delimiters orderless nerd-icons-dired nerd-icons-corfu nerd-icons-completion mood-line markdown-ts-mode markdown-mode marginalia magit ligature latex-preview-pane hyperbole hl-todo highlight-defined helpful general evil-textobj-tree-sitter evil-collection emojify elisp-demos elisp-def eldoc-box doom-themes denote dashboard darkroom corfu consult-notes centaur-tabs breadcrumb apheleia)))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- )
+ '(fringe ((t :background "#282828")))
+ '(header-line ((t :box (:line-width 4 :color "#37302f" :style nil))))
+ '(header-line-highlight ((t :box (:color "#ebdbb2"))))
+ '(keycast-key ((t)))
+ '(line-number ((t :background "#282828")))
+ '(mode-line ((t :box (:line-width 6 :color "#37302f" :style nil))))
+ '(mode-line-active ((t :box (:line-width 6 :color "#37302f" :style nil))))
+ '(mode-line-highlight ((t :box (:color "#ebdbb2"))))
+ '(mode-line-inactive ((t :box (:line-width 6 :color "#282828" :style nil))))
+ '(tab-bar-tab ((t :box (:line-width 4 :color "#282828" :style nil))))
+ '(tab-bar-tab-inactive ((t :box (:line-width 4 :color "#1d2021" :style nil))))
+ '(tab-line-tab ((t)))
+ '(tab-line-tab-active ((t)))
+ '(tab-line-tab-inactive ((t)))
+ '(vertical-border ((t :background "#282828" :foreground "#282828")))
+ '(window-divider ((t (:background "#282828" :foreground "#282828"))))
+ '(window-divider-first-pixel ((t (:background "#282828" :foreground "#282828"))))
+ '(window-divider-last-pixel ((t (:background "#282828" :foreground "#282828")))))
