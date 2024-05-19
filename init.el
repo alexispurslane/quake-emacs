@@ -89,8 +89,6 @@
   Loads:
   - `which-key' to show what keys can be pressed next at each stage of a
   key combination
-  - `hydra' to allow grouping commands so that you don't have to repeat
-  their prefix
   - `helpful' to give slower, but better, documentation for Emacs Lisp
   - `vertico' for a pervasive vertical completion UI that should be
   familar to VSCode users
@@ -107,13 +105,9 @@
         (which-key-idle-secondary-delay nil)
         (which-key-sort-order #'which-key-key-order-alpha))
 
-    (use-package hydra)
-
     ;; Better docs are always good
     (use-package helpful
-        :commands (helpful-variable
-                   helpful-key
-                   helpful-command))
+	:commands (helpful-key helpful-callable helpful-command helpful-variable))
 
     ;; Hijack every prompt and completion in all of Emacs and make them *good*
     (use-package vertico
@@ -197,17 +191,7 @@
         (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
         (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
 
-        ;; Make the escape key actually escape almost everything
-        (global-set-key [escape] 'evil-exit-emacs-state)
-        (define-key evil-normal-state-map [escape] 'keyboard-quit)
-        (define-key evil-visual-state-map [escape] 'keyboard-quit)
-        (define-key minibuffer-local-map [escape] 'minibuffer-keyboard-quit)
-        (define-key minibuffer-local-ns-map [escape] 'minibuffer-keyboard-quit)
-        (define-key minibuffer-local-completion-map [escape] 'minibuffer-keyboard-quit)
-        (define-key minibuffer-local-must-match-map [escape] 'minibuffer-keyboard-quit)
-        (define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit)
-
-        (defun minibuffer-keyboard-quit ()
+	(defun minibuffer-keyboard-quit ()
             "Abort recursive edit.
                  In Delete Selection mode, if the mark is active, just deactivate it;
                  then it takes a second \\[keyboard-quit] to abort the minibuffer."
@@ -216,6 +200,16 @@
                     (setq deactivate-mark  t)
                 (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
                 (abort-recursive-edit)))
+	
+        ;; Make the escape key actually escape almost everything
+	(global-set-key (kbd "<escape>")      'keyboard-escape-quit)
+        (define-key evil-normal-state-map [escape] 'keyboard-quit)
+        (define-key evil-visual-state-map [escape] 'keyboard-quit)
+        (define-key minibuffer-local-map [escape] 'minibuffer-keyboard-quit)
+        (define-key minibuffer-local-ns-map [escape] 'minibuffer-keyboard-quit)
+        (define-key minibuffer-local-completion-map [escape] 'minibuffer-keyboard-quit)
+        (define-key minibuffer-local-must-match-map [escape] 'minibuffer-keyboard-quit)
+        (define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit)
 
         ;; We want to be able to use ctrl-v and ctrl-c just for
         ;; convenience/user-friendliness, especially since ctrl-shift-v
@@ -544,7 +538,17 @@
         (treesit-auto-add-to-auto-mode-alist 'all)
         (global-treesit-auto-mode))
 
+    (defun corfu-enable-in-minibuffer ()
+	"Enable Corfu in the minibuffer."
+	(when (local-variable-p 'completion-at-point-functions)
+	    (setq-local corfu-echo-delay nil ;; Disable automatic echo and popup
+			corfu-popupinfo-delay nil)
+	    (corfu-mode 1)))
+
     (use-package corfu
+	:hook ((prog-mode . corfu-mode)
+	       (shell-mode . corfu-mode)
+	       (minibuffer-setup . corfu-enable-in-minibuffer))
         ;; Optional customizations
         :custom
         (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
@@ -556,14 +560,6 @@
         (corfu-popupinfo-delay 0.22)
         (corfu-popupinfo-direction 'right)
         :config
-        (global-corfu-mode)
-        (defun corfu-enable-in-minibuffer ()
-            "Enable Corfu in the minibuffer."
-            (when (local-variable-p 'completion-at-point-functions)
-                (setq-local corfu-echo-delay nil ;; Disable automatic echo and popup
-                            corfu-popupinfo-delay nil)
-                (corfu-mode 1)))
-        (add-hook 'minibuffer-setup-hook #'corfu-enable-in-minibuffer)
 
         (defun corfu-popupinfo-start ()
             (require 'corfu-popupinfo)
@@ -696,7 +692,6 @@
 
   Loads:
   - `hl-todo', so you never miss those TODOs and FIXMEs
-  - `rainbow-delimiters', to liven up nested parenthesis
   - `nerd-icons', `nerd-icons-completion', and `nerd-icons-corfu',
   because there's really nothing better than a nice set of icons to
   spice things up, and we want integration *everywhere*
@@ -705,10 +700,6 @@
     (use-package hl-todo
         :commands (hl-todo-mode)
         :init (add-hook 'prog-mode-hook #'hl-todo-mode))
-
-    ;; I like being able to distinguish parenthesis
-    (use-package rainbow-delimiters
-        :hook (prog-mode . rainbow-delimiters-mode))
 
     ;; Icons are nice to have! Nerd icons is faster and better
     ;; integrated (so less icon duplication between packages) with the
@@ -764,17 +755,11 @@
   but faster and more flexible, this layer is for you.
 
   Loads:
-  - `nerd-icons-dired', because a fully-iconified file manager
-  seems like an IDE sort of thing
   - `treemacs' and `treemacs-evil', for a fully graphical project tree explorer sidebar
   - `centaur-tabs', because nothing screams 'this isn't a regular
   text editor, this is an IDE' like fully-GUI tabs, curved in a
   way text could never emulate"
     ;; Integrate nerd icons with dired (I never use dired)
-    (use-package nerd-icons-dired
-        :after (nerd-icons)
-        :hook (dired-mode . nerd-icons-dired-mode))
-
     (use-package treemacs
         :commands (treemacs)
         :config
@@ -897,9 +882,10 @@
   exception must be made."
     ;; Emacs Lisp
     (use-package elisp-def
-        :hook (emacs-lisp-mode-hook . elisp-def-mode))
+        :hook (emacs-lisp-mode . elisp-def-mode))
 
     (use-package elisp-demos
+	:after (helpful)
         :config
         (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
 
