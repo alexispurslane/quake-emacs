@@ -154,7 +154,7 @@ I have not personally used MinEmacs, but I rifled fairly extensively through its
   - Installs relatively few additional packages (63 at last count)
   - Less opinionated than distributions like Spacemacs or Doom Emacs
 
-### Differences:
+#### Differences:
 
 1. Installs relatively few packages and vets every single one that *is* installed for active maintinence, general stability/maturity, etc, like MinEmacs, but still uses much more modern Emacs capabilities and packages, as soon as they *are* reasonably mature, instead of choosing older packages simply for the sake of longevity.
 2. Intended to strike a balance between being a great end-user product out of the box *while also* being a great foundation to build on.
