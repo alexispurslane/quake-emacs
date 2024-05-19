@@ -1006,39 +1006,3 @@
 	 ((and existing-shell existing-window) (delete-window existing-window))
 	 ((and existing-shell (not existing-window)) (display-buffer existing-shell))
 	 (t (setq existing-shell (term (getenv "SHELL")))))))
-
-
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(custom-safe-themes
-   '("a9abd706a4183711ffcca0d6da3808ec0f59be0e8336868669dc3b10381afb6f" "7b8f5bbdc7c316ee62f271acf6bcd0e0b8a272fdffe908f8c920b0ba34871d98" "e3daa8f18440301f3e54f2093fe15f4fe951986a8628e98dcd781efbec7a46f2" "014cb63097fc7dbda3edf53eb09802237961cbb4c9e9abd705f23b86511b0a69" "a6920ee8b55c441ada9a19a44e9048be3bfb1338d06fc41bce3819ac22e4b5a1" default))
- '(mini-frame-show-parameters '((top . 10) (width . 0.7) (left . 0.5)))
- '(package-selected-packages
-   '(yasnippet-capf which-key visual-fill-column vertico treesit-auto treemacs-evil spacious-padding rainbow-delimiters orderless nerd-icons-dired nerd-icons-corfu nerd-icons-completion mood-line markdown-ts-mode markdown-mode marginalia magit ligature latex-preview-pane hyperbole hl-todo highlight-defined helpful general evil-textobj-tree-sitter evil-collection emojify elisp-demos elisp-def eldoc-box doom-themes denote dashboard darkroom corfu consult-notes centaur-tabs breadcrumb apheleia)))
-
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(fringe ((t :background "#282828")))
- '(header-line ((t :box (:line-width 4 :color "#37302f" :style nil))))
- '(header-line-highlight ((t :box (:color "#ebdbb2"))))
- '(keycast-key ((t)))
- '(line-number ((t :background "#282828")))
- '(mode-line ((t :box (:line-width 6 :color "#37302f" :style nil))))
- '(mode-line-active ((t :box (:line-width 6 :color "#37302f" :style nil))))
- '(mode-line-highlight ((t :box (:color "#ebdbb2"))))
- '(mode-line-inactive ((t :box (:line-width 6 :color "#282828" :style nil))))
- '(tab-bar-tab ((t :box (:line-width 4 :color "#282828" :style nil))))
- '(tab-bar-tab-inactive ((t :box (:line-width 4 :color "#1d2021" :style nil))))
- '(tab-line-tab ((t)))
- '(tab-line-tab-active ((t)))
- '(tab-line-tab-inactive ((t)))
- '(vertical-border ((t :background "#282828" :foreground "#282828")))
- '(window-divider ((t (:background "#282828" :foreground "#282828"))))
- '(window-divider-first-pixel ((t (:background "#282828" :foreground "#282828"))))
- '(window-divider-last-pixel ((t (:background "#282828" :foreground "#282828")))))
