@@ -47,7 +47,7 @@ To update, just `git pull` to the latest tag.
 
 Quake Emacs has fuzzy autocompletion with [Corfu](https://elpa.gnu.org/packages/doc/corfu.html) and Orderless enabled everywhere.
 
-![](./screenshots/fuzzy-autocompletion-everywhere1.png)
+![](./screenshots/fast-autocompletion-everywhere1.png)
 
 Full autocompletion even works in the Lisp Eval line (`M-:`). It's a real repl, so why not have a real coding experience in it?
 
