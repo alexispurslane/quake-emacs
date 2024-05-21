@@ -1,9 +1,4 @@
 ;; -*- lexical-binding: t; -*-
-
-(defmacro +cmdfy! (&rest body)
-    "Convert BODY to an interactive command."
-    `(lambda () (interactive) ,@body))
-
 (require 'cl-lib)
 
 ;; Package setup
@@ -14,15 +9,25 @@
       use-package-compute-statistics t
       package-enable-at-startup nil)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; USER TUNABLE PARAMETERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defvar quake-color-theme
     'doom-gruvbox
     "The theme quake loads and uses at startup.")
 
+(defvar quake-evil-text-objects
+    '(("f" . "function")
+      ("s" . ("conditional" "loop" "assignment" "call" "block" "statement"))
+      ("t" . "class")
+      ("c" . "comment")
+      ("a" . "parameter")
+      ("T" . "test.outer"))
+    "The text objects added to evil mode at startup. A list of pairs,
+where the first element is a string, KEY, and the second object is
+either a string or a list containing the query to be made for
+that text object minus the .inner and .outer qualifiers.")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BASE EMACS CONFIG ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; A few more useful configurations...
+;; A few more useful configurations... 
 (use-package emacs
     :init
     ;; Enable indentation+completion using the TAB key.
@@ -39,6 +44,33 @@
           display-line-numbers 'relative
 	  custom-file "~/.emacs.d/custom.el"
           fill-column 65)
+
+    ;; Make escape exit minibuffers
+    (defun minibuffer-keyboard-quit ()
+        "Abort recursive edit.
+                 In Delete Selection mode, if the mark is active, just deactivate it;
+                 then it takes a second \\[keyboard-quit] to abort the minibuffer."
+        (interactive)
+        (if (and delete-selection-mode transient-mark-mode mark-active)
+                (setq deactivate-mark  t)
+            (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
+            (abort-recursive-edit)))
+    (define-key minibuffer-local-map [escape] 'minibuffer-keyboard-quit)
+    (define-key minibuffer-local-ns-map [escape] 'minibuffer-keyboard-quit)
+    (define-key minibuffer-local-completion-map [escape] 'minibuffer-keyboard-quit)
+    (define-key minibuffer-local-must-match-map [escape] 'minibuffer-keyboard-quit)
+    (define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit)
+
+    (global-set-key (kbd "ESC") #'keyboard-escape-quit)
+    ;; Possibly cargo-cult optimization settings
+    (setq jit-lock-stealth-time 0.2
+	  jit-lock-defer-time 0.0
+	  jit-lock-context-time 0.2
+	  jit-lock-stealth-load 200)
+    ;; Optimize for long lines. If you use a RtL language, just unset
+    ;; these
+    (setq-default bidi-paragraph-direction 'left-to-right
+		  bidi-inhibit-bpa t)
     (setopt use-short-answers t)
     (customize-set-variable 'treesit-font-lock-level 4)
 
@@ -48,7 +80,7 @@
     (when (find-font (font-spec :name "Cantarell"))
         (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 120))
     (when (find-font (font-spec :name "iA Writer Quattro V"))
-        (setq buffer-face-mode-face '(:family "iA Writer Quattro V")))
+	(setq buffer-face-mode-face '(:family "iA Writer Quattro V")))
 
     ;; Nicer appearance
     (menu-bar-mode -1)
@@ -59,29 +91,29 @@
 
     ;; Basic programmming mode to build off of
     (add-hook 'prog-mode-hook (lambda ()
-                                  (display-line-numbers-mode 1)
-                                  (setq display-line-numbers 'relative)
-                                  (hl-line-mode t)
-                                  (electric-pair-mode)))
+				  (display-line-numbers-mode 1)
+				  (setq display-line-numbers 'relative)
+				  (hl-line-mode t)
+				  (electric-pair-mode)))
 
     ;; Nicer behavior
-
     (cua-mode t)
 
     (pixel-scroll-precision-mode 1)
     (setq pixel-scroll-precision-use-momentum t
-          pixel-scroll-precision-large-scroll-height 40.0)
+	  pixel-scroll-precision-large-scroll-height 40.0)
 
     (winner-mode 1)
 
     (recentf-mode 1)
+    (savehist-mode 1)
     (setq recentf-max-menu-items 25
-          recentf-max-saved-items 25)
+	  recentf-max-saved-items 25)
 
     ;; Ignore case!
     (setq read-file-name-completion-ignore-case t
-          read-buffer-completion-ignore-case t
-          completion-ignore-case t)
+	  read-buffer-completion-ignore-case t
+	  completion-ignore-case t)
 
     (defun setup-fast-minibuffer ()
 	(setq gc-cons-threshold most-positive-fixnum))
@@ -101,11 +133,11 @@
   - `which-key' to show what keys can be pressed next at each stage of a
   key combination
   - `helpful' to give slower, but better, documentation for Emacs Lisp
-  - `vertico' for a pervasive vertical completion UI that should be
-  familar to VSCode users
-  - `marginalia', to add crucial metadata to vertico completion candidates
-  - `orderless', for fuzzy searching in vertico
-  - `consult', for the ability to use vertico to find things in
+  - `icomplete' with careful configuration (thanks to Prot!) to
+    make it work just as nicely as Vertico
+  - `marginalia', to add crucial metadata to icomplete completion candidates
+  - `orderless', for fuzzy searching in icomplete
+  - `consult', for the ability to use icomplete to find things in
   minibuffers (useful for xref)
   - `elisp-def', `elisp-demos', and `highlight-defined' to make
   the experience of configuring your editor much nicer."
@@ -122,22 +154,36 @@
     (use-package helpful
 	:commands (helpful-key helpful-callable helpful-command helpful-variable))
 
-    ;; Hijack every prompt and completion in all of Emacs and make them *good*
-    (use-package vertico
-        :hook (rfn-eshadow-update-overlay-hook . vertico-directory-tidy)
-        :custom
-        (vertico-cycle t)
-        :init
-        (vertico-mode)
+    ;; Now that icomplete has a vertical interface, with a little
+    ;; customization, Emacs's built-in completion capabilities can
+    ;; feel just as modern and fast as Vertico! No need for external
+    ;; dependencies for this!
+    (use-package icomplete
+	:hook (pre-command . fido-mode)
+	:bind (:map icomplete-minibuffer-map
+		    ("<return>" . icomplete-force-complete-and-exit!)
+		    ("<down>" . icomplete-forward-completions)
+		    ("C-n" . icomplete-forward-completions)
+		    ("<up>" . icomplete-backward-completions)
+		    ("C-p" . icomplete-backward-completions))
+	:config
+	(setq icomplete-delay-completions-threshold 0)
+	(setq icomplete-max-delay-chars 0)
+	(setq icomplete-compute-delay 0)
+	(setq icomplete-show-matches-on-no-input t)
+	(setq icomplete-hide-common-prefix nil)
+	(setq icomplete-prospects-height 15)
+	(setq icomplete-with-completion-tables t)
+	(icomplete-vertical-mode 1)
+	(defun icomplete-force-complete-and-exit! ()
+	    "This is more straight forward than `icomplete-force-complete-and-exit'.
+This won't complain about incomplete matches."
+	    (interactive)
+	    (icomplete-force-complete)
+	    (exit-minibuffer)))
 
-        ;; Nice directory behavior please
-        (keymap-set vertico-map "RET" #'vertico-directory-enter)
-        (keymap-set vertico-map "M-DEL" #'vertico-directory-delete-char)
-        (keymap-set vertico-map "DEL" #'vertico-directory-delete-word))
-
-    ;; Enable rich annotations using the Marginalia package
     (use-package marginalia
-        :after vertico
+        :after icomplete
         ;; Bind `marginalia-cycle' locally in the minibuffer.  To make the binding
         ;; available in the *Completions* buffer, add it to the
         ;; `completion-list-mode-map'.
@@ -152,25 +198,23 @@
         ;; package.
         (marginalia-mode))
 
-    ;; Optionally use the `orderless' completion style for proper fuzzy searching
-    ;; in vertico
     (use-package orderless
-        :after vertico
+        :after icomplete
         :init
 	(setq completion-styles '(orderless basic)
 	      completion-category-defaults nil
               completion-category-overrides '((file (styles partial-completion)))))
 
-    ;; Vertico completion superpowers like grep
+    ;; Vertical completion UI superpowers like grep!
     (use-package consult
-        :after vertico
+        :after icomplete
         :config
         ;; We also want to use this for in-buffer completion, which vertico can't do alone
         (setq xref-show-xrefs-function #'consult-xref
               xref-show-definitions-function #'consult-xref)
         (setq completion-in-region-function
               (lambda (&rest args)
-                  (apply (if vertico-mode
+                  (apply (if fido-mode
                                  #'consult-completion-in-region
                              #'completion--in-region)
                          args))))
@@ -184,22 +228,7 @@
         (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
 
     (use-package highlight-defined
-        :hook (emacs-lisp-mode . highlight-defined-mode))
-
-    ;; Declare directories with ".project" as a project so we can use
-    ;; project.el to manage non-version controlled projects, such as
-    ;; [Denote
-    ;; silos](https://protesilaos.com/emacs/denote#h:15719799-a5ff-4e9a-9f10-4ca03ef8f6c5)
-    (cl-defmethod project-root ((project (head local)))
-	(cdr project))
-
-    (defun core/project-try-local (dir)
-	"Determine if DIR is a non-Git project.
-DIR must include a .project file to be considered a project."
-	(let ((root (locate-dominating-file dir ".project")))
-	    (and root (cons 'local root))))
-
-    (add-hook 'project-find-functions #'core/project-try-local))
+        :hook (emacs-lisp-mode . highlight-defined-mode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE EDITING PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -212,12 +241,11 @@ DIR must include a .project file to be considered a project."
 
   - `evil', the Emacs editor of choice
   - `evil-collection', to integrate Evil mode with everything else
-  - `evil-textobj-tree-sitter' to integrate Evil mode with tree sitter
-  - `general', and an extensive set of leader key keybindings, so you
-  can control Emacs from the comfort of your leader key"
+  - `general', because I would otherwise have to invent my own
+  keybinding system, and an extensive set of leader key
+  keybindings, so you can control Emacs from the comfort of your
+  leader key"
     ;; Join the vim side :evil_grin:
-    ;; TODO: build list of places where evil mode isn't good and add a hook to
-    ;; avoid them
     (use-package evil
         :custom
         (evil-want-integration t)
@@ -227,53 +255,10 @@ DIR must include a .project file to be considered a project."
         (evil-undo-system 'undo-redo)
         :config
         (evil-mode 1)
-        (define-key evil-insert-state-map (kbd "C-g") 'evil-normal-state)
-        (define-key evil-insert-state-map (kbd "C-h") 'evil-delete-backward-char-and-join)
-
-	(defun minibuffer-keyboard-quit ()
-            "Abort recursive edit.
-                 In Delete Selection mode, if the mark is active, just deactivate it;
-                 then it takes a second \\[keyboard-quit] to abort the minibuffer."
-            (interactive)
-            (if (and delete-selection-mode transient-mark-mode mark-active)
-                    (setq deactivate-mark  t)
-                (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
-                (abort-recursive-edit)))
 	
-        ;; Make the escape key actually escape almost everything
-	(global-set-key (kbd "<escape>")      'keyboard-escape-quit)
-        (define-key evil-normal-state-map [escape] 'keyboard-quit)
-        (define-key evil-visual-state-map [escape] 'keyboard-quit)
-        (define-key minibuffer-local-map [escape] 'minibuffer-keyboard-quit)
-        (define-key minibuffer-local-ns-map [escape] 'minibuffer-keyboard-quit)
-        (define-key minibuffer-local-completion-map [escape] 'minibuffer-keyboard-quit)
-        (define-key minibuffer-local-must-match-map [escape] 'minibuffer-keyboard-quit)
-        (define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit)
-
-        ;; We want to be able to use ctrl-v and ctrl-c just for
-        ;; convenience/user-friendliness, especially since ctrl-shift-v
-        ;; doesn't work in evil, unlike (terminal) vim
-        (define-key evil-insert-state-map (kbd "C-c") 'cua-copy-region)
-        (define-key evil-insert-state-map (kbd "C-v") 'cua-paste)
-        (define-key evil-insert-state-map (kbd "C-x") 'cua-cut-region)
-        (define-key evil-insert-state-map (kbd "C-z") 'undo-tree-undo)
-        (define-key evil-insert-state-map (kbd "C-y") 'undo-tree-redo)
-
-        ;; Centaur tab (optional) support
-        (define-key evil-normal-state-map (kbd "g t") 'centaur-tabs-forward)
-        (define-key evil-normal-state-map (kbd "g T") 'centaur-tabs-backward)
-
-        ;; Nice commenting
-        (define-key evil-normal-state-map (kbd "g c") 'comment-region)
-        (define-key evil-normal-state-map (kbd "g C") 'uncomment-region)
-
-        ;; Support for visual fill column mode and visual line mode
-        ;; Make evil-mode up/down operate in screen lines instead of logical lines
-        (define-key evil-motion-state-map "j" 'evil-next-visual-line)
-        (define-key evil-motion-state-map "k" 'evil-previous-visual-line)
-        ;; Also in visual mode
-        (define-key evil-visual-state-map "j" 'evil-next-visual-line)
-        (define-key evil-visual-state-map "k" 'evil-previous-visual-line)
+	;; Make :q close the buffer and window, not quit the entire
+	;; Emacs application (we never leave Emacs!)
+	(global-set-key [remap evil-quit] 'kill-buffer-and-window)
 
         ;; Override evil mode's exceptions to defaulting to normal-mode
         (evil-set-initial-state 'messages-buffer-mode 'normal)
@@ -290,43 +275,66 @@ DIR must include a .project file to be considered a project."
         :config
         (evil-collection-init))
 
-    (use-package evil-textobj-tree-sitter
-        :after (evil evil-collection)
-        :config
-        (define-key evil-inner-text-objects-map "p" (evil-textobj-tree-sitter-get-textobj "parameter.inner"))
-        (define-key evil-outer-text-objects-map "c" (evil-textobj-tree-sitter-get-textobj "class.outer"))
-        (define-key evil-inner-text-objects-map "c" (evil-textobj-tree-sitter-get-textobj "class.inner"))
-        (define-key evil-outer-text-objects-map "f" (evil-textobj-tree-sitter-get-textobj "function.outer"))
-        (define-key evil-inner-text-objects-map "f" (evil-textobj-tree-sitter-get-textobj "function.inner"))
-	(define-key evil-inner-text-objects-map "a" (evil-textobj-tree-sitter-get-textobj ("conditional.inner" "loop.inner")))
-        (define-key evil-outer-text-objects-map "a" (evil-textobj-tree-sitter-get-textobj ("conditional.outer" "loop.outer"))))
-
     ;; A basic keymap for managing emacs using an evil mode leader key instead of
-    ;; pure repetitive strain injury (copied from MinEmacs :))
-
+    ;; pure repetitive strain injury (copied from MinEmacs originally :))
     (use-package general
-        ;; PERF: Loading `general' early make Emacs very slow on startup.
-        :after (evil evil-collection)
-        :config
-        ;; Advise `define-key' to automatically unbind keys when necessary.
-        (general-auto-unbind-keys)
-        ;; Set up some basic equivalents (like `general-nmap') with short named
-        ;; aliases (like `nmap') for VIM mapping functions.
-        (general-evil-setup t)
+	;; PERF: Loading `general' early make Emacs very slow on startup.
+	:after (evil evil-collection)
+	:config
+	;; Advise `define-key' to automatically unbind keys when necessary.
+	(general-auto-unbind-keys)
+	;; Set up some basic equivalents (like `general-nmap') with short named
+	;; aliases (like `nmap') for VIM mapping functions.
+	(general-evil-setup t)
 
-        (general-create-definer +core--internal-local-map!
-            :states '(insert emacs visual normal)
-            :keymaps 'override              
-            :prefix "SPC m"      
-            :global-prefix "M-SPC m")
+        ;; Make the escape key actually escape almost everything
+	(general-nvmap
+	    "ESC" #'keyboard-quit)
 
-        (add-hook 'emacs-lisp-mode-hook
-                  (lambda ()
-                      (+core--internal-local-map!
-                          "e" #'eval-last-sexp
-                          "d" #'eval-defun
-                          "b" #'eval-buffer
-                          "r" #'eval-region)))
+        ;; We want to be able to use ctrl-v and ctrl-c just for
+        ;; convenience/user-friendliness, especially since ctrl-shift-v
+        ;; doesn't work in evil, unlike (terminal) vim
+	(general-imap
+	    "C-c" #'cua-copy-region
+	    "C-v" #'cua-paste
+	    "C-x" #'cua-cut-region
+	    "C-z" #'undo
+	    "C-y" #'undo-redo)
+
+	(general-nvmap
+	    ;; fill-region >> vim gqq
+	    "gq" #'fill-region-as-paragraph
+            ;; Support for visual fill column mode and visual line mode
+            ;; Make evil-mode up/down operate in screen lines instead of logical lines
+	    "j" #'evil-next-visual-line
+	    "k" #'evil-previous-visual-line)
+
+	(general-nmap
+	    ;; Centaur tab (optional) supporj
+	    "gt" #'centaur-tabs-forward
+	    "gT" #'centaur-tabs-backward
+	    ;; Nice commenting
+	    "gc" #'comment-region
+	    "gC" #'uncomment-region)
+
+	(general-create-definer +core--internal-local-map!
+	    :states '(insert emacs visual normal)
+	    :keymaps 'override              
+	    :prefix "SPC m"      
+	    :global-prefix "M-SPC m")
+
+	(add-hook 'emacs-lisp-mode-hook
+		  (lambda ()
+		      (+core--internal-local-map!
+			  "e" #'eval-last-sexp
+			  "d" #'eval-defun
+			  "b" #'eval-buffer
+			  "r" #'eval-region)))
+
+	(add-hook 'outline-minor-mode-hook
+		  (lambda ()
+		      (+core--internal-local-map!
+			  "o" '(:keymap outline-mode-prefix-map :which-key "outline-minor-mode"))))
 
 	;; gobal keybindgs that are truly global
 	(general-create-definer tyrant-def
@@ -334,201 +342,271 @@ DIR must include a .project file to be considered a project."
 	    :keymaps 'override
 	    :prefix "SPC"
 	    :non-normal-prefix "M-SPC")
-	(tyrant-def "" nil)
-	
-        ;; Define the built-in global keybindings
-        (tyrant-def
-            ;; ====== Top level functions ======
-            "SPC"  '(execute-extended-command :wk "M-x")
-            ":"    '(pp-eval-expression :wk "Eval expression")
-            ";"    #'project-find-file
-            "u"    '(universal-argument :wk "C-u")
-            "C"    #'universal-coding-system-argument
-            "O"    #'other-window-prefix
-            "r"    #'restart-emacs
-            "~"    #'shell-toggle
 
-            ;; ====== Quit/Session ======
-            "q"    '(nil :wk "quit/session")
-            "qq"   #'save-buffers-kill-terminal
-            "qQ"   #'kill-emacs
-            "qS"   #'server-start
-            "qR"   #'recover-session
-            "qd"   #'desktop-read
-            "qs"   #'desktop-save
-            "qr"   #'restart-emacs
+	;; Define the built-in global keybindings
+	(tyrant-def
+	    ;; ====== Top level functions ======
+	    "SPC"  '(execute-extended-command :wk "M-x")
+	    ":"    '(pp-eval-expression :wk "Eval expression")
+	    ";"    #'project-find-file
+	    "u"    '(universal-argument :wk "C-u")
+	    "C"    #'universal-coding-system-argument
+	    "O"    #'other-window-prefix
+	    "r"    #'restart-emacs
+	    "~"    #'shell-toggle
 
-            ;; ====== Files ======
-            "f"    '(nil :wk "file")
-            "fS"   '(write-file :wk "Save as ...")
-            "fi"   #'auto-insert
-            "ff"   #'find-file
-            "fs"   #'save-buffer
-            "ft"   #'recover-this-file
-            "fT"   #'recover-file
-            "fr"   #'consult-recent-file
+	    ;; ====== Quit/Session ======
+	    "q"    '(nil :wk "quit/session")
+	    "qq"   #'save-buffers-kill-terminal
+	    "qQ"   #'kill-emacs
+	    "qS"   #'server-start
+	    "qR"   #'recover-session
+	    "qd"   #'desktop-read
+	    "qs"   #'desktop-save
+	    "qr"   #'restart-emacs
 
-            ;; ====== Personal Profile ======
-            "P"    '(nil :wk "profile")
-            "Pf"   `(,(+cmdfy! (find-file "~/.emacs.d/init.el"))
-                     :wk "Open framework config")
-            "Pu"   `(,(+cmdfy! (find-file "~/.quake.d/user.el"))
-                     :wk "Open user config")
+	    ;; ====== Files ======
+	    "f"    '(nil :wk "file")
+	    "fS"   '(write-file :wk "Save as ...")
+	    "fi"   #'auto-insert
+	    "ff"   #'find-file
+	    "fw"   #'find-file-other-window
+	    "fF"   #'find-file-other-frame
+	    "fs"   #'save-buffer
+	    "ft"   #'recover-this-file
+	    "fT"   #'recover-file
+	    "fr"   #'consult-recent-file
 
-            ;; ====== Buffers ======
-            "b"    '(nil :wk "buffer")
-            "bb"   #'consult-buffer
-            "bI"   #'ibuffer
-            "bx"   #'bury-buffer
-            "bS"   #'save-some-buffers
-            "bM"   #'view-echo-area-messages
-            "bk"   `(,(+cmdfy! (kill-buffer (current-buffer)))
-                     :wk "Kill this buffer")
-            "br"   '(revert-buffer :wk "Revert")
-            "bR"   '(rename-buffer :wk "Rename")
-            "bn"    '(switch-to-next-buffer :wk "Next buffer")
-            "bp"    '(switch-to-prev-buffer :wk "Previous buffer")
+	    ;; ====== Personal Profile ======
+	    "P"    '(nil :wk "profile")
+	    "Pf"   `(,(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
+		     :wk "Open framework config")
+	    "Pu"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
+		     :wk "Open user config")
 
-            ;; Lines
-            "bl"   '(nil :wk "line")
-            "blk"  #'keep-lines ;; Will be overwritten with `consult-keep-lines'
-            ;; Bookmarks
-            "bm"   '(nil :wk "bookmark")
-            "bmm"  #'bookmark-set
-            "bmd"  #'bookmark-delete
-            ;; Files / Local variables
-            "bv"   '(nil :wk "locals")
-            "bvv"  '(add-file-local-variable :wk "Add")
-            "bvV"  '(delete-file-local-variable :wk "Delete")
-            "bvp"  '(add-file-local-variable-prop-line :wk "Add in prop line")
-            "bvP"  '(delete-file-local-variable-prop-line :wk "Delete from prop line")
-            "bvd"  '(add-dir-local-variable :wk "Add to dir-locals")
-            "bvD"  '(delete-dir-local-variable :wk "Delete from dir-locals")
+	    ;; ====== Buffers ======
+	    "b"    '(nil :wk "buffer")
+	    "bb"   #'consult-buffer
+	    "bI"   #'ibuffer
+	    "bx"   #'bury-buffer
+	    "bS"   #'save-some-buffers
+	    "bM"   #'view-echo-area-messages
+	    "bk"   `(,(lambda () (interactive) (kill-buffer (current-buffer)))
+		     :wk "Kill this buffer")
+	    "br"   '(revert-buffer :wk "Revert")
+	    "bR"   '(rename-buffer :wk "Rename")
+	    "bn"    '(switch-to-next-buffer :wk "Next buffer")
+	    "bp"    '(switch-to-prev-buffer :wk "Previous buffer")
 
-            ;; ====== Insert ======
-            "i"    '(nil :wk "insert")
-            "iu"   '(insert-char :wk "Unicode char")
-            "ip"   #'yank-pop ;; Will be overwritten with `consult-yank-pop'
-            "ie"   #'emojify-insert-emoji
+	    ;; Lines
+	    "bl"   '(nil :wk "line")
+	    "blk"  #'keep-lines ;; Will be overwritten with `consult-keep-lines'
+	    ;; Bookmarks
+	    "bm"   '(nil :wk "bookmark")
+	    "bmm"  #'bookmark-set
+	    "bmd"  #'bookmark-delete
+	    ;; Files / Local variables
+	    "bv"   '(nil :wk "locals")
+	    "bvv"  '(add-file-local-variable :wk "Add")
+	    "bvV"  '(delete-file-local-variable :wk "Delete")
+	    "bvp"  '(add-file-local-variable-prop-line :wk "Add in prop line")
+	    "bvP"  '(delete-file-local-variable-prop-line :wk "Delete from prop line")
+	    "bvd"  '(add-dir-local-variable :wk "Add to dir-locals")
+	    "bvD"  '(delete-dir-local-variable :wk "Delete from dir-locals")
 
-            ;; ====== Window ======
-            "w"    '(nil :wk "window")
-            "wd"   #'delete-window
-            "wD"   #'delete-windows-on
-            "wo"   #'delete-other-windows
-            "wm"   #'maximize-window
-            "wu"   #'winner-undo
-            "wU"   #'winner-redo
-            "wj"   #'evil-window-down
-            "wk"   #'evil-window-up
-            "wh"   #'evil-window-left
-            "wl"   #'evil-window-right
-            "ws"   #'split-window-horizontally
-            "wv"   #'split-window-vertically
+	    ;; ====== Insert ======
+	    "i"    '(nil :wk "insert")
+	    "iu"   '(insert-char :wk "Unicode char")
+	    "ip"   #'yank-pop ;; Will be overwritten with `consult-yank-pop'
+	    "ie"   #'emojify-insert-emoji
 
-            ;; ====== Applications (Open) ======
-            "o"    '(nil :wk "open")
-            "o-"   '(dired :wk "Dired") ;; Will be overwritten if dirvish is used
-            "ot"   #'treemacs
-            "oT"   #'centaur-tabs-mode
-            "od"   #'darkroom-mode
-            "o="   #'calc
+	    ;; ====== Window ======
+	    "w"    '(nil :wk "window")
+	    "wd"   #'delete-window
+	    "wD"   #'delete-windows-on
+	    "wo"   #'delete-other-windows
+	    "wm"   #'maximize-window
+	    "wu"   #'winner-undo
+	    "wU"   #'winner-redo
+	    "wj"   #'evil-window-down
+	    "wk"   #'evil-window-up
+	    "wh"   #'evil-window-left
+	    "wl"   #'evil-window-right
+	    "ws"   #'split-window-vertically
+	    "wv"   #'split-window-horizontally
+	    "ww"   #'other-window
 
-            ;; ====== Search ======
-            "s"    '(nil :wk "search")
-            "si"    #'consult-imenu
+	    ;; ====== Applications (Open) ======
+	    "o"    '(nil :wk "open")
+	    "o-"   '(dired :wk "Dired") ;; Will be overwritten if dirvish is used
+	    "ot"   #'treemacs
+	    "oT"   #'centaur-tabs-mode
+	    "od"   #'darkroom-mode
+	    "o="   #'calc
+	    "oo"   #'outline-minor-mode
 
-            ;; ======  Mode specific a.k.a. "local leader" ======
-            "m"    '(nil :wk "mode-specific")
+	    ;; ====== Search ======
+	    "s"    '(nil :wk "search")
+	    "si"    #'consult-imenu
+	    "sr"    #'consult-ripgrep
+	    "sf"    #'consult-find
 
-            ;; ====== VC ======
-            "g"    '(nil :wk "git/vc")
-            "gg"   #'magit
+	    ;; ======  Mode specific a.k.a. "local leader" ======
+	    "m"    '(nil :wk "mode-specific")
 
-            ;; ====== Toggle ======
-            "t"    '(nil :wk "toggle")
-            "td"   #'toggle-debug-on-error
-            "tr"   #'read-only-mode
-            "tl"   #'follow-mode
-            "tv"   #'visible-mode
-            "tf"   #'flymake-mode
+	    ;; ====== VC ======
+	    "g"    '(nil :wk "git/vc")
+	    "gg"   #'magit
 
-            ;; ====== Code ======
-            "l"    '(nil :wk "lsp and flymake")
-            "le"    #'eglot
-            "lr"    #'eglot-rename
-            "la"    #'eglot-code-actions
-            "lx"    #'eglot-code-action-extract
-            "lf"    #'eglot-code-action-quickfix
-            "l!"    #'consult-flymake
-            "ln"    #'flymake-goto-next-error
-            "lp"    #'flymake-goto-prev-error
+	    ;; ====== Toggle ======
+	    "t"    '(nil :wk "toggle")
+	    "td"   #'toggle-debug-on-error
+	    "tr"   #'read-only-mode
+	    "tl"   #'follow-mode
+	    "tv"   #'visible-mode
+	    "tf"   #'flymake-mode
 
-            ;; ====== Debug ======
-            "d"    '(nil :wk "debug")
-            "dG"   #'gdb
+	    ;; ====== Code ======
+	    "l"    '(nil :wk "lsp and flymake")
+	    "le"    #'eglot
+	    "lr"    #'eglot-rename
+	    "la"    #'eglot-code-actions
+	    "lx"    #'eglot-code-action-extract
+	    "lf"    #'eglot-code-action-quickfix
+	    "l!"    #'consult-flymake
+	    "ln"    #'flymake-goto-next-error
+	    "lp"    #'flymake-goto-prev-error
 
-            ;; ====== Notes ======
-            "n"    '(nil :wk "notes")
-            "nc"   #'denote
-            "nn"   #'consult-notes
-            "ni"   #'denote-link-or-create
-            "nI"   #'denote-link-after-creating
-            "nr"   #'denote-rename-file
-            "nk"   #'denote-keywords-add
-            "nK"   #'denote-keywords-remove
-            "nb"   #'denote-backlinks
-            "nB"   #'denote-find-backlink
-            "nR"   #'denote-region
+	    ;; ====== Debug ======
+	    "d"    '(nil :wk "debug")
+	    "dG"   #'gdb
 
-            ;; ====== Help ======
-            "h"    '(nil :wk "help")
-            "hi"   #'info
-            "hg"   #'general-describe-keybindings
+	    ;; ====== Notes ======
+	    "n"    '(nil :wk "notes")
+	    "nc"   #'denote
+	    "nn"   #'consult-notes
+	    "ni"   #'denote-link-global
+	    "nI"   #'denote-link-after-creating
+	    "nr"   #'denote-rename-file
+	    "nk"   #'denote-keywords-add
+	    "nK"   #'denote-keywords-remove
+	    "nb"   #'denote-backlinks
+	    "nB"   #'denote-find-backlink
+	    "nR"   #'denote-region
 
-            "he"   '(nil :wk "elisp/emacs")
-            "hes"  #'elisp-index-search
-            "hem"  #'info-emacs-manual
-            "hei"  #'Info-search
+	    ;; ====== Help ======
+	    "h"    '(nil :wk "help")
+	    "hi"   #'info
+	    "hg"   #'general-describe-keybindings
 
-            "hv"  #'helpful-variable
-            "hk"  #'helpful-key
-            "hc"  #'helpful-command
-            "hf"  #'helpful-callable
-            "hm"  #'describe-keymap
-            "hb"  #'describe-bindings
-            "hs"  #'describe-symbol
-            "hp"  #'describe-package
+	    "he"   '(nil :wk "elisp/emacs")
+	    "hes"  #'elisp-index-search
+	    "hem"  #'info-emacs-manual
+	    "hei"  #'Info-search
 
-            ;; ====== Extras ======
-            "e"    '(nil :wk "extras")
+	    "hv"  #'helpful-variable
+	    "hk"  #'helpful-key
+	    "hc"  #'helpful-command
+	    "hf"  #'helpful-callable
+	    "hm"  #'describe-keymap
+	    "hb"  #'describe-bindings
+	    "hs"  #'describe-symbol
+	    "hp"  #'describe-package
 
-            ;; ====== Project ======
-            "p"    '(nil :wk "project")
-            "pp"  #'project-switch-project
-            "pc"  #'project-compile
-            "pd"  #'project-find-dir
-            "pf"  #'project-find-file
-            "pk"  #'project-kill-buffers
-            "pb"  #'project-switch-to-buffer
-            "p-"  #'project-dired
-            "px"  #'project-execute-extended-command
-            ;; compile/test
-            "pc" #'project-compile
-            ;; run
-            "pr"  '(nil :wk "run")
-            "prc" #'project-shell-command
-            "prC" #'project-async-shell-command
-            ;; forget
-            "pF"  '(nil :wk "forget/cleanup")
-            "pFp" #'project-forget-project
-            "pFu" #'project-forget-projects-under
-            ;; search/replace
-            "ps"  '(nil :wk "search/replace")
-            "pss" #'project-search
-            "psn" '(fileloop-continue :wk "Next match")
-            "psr" #'project-query-replace-regexp
-            "psf" #'project-find-regexp)))
+	    ;; ====== Extras ======
+	    "e"    '(nil :wk "extras")
+
+	    ;; ====== Project ======
+	    "p"    '(nil :wk "project")
+	    "pp"  #'project-switch-project
+	    "pc"  #'project-compile
+	    "pd"  #'project-find-dir
+	    "pf"  #'project-find-file
+	    "pk"  #'project-kill-buffers
+	    "pb"  #'project-switch-to-buffer
+	    "p-"  #'project-dired
+	    "px"  #'project-execute-extended-command
+	    ;; compile/test
+	    "pc" #'project-compile
+	    ;; run
+	    "pr"  '(nil :wk "run")
+	    "prc" #'project-shell-command
+	    "prC" #'project-async-shell-command
+	    ;; forget
+	    "pF"  '(nil :wk "forget/cleanup")
+	    "pFp" #'project-forget-project
+	    "pFu" #'project-forget-projects-under
+	    ;; search/replace
+	    "ps"  '(nil :wk "search/replace")
+	    "pss" #'project-search
+	    "psn" '(fileloop-continue :wk "Next match")
+	    "psr" #'project-query-replace-regexp
+	    "psf" #'project-find-regexp))
+
+    (use-package evil-textobj-tree-sitter
+	:after (evil evil-collection general)
+	:config
+	;; expand current selection to parent node on the tree-sitter
+	;; tree: the simplest, and probably most useful, command of
+	;; them all. Thanks to foxfriday/evil-ts for this one
+	(defun evil-ts-expand-region ()
+	    "Expand selection to the closet parent."
+	    (let* ((point (point))
+		   (mark (or (mark t) point))
+		   (start (min point mark))
+		   (end (max point mark))
+		   (node (treesit-node-at start))
+		   (parent (treesit-parent-until node
+						 (lambda (n) (and (> start (treesit-node-start  n))
+								  (< end (treesit-node-end n))))
+						 nil))
+		   (pstart (if parent (treesit-node-start parent) nil))
+		   (pend (if parent (treesit-node-end parent) nil)))
+		(when parent
+		    (goto-char pstart)
+		    (list pstart pend))))
+
+	(evil-define-text-object evil-ts-text-obj-expand-region (count &optional beg end type)
+	    (evil-ts-expand-region))
+
+	(define-key evil-outer-text-objects-map "x" 'evil-ts-text-obj-expand-region)
+	(define-key evil-inner-text-objects-map "x" 'evil-ts-text-obj-expand-region)
+
+	(eval-when-compile
+	    (defmacro define-textobjs ()
+		"Loop through `quake-evil-text-objects' and construct a flat
+list of the `define-key' expressions needed to set the text
+objects up with the correct values already substituted in for
+further macroexpansion. Necessary because define-key does not evaluate its arguments so it won't work in a regular loop."
+		`(progn ,@(cl-loop for thing in quake-evil-text-objects
+				   for key = (car thing)
+				   for query = (if (listp (cdr thing)) (cdr thing) (list (cdr thing)))
+				   for outer-query = (mapcar (lambda (x) (concat x ".outer")) query)
+				   for inner-query = (mapcar (lambda (x) (concat x ".inner")) query)
+				   for docname-start = (concat "go-to-next-" (car query) "-start")
+				   for docname-end = (concat "go-to-next-" (car query) "-end")
+				   appending
+				   `((define-key evil-outer-text-objects-map ,key
+						 (evil-textobj-tree-sitter-get-textobj ,outer-query))
+				     (define-key evil-inner-text-objects-map ,key
+						 (evil-textobj-tree-sitter-get-textobj ,inner-query))
+				     (general-nvmap
+					 ;; go to next start
+					 ,(concat "[" key)
+					 (lambda ()
+					     (interactive)
+					     (evil-textobj-tree-sitter-goto-textobj ,(car outer-query)))
+					 ;; go to next end
+					 ,(concat "]" key)
+					 (lambda ()
+					     (interactive)
+					     (evil-textobj-tree-sitter-goto-textobj ,(car outer-query) nil t))))
+				   into exprs
+				   finally (return exprs)))))
+	(define-textobjs)
+
+	(define-key evil-outer-text-objects-map "a" (evil-textobj-tree-sitter-get-textobj ("conditional.outer" "loop.outer" "assignment.outer" "call.outer" "block.outer" "statement.outer" "function.outer" "class.outer" "comment.outer" "parameter.outer" "test.outer")))
+	(define-key evil-inner-text-objects-map "a" (evil-textobj-tree-sitter-get-textobj ("conditional.inner" "loop.inner" "assignment.inner" "call.inner" "block.inner" "statement.inner" "function.inner" "class.inner" "comment.inner" "parameter.inner" "test.inner")))))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TASK-SPECIFIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -554,30 +632,30 @@ DIR must include a .project file to be considered a project."
     ;; to have a Quake style dropdown terminal!
     (add-to-list 'display-buffer-alist
 		 '("\\*terminal\\*"
-                   (display-buffer-in-side-window)
-                   (side . top)
-                   (window-height . 10)))
+		   (display-buffer-in-side-window)
+		   (side . top)
+		   (window-height . 10)))
 
     ;; Emacs' entire selling point right here!
     (use-package magit
-        :commands (magit-status magit-get-current-branch)
-        :custom
-        (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
-        :config
+	:commands (magit-status magit-get-current-branch)
+	:custom
+	(magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
+	:config
 					; Escape quits magit help mode like I expect
-        (general-define-key
-         :keymaps 'transient-base-map
-         "<escape>" 'transient-quit-one))
+	(general-define-key
+	 :keymaps 'transient-base-map
+	 "<escape>" 'transient-quit-one))
 
     (use-package diff-hl :hook (prog-mode . diff-hl-mode))
 
     ;; We like syntax highlighting in this house
     (use-package treesit-auto
-        :custom
-        (treesit-auto-install 'prompt)
-        :config
-        (treesit-auto-add-to-auto-mode-alist 'all)
-        (global-treesit-auto-mode))
+	:custom
+	(treesit-auto-install 'prompt)
+	:config
+	(treesit-auto-add-to-auto-mode-alist 'all)
+	(global-treesit-auto-mode))
 
     (defun corfu-enable-in-minibuffer ()
 	"Enable Corfu in the minibuffer."
@@ -590,23 +668,23 @@ DIR must include a .project file to be considered a project."
 	:hook ((prog-mode . corfu-mode)
 	       (shell-mode . corfu-mode)
 	       (minibuffer-setup . corfu-enable-in-minibuffer))
-        ;; Optional customizations
-        :custom
-        (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
-        (corfu-auto t)                 ;; Enable auto completion
-        (corfu-separator ?\s)          ;; Orderless field separator
-        (corfu-quit-no-match 'separator)
-        (corfu-auto-delay 0.12)
-        (corfu-auto-prefix 3)
-        (corfu-popupinfo-delay 0.22)
-        (corfu-popupinfo-direction 'right)
-        :config
+	;; Optional customizations
+	:custom
+	(corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+	(corfu-auto t)                 ;; Enable auto completion
+	(corfu-separator ?\s)          ;; Orderless field separator
+	(corfu-quit-no-match 'separator)
+	(corfu-auto-delay 0.12)
+	(corfu-auto-prefix 3)
+	(corfu-popupinfo-delay 0.22)
+	(corfu-popupinfo-direction 'right)
+	:config
 
-        (defun corfu-popupinfo-start ()
-            (require 'corfu-popupinfo)
-            (set-face-attribute 'corfu-popupinfo nil :inherit 'variable-pitch)
-            (corfu-popupinfo-mode))
-        (add-hook 'corfu-mode-hook #'corfu-popupinfo-start))
+	(defun corfu-popupinfo-start ()
+	    (require 'corfu-popupinfo)
+	    (set-face-attribute 'corfu-popupinfo nil :inherit 'variable-pitch)
+	    (corfu-popupinfo-mode))
+	(add-hook 'corfu-mode-hook #'corfu-popupinfo-start))
 
     (with-eval-after-load 'eglot
 	(setq eglot-autoshutdown t
@@ -614,31 +692,31 @@ DIR must include a .project file to be considered a project."
 	      eglot-sync-connect nil)
 	(add-hook 'eglot-connect-hook (lambda (server)
 					  (message "Server connected")))
-        (add-to-list 'eglot-server-programs
-                     '((typescript-ts-mode js-ts-mode) . ("typescript-language-server" "--stdio")))
-        (add-to-list 'eglot-server-programs
-                     '((rust-ts-mode) . ("rust-analyzer"))))
+	(add-to-list 'eglot-server-programs
+		     '((typescript-ts-mode js-ts-mode) . ("typescript-language-server" "--stdio")))
+	(add-to-list 'eglot-server-programs
+		     '((rust-ts-mode) . ("rust-analyzer"))))
 
     ;; Global autoformatting
     (use-package apheleia
-        :config
-        (setf (alist-get 'prettier apheleia-formatters)
-              '("prettier" file))
-        (add-to-list 'apheleia-mode-alist '(typescript-ts-mode . prettier))
-        (add-to-list 'apheleia-mode-alist '(js-ts-mode . prettier))
-        :hook (prog-mode . apheleia-mode))
+	:config
+	(setf (alist-get 'prettier apheleia-formatters)
+	      '("prettier" file))
+	(add-to-list 'apheleia-mode-alist '(typescript-ts-mode . prettier))
+	(add-to-list 'apheleia-mode-alist '(js-ts-mode . prettier))
+	:hook (prog-mode . apheleia-mode))
 
     (use-package editorconfig :hook (prog-mode . editorconfig-mode))
 
     ;; Snippets are useful for an IDE-lite experience!
     (use-package yasnippet
-        :hook (prog-mode . yas-minor-mode)
-        :config (yas-reload-all))
+	:hook (prog-mode . yas-minor-mode)
+	:config (yas-reload-all))
 
     (use-package yasnippet-capf
-        :after (corfu yasnippet)
-        :config
-        (add-to-list 'completion-at-point-functions #'yasnippet-capf)))
+	:after (corfu yasnippet)
+	:config
+	(add-to-list 'completion-at-point-functions #'yasnippet-capf)))
 
 (defun task/writing-layer ()
     "If you're like me and you use Emacs to write blog posts and/or
@@ -653,7 +731,7 @@ DIR must include a .project file to be considered a project."
     ;; Ability to fill words into the width of the screen as proper
     ;; WYSIWYG editors do
     (use-package visual-fill-column
-        :commands (visual-fill-column-mode))
+	:commands (visual-fill-column-mode))
 
     (defun flymake-proselint-setup ()
 	"Enable flymake backend."
@@ -662,20 +740,18 @@ DIR must include a .project file to be considered a project."
 
     ;; Distraction free writing mode
     (use-package darkroom
-        :commands (darkroom-mode darkroom-tentative-mode)
-        :config
-        (add-hook 'darkroom-mode-hook (lambda ()
+	:commands (darkroom-mode darkroom-tentative-mode)
+	:config
+	(add-hook 'darkroom-mode-hook (lambda ()
 					  ;; Faster performance on long lines
-					  (setq-default bidi-paragraph-direction 'left-to-right
-							bidi-inhibit-bpa t)
 					  (column-number-mode -1)
 					  (ligature-mode -1)
 					  (prettify-symbols-mode -1)
 					  ;; Less distracting fringe
-                                          (setq left-fringe-width 0)
-                                          (setq right-fringe-width 0)
+					  (setq left-fringe-width 0)
+					  (setq right-fringe-width 0)
 					  (visual-fill-column-mode)
-                                          (if darkroom-mode
+					  (if darkroom-mode
 						  (buffer-face-mode 1) ; enable variable pitch in buffer if entering
 					      (buffer-face-mode -1)) ; disable it if exiting
 					  ;; Proselint
@@ -683,7 +759,7 @@ DIR must include a .project file to be considered a project."
 					  (flymake-proselint-setup))))
 
     (use-package latex-preview-pane
-        :commands (latex-preview-pane-mode latex-preview-pane-enable)))
+	:commands (latex-preview-pane-mode latex-preview-pane-enable)))
 
 (defun task/notes-layer ()
     "For those who take notes in Emacs without being tied down to any
@@ -696,36 +772,88 @@ DIR must include a .project file to be considered a project."
   - `consult-notes' to have a metadata-rich, integrated way to find
   your notes."
     (use-package denote
-        :commands (denote denote-link-or-create denote-link denote-filetype-heuristics)
-        :custom
+	:commands (denote consult-notes denote-link-global denote-link-after-creating denote-rename-file denote-keywords-add denote-keywords-remove denote-backlinks denote-find-backlink denote-region)
+	:custom
 	(denote-known-keywords '())
-        (denote-infer-keywords t)
-        (denote-prompts-with-history-as-completion t)
-        (denote-prompts '(title keywords))
-        (denote-file-type 'markdown-yaml)
-        (denote-backlinks-show-context t)
-        ;; display backlinks buffer to the left of the current window,
-        ;; which seems cool to me
-        (denote-link-backlinks-display-buffer-action
-         '((display-buffer-reuse-window
-            display-buffer-in-side-window)
-           (side . left)
-           (slot . 99)
-           (window-width . 0.3)
-           (dedicated . t)
-           (preserve-size . (t . t))))
-        :config
-        (add-hook 'find-file-hook #'denote-link-buttonize-buffer)
+	(denote-infer-keywords t)
+	(denote-prompts-with-history-as-completion t)
+	(denote-prompts '(title keywords))
+	(denote-file-type 'markdown-yaml)
+	(denote-backlinks-show-context t)
+	;; display backlinks buffer to the left of the current window,
+	;; which seems cool to me
+	(denote-link-backlinks-display-buffer-action
+	 '((display-buffer-reuse-window
+	    display-buffer-in-side-window)
+	   (side . left)
+	   (slot . 99)
+	   (window-width . 0.3)
+	   (dedicated . t)
+	   (preserve-size . (t . t))))
+	:config
+	(add-hook 'find-file-hook #'denote-link-buttonize-buffer)
 	;; Allow inserting links or buttonizing existing ones in *any*
-	;; file, just treating thema s you would text files
-	(advice-add 'denote-file-has-supported-extension-p :filter-return (lambda (x) t)))
+	;; file, just treating themes you would text files
+	;; 
+	;; NOTE: I initially had a much simpler implementation, but
+	;; Prot suggested this was safer, since I'm defining my own
+	;; link function instead of just fucking with core denote
+	;; sanity-checking functions. See:
+	;; https://github.com/protesilaos/denote/issues/364
+	(defun denote-link-global (file file-type description &optional id-only)
+	    "Like the `denote-link', but works in any buffer.
+The FILE, FILE-TYPE, DESCRIPTION, and ID-ONLY have the same meaning as
+in `denote-link'."
+	    (interactive
+	     (let* ((file (denote-file-prompt nil "Link to FILE"))
+		    (file-type (denote-filetype-heuristics buffer-file-name))
+		    (description (when (file-exists-p file)
+				     (denote--link-get-description file))))
+		 (list file file-type description current-prefix-arg)))
+	    (unless (file-exists-p file)
+		(user-error "The linked file does not exists"))
+	    (let ((beg (point)))
+		(denote--delete-active-region-content)
+		(insert (denote-format-link file description file-type id-only))
+		(unless (derived-mode-p 'org-mode)
+		    (make-button beg (point) 'type 'denote-link-button))))
+	
+	;; Declare directories with ".dir-locals.el" as a project so
+	;; we can use project.el to manage non-version controlled
+	;; projects, such as [Denote
+	;; silos](https://protesilaos.com/emacs/denote#h:15719799-a5ff-4e9a-9f10-4ca03ef8f6c5)
+	;; 
+	;; FIXME: In theory `project-vc-extra-root-markers' should serve our
+	;; purposes better, but it doesn't seem to work.
+	(cl-defmethod project-root ((project (head local)))
+	    (cdr project))
+
+	(defun core/project-try-local (dir)
+	    "Determine if DIR is a non-Git project.
+DIR must include a .dir-locals.el file to be considered a project."
+	    (let ((root (locate-dominating-file dir ".dir-locals.el")))
+		(and root (cons 'local root))))
+
+	(add-hook 'project-find-functions #'core/project-try-local)
+
+	(defun denote-silo (dir)
+	    "Create a new directory DIR to function as a `denote' silo. Adds it to the project list."
+	    (interactive (list (read-directory-name "Silo directory: ")))
+	    (if (not (make-directory dir t))
+		    (progn
+			(with-temp-file (file-name-concat dir ".dir-locals.el")
+			    (insert (format "
+;;; Directory Local Variables            -*- no-byte-compile: t -*-
+;;; For more information see (info \"(emacs) Directory Variables\")
+((nil . ((denote-directory . \"%s\"))))" (expand-file-name dir))))
+			(project-remember-project (expand-file-name dir))))))
 
     (use-package consult-notes
-        :after (denote)
-        :config
-        (consult-notes-denote-mode 1)
-        ;; search only for text files in denote dir
-        (setq consult-notes-denote-files-function (function denote-directory-text-only-files))))
+	:after (denote)
+	:config
+	(consult-notes-denote-mode 1)
+	;; search only for text files in denote dir
+	(setq consult-notes-denote-files-function (function denote-directory-text-only-files))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; RECOMMENDED AESTHETIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -747,85 +875,83 @@ DIR must include a .project file to be considered a project."
     ;; Although this is big and relatively slow (one of the slowest
     ;; things I include) doom's themes are just too good to pass up
     (use-package doom-themes
-        :config
-        ;; Global settings (defaults)
-        (setq doom-themes-enable-bold t
-              doom-themes-enable-italic t))
+	:config
+	;; Global settings (defaults)
+	(setq doom-themes-enable-bold t
+	      doom-themes-enable-italic t))
 
     (load-theme quake-color-theme t)
 
     (use-package spacious-padding
-        :after (doom-themes)
-        :config
-        (spacious-padding-mode 1)
-        (set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
-        (set-face-attribute 'mode-line-inactive nil :inherit 'mode-line))
+	:after (doom-themes)
+	:config
+	(spacious-padding-mode 1)
+	(set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
+	(set-face-attribute 'mode-line-inactive nil :inherit 'mode-line))
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
-        :after (evil doom-themes)
-        :custom
-        (mood-line-glyph-alist mood-line-glyphs-unicode)
-        (mood-line-segment-modal-evil-state-alist 
-         '((normal . ("Ⓝ" . font-lock-variable-name-face))
-           (insert . ("Ⓘ" . font-lock-string-face))
-           (visual . ("Ⓥ" . font-lock-keyword-face))
-           (replace . ("Ⓡ" . font-lock-type-face))
-           (motion . ("Ⓜ" . font-lock-constant-face))
-           (operator . ("Ⓞ" . font-lock-function-name-face))
-           (emacs . ("Ⓔ" . font-lock-builtin-face))) )
-        (mood-line-format
-         (mood-line-defformat
-          :left
-          (((mood-line-segment-modal) . " ")
-           ((or (mood-line-segment-buffer-status) " ") . " ")
-           ((mood-line-segment-buffer-name) . " ")
-           ((mood-line-segment-cursor-position) . " ")
-           (mood-line-segment-scroll))
-          :right
-          (((mood-line-segment-vc) . " ")
-           ((mood-line-segment-major-mode) . " ")
-           ((mood-line-segment-checker) . " ")
-           ((mood-line-segment-process) . " "))))
-        :config
-        (mood-line-mode))
+	:after (evil doom-themes)
+	:custom
+	(mood-line-glyph-alist mood-line-glyphs-unicode)
+	(mood-line-segment-modal-evil-state-alist 
+	 '((normal . ("Ⓝ" . font-lock-variable-name-face))
+	   (insert . ("Ⓘ" . font-lock-string-face))
+	   (visual . ("Ⓥ" . font-lock-keyword-face))
+	   (replace . ("Ⓡ" . font-lock-type-face))
+	   (motion . ("Ⓜ" . font-lock-constant-face))
+	   (operator . ("Ⓞ" . font-lock-function-name-face))
+	   (emacs . ("Ⓔ" . font-lock-builtin-face))) )
+	(mood-line-format
+	 (mood-line-defformat
+	  :left
+	  (((mood-line-segment-modal) . " ")
+	   ((or (mood-line-segment-buffer-status) " ") . " ")
+	   ((mood-line-segment-buffer-name) . " ")
+	   ((mood-line-segment-cursor-position) . " ")
+	   (mood-line-segment-scroll))
+	  :right
+	  (((mood-line-segment-vc) . " ")
+	   ((mood-line-segment-major-mode) . " ")
+	   ((mood-line-segment-checker) . " ")
+	   ((mood-line-segment-process) . " "))))
+	:config
+	(mood-line-mode))
 
     (use-package dashboard
-        :custom
-        (dashboard-banner-logo-title "Lean, fast, focused, based on the latest tech. Welcome to Quake Emacs")
-        (dashboard-startup-banner "~/.emacs.d/banner-quake.png")
-        (dashboard-center-content t)
-        (dashboard-vertically-center-content t)
-        (dashboard-items '((recents   . 5)
-                           (projects  . 5)))
-        (dashboard-item-shortcuts '((recents   . "r")
-                                    (projects  . "p")))
-        (dashboard-icon-type 'nerd-icons) ; use `nerd-icons' package
-        (dashboard-set-heading-icons t)
-        (dashboard-set-file-icons t)
-        :config
-        (dashboard-setup-startup-hook))
+	:custom
+	(dashboard-banner-logo-title "Lean, fast, focused, based on the latest tech. Welcome to Quake Emacs")
+	(dashboard-startup-banner "~/.emacs.d/banner-quake.png")
+	(dashboard-center-content t)
+	(dashboard-vertically-center-content t)
+	(dashboard-items '((recents   . 5)
+			   (projects  . 5)))
+	(dashboard-item-shortcuts '((recents   . "r")
+				    (projects  . "p")))
+	(dashboard-icon-type 'nerd-icons) ; use `nerd-icons' package
+	(dashboard-set-heading-icons t)
+	(dashboard-set-file-icons t)
+	:config
+	(dashboard-setup-startup-hook))
 
     (use-package eldoc-box
-        :config
-        (set-face-attribute 'eldoc-box-body nil :font "Cantarell-12")
-        :hook (eldoc-mode . eldoc-box-hover-at-point-mode))
+	:config
+	(set-face-attribute 'eldoc-box-body nil :inherit 'variable-pitch)
+	:hook (eldoc-mode . eldoc-box-hover-at-point-mode))
 
     ;; Pretty markdown formatting for eldoc-box
     (use-package markdown-mode
-        :after (eldoc-box)
-        :commands (markdown-mode)
+	:after (eldoc-box)
+	:commands (markdown-mode)
 	:custom
 	(markdown-asymmetric-header nil)
 	(markdown-header-scaling t)
 	(markdown-marginalize-headers t)
 	(markdown-enable-math t)
-	(markdown-hide-urls t)
-	(markdown-hide-markup t)
 	(markdown-fontify-code-blocks-natively t))
 
     (use-package breadcrumb
-        :hook (eglot-managed-mode . breadcrumb-local-mode)))
+	:hook (eglot-managed-mode . breadcrumb-local-mode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; OPTIONAL AESTHETIC BLING ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -841,57 +967,57 @@ DIR must include a .project file to be considered a project."
   - `emojify', because emojis are cool
   - `ligature', because ligatures are cool"
     (use-package hl-todo
-        :commands (hl-todo-mode)
-        :init (add-hook 'prog-mode-hook #'hl-todo-mode))
+	:commands (hl-todo-mode)
+	:init (add-hook 'prog-mode-hook #'hl-todo-mode))
 
     ;; Icons are nice to have! Nerd icons is faster and better
     ;; integrated (so less icon duplication between packages) with the
     ;; packages I'm using than all-the-icons
     (use-package nerd-icons
-        :if (display-graphic-p)
-        :custom (nerd-icons-font-family "Symbols Nerd Font Mono"))
+	:if (display-graphic-p)
+	:custom (nerd-icons-font-family "Symbols Nerd Font Mono"))
 
     ;; Integrate these icons with marginalia
     (use-package nerd-icons-completion
-        :after (marginalia nerd-icons)
-        :config
-        (nerd-icons-completion-mode)
-        (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
+	:after (marginalia nerd-icons)
+	:config
+	(nerd-icons-completion-mode)
+	(add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
     ;; Integrate them with corfu
     (use-package nerd-icons-corfu
-        :after (corfu nerd-icons)
-        :config (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
+	:after (corfu nerd-icons)
+	:config (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
 
     (use-package emojify
-        :config
-        (setq emojify-display-style 'unicode)
-        (setq emojify-emoji-styles '(unicode))
-        :hook (after-init-hook . global-emojify-mode))
+	:config
+	(setq emojify-display-style 'unicode)
+	(setq emojify-emoji-styles '(unicode))
+	:hook (after-init-hook . global-emojify-mode))
 
     ;; This assumes you've installed the package via MELPA.
     (use-package ligature
-        :config
-        ;; Enable the "www" ligature in every possible major mode
-        (ligature-set-ligatures 't '("www"))
-        ;; Enable traditional ligature support in eww-mode, if the
-        ;; `variable-pitch' face supports it
-        (ligature-set-ligatures 'eww-mode '("ff" "fi" "ffi"))
-        ;; Enable all Cascadia Code ligatures in programming modes
-        (ligature-set-ligatures 'prog-mode '("|||>" "<|||" "<==>" "<!--" "####" "~~>" "***" "||=" "||>"
-                                             ":::" "::=" "=:=" "===" "==>" "=!=" "=>>" "=<<" "=/=" "!=="
-                                             "!!." ">=>" ">>=" ">>>" ">>-" ">->" "->>" "-->" "---" "-<<"
-                                             "<~~" "<~>" "<*>" "<||" "<|>" "<$>" "<==" "<=>" "<=<" "<->"
-                                             "<--" "<-<" "<<=" "<<-" "<<<" "<+>" "</>" "###" "#_(" "..<"
-                                             "..." "+++" "/==" "///" "_|_" "www" "&&" "^=" "~~" "~@" "~="
-                                             "~>" "~-" "**" "*>" "*/" "||" "|}" "|]" "|=" "|>" "|-" "{|"
-                                             "[|" "]#" "::" ":=" ":>" ":<" "$>" "==" "=>" "!=" "!!" ">:"
-                                             ">=" ">>" ">-" "-~" "-|" "->" "--" "-<" "<~" "<*" "<|" "<:"
-                                             "<$" "<=" "<>" "<-" "<<" "<+" "</" "#{" "#[" "#:" "#=" "#!"
-                                             "##" "#(" "#?" "#_" "%%" ".=" ".-" ".." ".?" "+>" "++" "?:"
-                                             "?=" "?." "??" ";;" "/*" "/=" "/>" "//" "__" "~~" "(*" "*)"
-                                             "\\\\" "://"))
-        :hook (prog-mode . ligature-mode)))
+	:config
+	;; Enable the "www" ligature in every possible major mode
+	(ligature-set-ligatures 't '("www"))
+	;; Enable traditional ligature support in eww-mode, if the
+	;; `variable-pitch' face supports it
+	(ligature-set-ligatures 'eww-mode '("ff" "fi" "ffi"))
+	;; Enable all Cascadia Code ligatures in programming modes
+	(ligature-set-ligatures 'prog-mode '("|||>" "<|||" "<==>" "<!--" "####" "~~>" "***" "||=" "||>"
+					     ":::" "::=" "=:=" "===" "==>" "=!=" "=>>" "=<<" "=/=" "!=="
+					     "!!." ">=>" ">>=" ">>>" ">>-" ">->" "->>" "-->" "---" "-<<"
+					     "<~~" "<~>" "<*>" "<||" "<|>" "<$>" "<==" "<=>" "<=<" "<->"
+					     "<--" "<-<" "<<=" "<<-" "<<<" "<+>" "</>" "###" "#_(" "..<"
+					     "..." "+++" "/==" "///" "_|_" "www" "&&" "^=" "~~" "~@" "~="
+					     "~>" "~-" "**" "*>" "*/" "||" "|}" "|]" "|=" "|>" "|-" "{|"
+					     "[|" "]#" "::" ":=" ":>" ":<" "$>" "==" "=>" "!=" "!!" ">:"
+					     ">=" ">>" ">-" "-~" "-|" "->" "--" "-<" "<~" "<*" "<|" "<:"
+					     "<$" "<=" "<>" "<-" "<<" "<+" "</" "#{" "#[" "#:" "#=" "#!"
+					     "##" "#(" "#?" "#_" "%%" ".=" ".-" ".." ".?" "+>" "++" "?:"
+					     "?=" "?." "??" ";;" "/*" "/=" "/>" "//" "__" "~~" "(*" "*)"
+					     "\\\\" "://"))
+	:hook (prog-mode . ligature-mode)))
 
 (defun optional/ide-layer ()
     "If you want your editor to feel even more like a GUI-based IDE,
@@ -904,57 +1030,57 @@ DIR must include a .project file to be considered a project."
   way text could never emulate"
     ;; Integrate nerd icons with dired (I never use dired)
     (use-package treemacs
-        :commands (treemacs)
-        :config
-        (dolist (face '(treemacs-root-face
-                        treemacs-git-unmodified-face
-                        treemacs-git-modified-face
-                        treemacs-git-renamed-face
-                        treemacs-git-ignored-face
-                        treemacs-git-untracked-face
-                        treemacs-git-added-face
-                        treemacs-git-conflict-face
-                        treemacs-directory-face
-                        treemacs-directory-collapsed-face
-                        treemacs-file-face
-                        treemacs-tags-face))
-            (set-face-attribute face nil :inherit 'variable-pitch :height 120)))
+	:commands (treemacs)
+	:config
+	(dolist (face '(treemacs-root-face
+			treemacs-git-unmodified-face
+			treemacs-git-modified-face
+			treemacs-git-renamed-face
+			treemacs-git-ignored-face
+			treemacs-git-untracked-face
+			treemacs-git-added-face
+			treemacs-git-conflict-face
+			treemacs-directory-face
+			treemacs-directory-collapsed-face
+			treemacs-file-face
+			treemacs-tags-face))
+	    (set-face-attribute face nil :inherit 'variable-pitch :height 120)))
 
     (use-package treemacs-evil
-        :after (treemacs evil)
-        :ensure t)
+	:after (treemacs evil)
+	:ensure t)
 
     (use-package centaur-tabs
-        :commands (centaur-tabs-mode)
-        :custom
-        (centaur-tabs-style "wave")
-        (centaur-tabs-height 32)
-        (centaur-tabs-set-icons t)
-        (centaur-tabs-gray-out-icons 'buffer)
-        (centaur-tabs-set-modified-marker t)
-        (centaur-tabs-label-fixed-length 15)
-        :config
-        (centaur-tabs-change-fonts "Cantarell" 120)))
+	:commands (centaur-tabs-mode)
+	:custom
+	(centaur-tabs-style "wave")
+	(centaur-tabs-height 32)
+	(centaur-tabs-set-icons t)
+	(centaur-tabs-gray-out-icons 'buffer)
+	(centaur-tabs-set-modified-marker t)
+	(centaur-tabs-label-fixed-length 15)
+	:config
+	(centaur-tabs-change-fonts "Cantarell" 120)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; RUN LAYERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (load "~/.quake.d/user.el")
-(defvar enabled-layers (user/enabled-layers))
-
-(defun core/enable-layer (layer)
-    (message (format "Enabling the %s layer" layer))
-    (funcall (symbol-function layer)))
 
 ;; no garbage collection during startup — we can amortize it later
 (setq gc-cons-threshold-original gc-cons-threshold)
 (setq gc-cons-threshold most-positive-fixnum)
-(mapcar #'core/enable-layer enabled-layers)
 (run-with-idle-timer
  5 nil
  (lambda ()
      (setq gc-cons-threshold gc-cons-threshold-original)
      (makunbound 'gc-cons-threshold-original)
      (message "gc-cons-threshold and file-name-handler-alist restored")))
+
+;; Enable layers
+(dolist (layer (user/enabled-layers))
+    (message (format "Enabling the %s layer" layer))
+    (funcall (symbol-function layer)))
+
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;; CODE MOVED IN-TREE FOR PERFORMANCE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -984,15 +1110,15 @@ DIR must include a .project file to be considered a project."
 	    ;; Reset the `flymake-proselint-backend--proc' process to a new process
 	    ;; calling the proselint tool.
 	    (setq
-             flymake-proselint-backend--proc
-             (make-process
-              :name "proselint-flymake" :noquery t :connection-type 'pipe
-              ;; Make output go to a temporary buffer.
-              ;;
-              :buffer (generate-new-buffer " *proselint-flymake*")
-              :command '("proselint")
-              :sentinel
-              (lambda (proc _event)
+	     flymake-proselint-backend--proc
+	     (make-process
+	      :name "proselint-flymake" :noquery t :connection-type 'pipe
+	      ;; Make output go to a temporary buffer.
+	      ;;
+	      :buffer (generate-new-buffer " *proselint-flymake*")
+	      :command '("proselint")
+	      :sentinel
+	      (lambda (proc _event)
 		  ;; Check that the process has indeed exited, as it might
 		  ;; be simply suspended.
 		  (when (memq (process-status proc) '(exit signal))
@@ -1008,21 +1134,21 @@ DIR must include a .project file to be considered a project."
 					  ;; of objects, and call `report-fn'.
 					  ;;
 					  (cl-loop
-                                           while (search-forward-regexp
-                                                  "^.+:\\([[:digit:]]+\\):\\([[:digit:]]+\\): \\(.+\\)$"
-                                                  nil t)
-                                           for lnum = (string-to-number (match-string 1))
-                                           for lcol = (string-to-number (match-string 2))
-                                           for msg = (match-string 3)
-                                           for (beg . end) = (flymake-diag-region source lnum lcol)
-                                           when (and beg end)
-                                           collect (flymake-make-diagnostic source
-                                                                            beg
-                                                                            end
-                                                                            :warning
-                                                                            msg)
-                                           into diags
-                                           finally (funcall report-fn diags)))
+					   while (search-forward-regexp
+						  "^.+:\\([[:digit:]]+\\):\\([[:digit:]]+\\): \\(.+\\)$"
+						  nil t)
+					   for lnum = (string-to-number (match-string 1))
+					   for lcol = (string-to-number (match-string 2))
+					   for msg = (match-string 3)
+					   for (beg . end) = (flymake-diag-region source lnum lcol)
+					   when (and beg end)
+					   collect (flymake-make-diagnostic source
+									    beg
+									    end
+									    :warning
+									    msg)
+					   into diags
+					   finally (funcall report-fn diags)))
 				  (flymake-log :warning "Canceling obsolete check %s"
 					       proc))
 			  ;; Cleanup the temporary buffer used to hold the
