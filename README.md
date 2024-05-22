@@ -76,7 +76,7 @@ While also offering IDE-class features besides completion, via [Eglot](https://g
 
 I've also spent a great deal of time setting up tree-sitter based structural text objects for selection, editing, and motion using [evil-textobj-tree-sitter]([https://github.com/meain/evil-textobj-tree-sitter]), supporting all the text objects Helix or NeoVim does thanks to reading Helix's source code and NeoVim's documentation. Enjoy the text generation of advanced text editing!
 
-<video width="630" height="300" src="https://github.com/alexispurslane/quake-emacs/raw/develop/screenshots/structural-textobjects.webm"></video>
+<video width="630" height="300" src="http://raw.githubusercontent.com/alexispurslane/quake-emacs/develop/screenshots/structural-textobjects.webm"></video>
 
 And, Quake Emacs wouldn't be able to live up to its name unless it had a classic Quake-style popup terminal! So here it is, implemented entirely without any external packages, and bound to `SPC ~`:
 
