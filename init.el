@@ -19,7 +19,7 @@
       ("t" . "class")
       ("c" . "comment")
       ("a" . "parameter")
-      ("T" . "test.outer"))
+      ("T" . "test"))
     "The text objects added to evil mode at startup. A list of pairs,
 where the first element is a string, KEY, and the second object is
 either a string or a list containing the query to be made for
@@ -592,15 +592,15 @@ further macroexpansion. Necessary because define-key does not evaluate its argum
 						 (evil-textobj-tree-sitter-get-textobj ,inner-query))
 				     (general-nvmap
 					 ;; go to next start
-					 ,(concat "[" key)
-					 (lambda ()
-					     (interactive)
-					     (evil-textobj-tree-sitter-goto-textobj ,(car outer-query)))
+					 ,(concat "[" key) '((lambda ()
+								 (interactive)
+								 (evil-textobj-tree-sitter-goto-textobj ,(car outer-query) t nil))
+							     :which-key ,(concat "goto-textobj-" (car query) "-start"))
 					 ;; go to next end
-					 ,(concat "]" key)
-					 (lambda ()
-					     (interactive)
-					     (evil-textobj-tree-sitter-goto-textobj ,(car outer-query) nil t))))
+					 ,(concat "]" key) '((lambda ()
+								 (interactive)
+								 (evil-textobj-tree-sitter-goto-textobj ,(car outer-query) nil t))
+							     :which-key ,(concat "goto-textobj-" (car query) "-end"))))
 				   into exprs
 				   finally (return exprs)))))
 	(define-textobjs)
