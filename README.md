@@ -23,6 +23,7 @@ Text editors are most often used for three core tasks: **code editing**, **writi
   - [How to install](#how-to-install)
   - [Key Features](#key-features)
   - [Showcase](#showcase)
+    - [Simple Config](#simple-config)
     - [Code Editing](#code-editing)
     - [Writing](#writing)
     - [Note-taking](#note-taking)
@@ -66,6 +67,17 @@ To update, just `git pull` to the latest tag. I recommend you check the release 
 - 🌐 **Modern and vanilla**: Despite having an opinionated UX out of the box, Quake Emacs prioritizes [using Emacs's built-in capabilities and packages that integrate well with them](https://b.tuxes.uk/avoiding-emacs-bankruptcy.html) as much as feasibly possible. Quake Emacs only introduces layers of abstraction over built-in vanilla Emacs when *absolutely necessary*. Vanilla Emacs instructions should still work in Quake Emacs!
 
 ## Showcase
+
+### Simple Config
+
+Before I get to showing you any of the fancy things Quake Emacs can do, the most important thing is proving that it will be manageable for you to understand and fork if necessary, and won't lead either you or me to Emacs bankruptcy. One of the key things I've done in this regard is optimizing the layout of `init.el` to work with Emacs's built-in `outline-minor-mode` to help you get an overview of it and jump to specific things in it without needing finnicky text search or getting overwhelmed:
+
+![](./screenshots/outline-mode-compat.gif)
+
+It's much more difficult to demonstrate code clarity and simplicity in a gif, though, so if you're still skeptical, I highly encourage you to skim the [source code](https://github.com/alexispurslane/quake-emacs/blob/develop/init.el) yourself.
+
+> [!NOTE]
+> Why isn't this a literate config? I've seriously considered it for code clarity reasons, but decided against it for two reasons. First, if it was a literate config, I'd want to move all the per-layer documentation out of docstrings and into the org mode markup to avoid tedious duplication, but then eldoc wouldn't document layers for you. Second, it would mean Quake Emacs would really be two files, instead of one and a user file, which is annoying. I do want it to be as self-sufficient as possible. In fact, I'm planning on making the user file optional. Third, it adds a layer of indirection and complexity that goes against the core goal of Quake Emacs: with a literate config, I'd have to use org-tangle to 'compile' it before it could be loaded into Emacs, and it would be possible for the literate config and the tangled config to get out of sync locally, not to mention needing to use {C-c '} to edit the blocks. And finally, it would probably significantly slow compile times, since `load`ing is slow, and I want to avoid that. However, I've tried to get as close to what a literate configuration file would offer by other means
 
 ### Code Editing
 
