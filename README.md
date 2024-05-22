@@ -82,7 +82,7 @@ It's much more difficult to demonstrate code clarity and simplicity in a gif, th
 > 1. First, as a literate config, I'd want to move all the per-layer documentation out of docstrings and into the org mode markup to avoid tedious duplication, but then eldoc wouldn't document layers for you.
 > 2. Second, it would mean Quake Emacs would really be two files, instead of one and a user file, which is annoying. I do want it to be as self-sufficient as possible. In fact, I'm planning on making the user file optional.
 > 3. Third, it adds a layer of indirection and complexity that goes against the core goal of Quake Emacs: with a literate config, I'd have to use org-tangle to 'compile' it before it could be loaded into Emacs, and it would be possible for the literate config and the tangled config to get out of sync locally, not to mention needing to use {C-c '} to edit the blocks.
-> 4. And fourth, it would probably significantly slow compile times, since `load`ing is slow, and I want to avoid that. However, I've tried to get as close to what a literate configuration file would offer by other means
+> 4. And fourth, it would probably significantly slow start times, since `load`ing is slow, and I want to avoid that. However, I've tried to get as close to what a literate configuration file would offer by other means
 > 
 > Feel free to open an issue if you think this was a bad choice, though!
 
