@@ -5,13 +5,11 @@
   <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/badge.svg"/>
 </div>
 
-<p align="center">
-<img src="./screenshots/dashboard.png" width="24%"/>
-</p>
-
 ---
 
-## Why?
+<p align="center">
+<img src="./screenshots/dashboard.png" width="25%"/>
+</p>
 
 If you want to use Emacs, but you:
 
@@ -43,6 +41,10 @@ To update, just `git pull` to the latest tag. I recommend you check the release 
 - 🎯 **Lean and focused**: Quake Emacs includes just the packages and configuration you need for a beautiful, modern IDE-lite experience when coding and a focused, ergonomic experience when writing or taking notes, and *nothing else*. It even completely does away with the need for language-specific layers through the use of tree-sitter and LSP support. Consider Quake Emacs part of your editor — it's just there to give you a good out of the box experience, like [Helix](https://helix-editor.com/). The rest is up to you! 
 - 🚀 **Fast**: On my machine, Quake Emacs loads in under 0.6 seconds. Every single package is carefully chosen with performance in mind, and the default load order is tuned obsessively to ensure Emacs starts as fast as possible. Enjoy fast startup times, or use it as extra headroom to add your own packages.
 - 🥇 **Just one single file**: The configuration framework itself is only one simple, extensively documented, self-contained 1000-line file. That's it. Just put the file in your Emacs directory and go. No external commands, no multiple thousands of lines of Lisp scattered throughout hundreds of files across interminable layers of abstraction. If you want to know where something is, or how it works, it's easy to find.
+
+> [!NOTE]
+> I added the line count badge above to give you a general ballpark idea of the size of Quake Emacs's config, but it includes both docstrings and comments in the line count, whereas my 1000-line promise specifically refers to lines of *source code*, so as not to disincentivize me to document extensively.
+
 - 🌐 **Modern and vanilla**: Despite having an opinionated UX out of the box, Quake Emacs prioritizes [using Emacs's built-in capabilities and packages that integrate well with them](https://b.tuxes.uk/avoiding-emacs-bankruptcy.html) as much as feasibly possible. Quake Emacs only introduces layers of abstraction over built-in vanilla Emacs when *absolutely necessary*. Vanilla Emacs instructions should still work in Quake Emacs!
 
 ## Showcase
