@@ -44,24 +44,8 @@ that text object minus the .inner and .outer qualifiers.")
           display-line-numbers 'relative
 	  custom-file "~/.emacs.d/custom.el"
           fill-column 65)
+    (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
-    ;; Make escape exit minibuffers
-    (defun minibuffer-keyboard-quit ()
-        "Abort recursive edit.
-                 In Delete Selection mode, if the mark is active, just deactivate it;
-                 then it takes a second \\[keyboard-quit] to abort the minibuffer."
-        (interactive)
-        (if (and delete-selection-mode transient-mark-mode mark-active)
-                (setq deactivate-mark  t)
-            (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
-            (abort-recursive-edit)))
-    (define-key minibuffer-local-map [escape] 'minibuffer-keyboard-quit)
-    (define-key minibuffer-local-ns-map [escape] 'minibuffer-keyboard-quit)
-    (define-key minibuffer-local-completion-map [escape] 'minibuffer-keyboard-quit)
-    (define-key minibuffer-local-must-match-map [escape] 'minibuffer-keyboard-quit)
-    (define-key minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit)
-
-    (global-set-key (kbd "ESC") #'keyboard-escape-quit)
     ;; Possibly cargo-cult optimization settings
     (setq jit-lock-stealth-time 0.2
 	  jit-lock-defer-time 0.0
@@ -87,6 +71,7 @@ that text object minus the .inner and .outer qualifiers.")
     (tool-bar-mode -1)
     (scroll-bar-mode -1)
     (set-frame-parameter nil 'undecorated t)
+    
     (column-number-mode)
 
     ;; Basic programmming mode to build off of
@@ -136,12 +121,10 @@ that text object minus the .inner and .outer qualifiers.")
   - `icomplete' with careful configuration (thanks to Prot!) to
     make it work just as nicely as Vertico
   - `marginalia', to add crucial metadata to icomplete completion candidates
-  - `orderless', for fuzzy searching in icomplete
   - `consult', for the ability to use icomplete to find things in
   minibuffers (useful for xref)
   - `elisp-def', `elisp-demos', and `highlight-defined' to make
-  the experience of configuring your editor much nicer."
-
+  the experience of configuring your editor much nicer. "
     (use-package which-key
         :init (which-key-mode)
         :diminish which-key-mode
@@ -161,12 +144,16 @@ that text object minus the .inner and .outer qualifiers.")
     (use-package icomplete
 	:hook (pre-command . fido-mode)
 	:bind (:map icomplete-minibuffer-map
-		    ("<return>" . icomplete-force-complete-and-exit!)
+		    ("RET" . icomplete-force-complete-and-exit)
+		    ("M-RET" . icomplete-fido-exit)
+		    ("TAB" . icomplete-force-complete)
 		    ("<down>" . icomplete-forward-completions)
 		    ("C-n" . icomplete-forward-completions)
 		    ("<up>" . icomplete-backward-completions)
 		    ("C-p" . icomplete-backward-completions))
 	:config
+	;; remove arbitrary optimization limits that make icomplete
+	;; feel old-fashioned
 	(setq icomplete-delay-completions-threshold 0)
 	(setq icomplete-max-delay-chars 0)
 	(setq icomplete-compute-delay 0)
@@ -174,13 +161,7 @@ that text object minus the .inner and .outer qualifiers.")
 	(setq icomplete-hide-common-prefix nil)
 	(setq icomplete-prospects-height 15)
 	(setq icomplete-with-completion-tables t)
-	(icomplete-vertical-mode 1)
-	(defun icomplete-force-complete-and-exit! ()
-	    "This is more straight forward than `icomplete-force-complete-and-exit'.
-This won't complain about incomplete matches."
-	    (interactive)
-	    (icomplete-force-complete)
-	    (exit-minibuffer)))
+	(icomplete-vertical-mode 1))
 
     (use-package marginalia
         :after icomplete
@@ -207,7 +188,7 @@ This won't complain about incomplete matches."
 
     ;; Vertical completion UI superpowers like grep!
     (use-package consult
-        :after icomplete
+	:commands (consult-grep consult-ripgrep consult-man)
         :config
         ;; We also want to use this for in-buffer completion, which vertico can't do alone
         (setq xref-show-xrefs-function #'consult-xref
@@ -218,6 +199,7 @@ This won't complain about incomplete matches."
                                  #'consult-completion-in-region
                              #'completion--in-region)
                          args))))
+
     ;; Emacs Lisp
     (use-package elisp-def
         :hook (emacs-lisp-mode . elisp-def-mode))
@@ -287,10 +269,6 @@ This won't complain about incomplete matches."
 	;; aliases (like `nmap') for VIM mapping functions.
 	(general-evil-setup t)
 
-        ;; Make the escape key actually escape almost everything
-	(general-nvmap
-	    "ESC" #'keyboard-quit)
-
         ;; We want to be able to use ctrl-v and ctrl-c just for
         ;; convenience/user-friendliness, especially since ctrl-shift-v
         ;; doesn't work in evil, unlike (terminal) vim
@@ -331,11 +309,6 @@ This won't complain about incomplete matches."
 			  "b" #'eval-buffer
 			  "r" #'eval-region)))
 
-	(add-hook 'outline-minor-mode-hook
-		  (lambda ()
-		      (+core--internal-local-map!
-			  "o" '(:keymap outline-mode-prefix-map :which-key "outline-minor-mode"))))
-
 	;; gobal keybindgs that are truly global
 	(general-create-definer tyrant-def
 	    :states '(normal insert motion emacs)
@@ -370,8 +343,6 @@ This won't complain about incomplete matches."
 	    "fS"   '(write-file :wk "Save as ...")
 	    "fi"   #'auto-insert
 	    "ff"   #'find-file
-	    "fw"   #'find-file-other-window
-	    "fF"   #'find-file-other-frame
 	    "fs"   #'save-buffer
 	    "ft"   #'recover-this-file
 	    "fT"   #'recover-file
@@ -443,7 +414,6 @@ This won't complain about incomplete matches."
 	    "oT"   #'centaur-tabs-mode
 	    "od"   #'darkroom-mode
 	    "o="   #'calc
-	    "oo"   #'outline-minor-mode
 
 	    ;; ====== Search ======
 	    "s"    '(nil :wk "search")
@@ -483,6 +453,7 @@ This won't complain about incomplete matches."
 
 	    ;; ====== Notes ======
 	    "n"    '(nil :wk "notes")
+	    "ns"   #'denote-silo
 	    "nc"   #'denote
 	    "nn"   #'consult-notes
 	    "ni"   #'denote-link-global
@@ -546,11 +517,9 @@ This won't complain about incomplete matches."
     (use-package evil-textobj-tree-sitter
 	:after (evil evil-collection general)
 	:config
-	;; expand current selection to parent node on the tree-sitter
-	;; tree: the simplest, and probably most useful, command of
-	;; them all. Thanks to foxfriday/evil-ts for this one
+	;; Thanks to foxfriday/evil-ts for this one
 	(defun evil-ts-expand-region ()
-	    "Expand selection to the closet parent."
+	    "Expand selection to the closest tree-sitter parent node."
 	    (let* ((point (point))
 		   (mark (or (mark t) point))
 		   (start (min point mark))
@@ -566,25 +535,32 @@ This won't complain about incomplete matches."
 		    (goto-char pstart)
 		    (list pstart pend))))
 
+	;; make "tree sitter expand region" a manipulable text object
 	(evil-define-text-object evil-ts-text-obj-expand-region (count &optional beg end type)
 	    (evil-ts-expand-region))
 
+	;; bind it to "x"
 	(define-key evil-outer-text-objects-map "x" 'evil-ts-text-obj-expand-region)
 	(define-key evil-inner-text-objects-map "x" 'evil-ts-text-obj-expand-region)
 
+	;; This being a macro is necessary because define-key does not
+	;; evaluate its arguments so it won't work in a regular loop.
 	(eval-when-compile
 	    (defmacro define-textobjs ()
-		"Loop through `quake-evil-text-objects' and construct a flat
-list of the `define-key' expressions needed to set the text
-objects up with the correct values already substituted in for
-further macroexpansion. Necessary because define-key does not evaluate its arguments so it won't work in a regular loop."
+		"Loop through `quake-evil-text-objects' and construct
+a flat list of the `define-key' expressions needed to set the text
+objects up with the correct values already substituted in for further
+macroexpansion."
 		`(progn ,@(cl-loop for thing in quake-evil-text-objects
 				   for key = (car thing)
 				   for query = (if (listp (cdr thing)) (cdr thing) (list (cdr thing)))
+
 				   for outer-query = (mapcar (lambda (x) (concat x ".outer")) query)
 				   for inner-query = (mapcar (lambda (x) (concat x ".inner")) query)
+
 				   for docname-start = (concat "go-to-next-" (car query) "-start")
 				   for docname-end = (concat "go-to-next-" (car query) "-end")
+
 				   appending
 				   `((define-key evil-outer-text-objects-map ,key
 						 (evil-textobj-tree-sitter-get-textobj ,outer-query))
@@ -602,11 +578,9 @@ further macroexpansion. Necessary because define-key does not evaluate its argum
 								 (evil-textobj-tree-sitter-goto-textobj ,(car outer-query) nil t))
 							     :which-key ,(concat "goto-textobj-" (car query) "-end"))))
 				   into exprs
-				   finally (return exprs)))))
-	(define-textobjs)
 
-	(define-key evil-outer-text-objects-map "a" (evil-textobj-tree-sitter-get-textobj ("conditional.outer" "loop.outer" "assignment.outer" "call.outer" "block.outer" "statement.outer" "function.outer" "class.outer" "comment.outer" "parameter.outer" "test.outer")))
-	(define-key evil-inner-text-objects-map "a" (evil-textobj-tree-sitter-get-textobj ("conditional.inner" "loop.inner" "assignment.inner" "call.inner" "block.inner" "statement.inner" "function.inner" "class.inner" "comment.inner" "parameter.inner" "test.inner")))))
+				   finally (return exprs)))))
+	(define-textobjs)))
 
 ;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TASK-SPECIFIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -738,25 +712,28 @@ further macroexpansion. Necessary because define-key does not evaluate its argum
 	(message "Initializing proselint flymake backend")
 	(add-hook 'flymake-diagnostic-functions #'flymake-proselint-backend nil t))
 
+    (defun distraction-free-writing-mode ()
+	"Enhance `darkroom-mode' with more things for writing."
+	;; Faster performance on long lines
+	(column-number-mode -1)
+	(ligature-mode -1)
+	(prettify-symbols-mode -1)
+	;; Less distracting fringe
+	(setq left-fringe-width 0)
+	(setq right-fringe-width 0)
+	(visual-fill-column-mode)
+	(if darkroom-mode
+		(buffer-face-mode 1) ; enable variable pitch in buffer if entering
+	    (buffer-face-mode -1)) ; disable it if exiting
+	;; Proselint
+	(flymake-mode)
+	(flymake-proselint-setup))
+    
     ;; Distraction free writing mode
     (use-package darkroom
 	:commands (darkroom-mode darkroom-tentative-mode)
 	:config
-	(add-hook 'darkroom-mode-hook (lambda ()
-					  ;; Faster performance on long lines
-					  (column-number-mode -1)
-					  (ligature-mode -1)
-					  (prettify-symbols-mode -1)
-					  ;; Less distracting fringe
-					  (setq left-fringe-width 0)
-					  (setq right-fringe-width 0)
-					  (visual-fill-column-mode)
-					  (if darkroom-mode
-						  (buffer-face-mode 1) ; enable variable pitch in buffer if entering
-					      (buffer-face-mode -1)) ; disable it if exiting
-					  ;; Proselint
-					  (flymake-mode)
-					  (flymake-proselint-setup))))
+	(add-hook 'darkroom-mode-hook #'distraction-free-writing-mode))
 
     (use-package latex-preview-pane
 	:commands (latex-preview-pane-mode latex-preview-pane-enable)))
@@ -772,7 +749,7 @@ further macroexpansion. Necessary because define-key does not evaluate its argum
   - `consult-notes' to have a metadata-rich, integrated way to find
   your notes."
     (use-package denote
-	:commands (denote consult-notes denote-link-global denote-link-after-creating denote-rename-file denote-keywords-add denote-keywords-remove denote-backlinks denote-find-backlink denote-region)
+	:commands (denote consult-notes denote-link-global denote-link-after-creating denote-region denote-silo)
 	:custom
 	(denote-known-keywords '())
 	(denote-infer-keywords t)
@@ -780,21 +757,8 @@ further macroexpansion. Necessary because define-key does not evaluate its argum
 	(denote-prompts '(title keywords))
 	(denote-file-type 'markdown-yaml)
 	(denote-backlinks-show-context t)
-	;; display backlinks buffer to the left of the current window,
-	;; which seems cool to me
-	(denote-link-backlinks-display-buffer-action
-	 '((display-buffer-reuse-window
-	    display-buffer-in-side-window)
-	   (side . left)
-	   (slot . 99)
-	   (window-width . 0.3)
-	   (dedicated . t)
-	   (preserve-size . (t . t))))
 	:config
 	(add-hook 'find-file-hook #'denote-link-buttonize-buffer)
-	;; Allow inserting links or buttonizing existing ones in *any*
-	;; file, just treating themes you would text files
-	;; 
 	;; NOTE: I initially had a much simpler implementation, but
 	;; Prot suggested this was safer, since I'm defining my own
 	;; link function instead of just fucking with core denote
@@ -822,19 +786,7 @@ in `denote-link'."
 	;; we can use project.el to manage non-version controlled
 	;; projects, such as [Denote
 	;; silos](https://protesilaos.com/emacs/denote#h:15719799-a5ff-4e9a-9f10-4ca03ef8f6c5)
-	;; 
-	;; FIXME: In theory `project-vc-extra-root-markers' should serve our
-	;; purposes better, but it doesn't seem to work.
-	(cl-defmethod project-root ((project (head local)))
-	    (cdr project))
-
-	(defun core/project-try-local (dir)
-	    "Determine if DIR is a non-Git project.
-DIR must include a .dir-locals.el file to be considered a project."
-	    (let ((root (locate-dominating-file dir ".dir-locals.el")))
-		(and root (cons 'local root))))
-
-	(add-hook 'project-find-functions #'core/project-try-local)
+	(setq project-vc-extra-root-markers '(".dir-locals.el"))
 
 	(defun denote-silo (dir)
 	    "Create a new directory DIR to function as a `denote' silo. Adds it to the project list."
@@ -1024,11 +976,13 @@ DIR must include a .dir-locals.el file to be considered a project."
   but faster and more flexible, this layer is for you.
 
   Loads:
-  - `treemacs' and `treemacs-evil', for a fully graphical project tree explorer sidebar
+  - `treemacs' and `treemacs-evil', for a fully graphical project tree
+    explorer sidebar
   - `centaur-tabs', because nothing screams 'this isn't a regular
   text editor, this is an IDE' like fully-GUI tabs, curved in a
   way text could never emulate"
     ;; Integrate nerd icons with dired (I never use dired)
+
     (use-package treemacs
 	:commands (treemacs)
 	:config
@@ -1044,11 +998,12 @@ DIR must include a .dir-locals.el file to be considered a project."
 			treemacs-directory-collapsed-face
 			treemacs-file-face
 			treemacs-tags-face))
-	    (set-face-attribute face nil :inherit 'variable-pitch :height 120)))
+            (set-face-attribute face nil :inherit 'variable-pitch :height 120)))
 
     (use-package treemacs-evil
 	:after (treemacs evil)
 	:ensure t)
+
 
     (use-package centaur-tabs
 	:commands (centaur-tabs-mode)
