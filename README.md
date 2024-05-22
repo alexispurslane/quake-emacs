@@ -2,6 +2,7 @@
   <img src="./banner-quake.png" height="128" style="display: block; margin: 0 auto"/>
   <h1>Quake Emacs</h1>
   <p>Lean, fast, focused, and based on the latest Emacs tech</p>
+  <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/badge.svg"/>
 </div>
 
 <p align="center">

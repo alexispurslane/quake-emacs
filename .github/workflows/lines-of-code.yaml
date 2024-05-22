@@ -9,7 +9,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Make Code Badge
+      - name: Code Lines Badge
         uses: shadowmoose/GHA-LoC-Badge@1.0.0
         id: badge
         with:
