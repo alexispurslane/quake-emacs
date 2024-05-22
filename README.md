@@ -20,6 +20,24 @@ then Quake Emacs is for you.
 
 Text editors are most often used for three core tasks: **code editing**, **writing**, and **note-taking**. Quake Emacs is a single-file Emacs distribution architected around those three fundamental tasks, aiming to provide a lean, fast, focused, and complete experience for all three right out of the box, while remaining as simple and vanilla as possible, so you can use it as a great foundation for bare-metal Emacs configuration.
 
+  - [How to install](#how-to-install)
+  - [Key Features](#key-features)
+  - [Showcase](#showcase)
+    - [Code Editing](#code-editing)
+    - [Writing](#writing)
+    - [Note-taking](#note-taking)
+  - [Justification](#justification)
+  - [Inspiration and Prior Art](#inspiration-and-prior-art)
+    - [Doom Emacs](#doom-emacs)
+      - [Points of similarity](#points-of-similarity:)
+      - [Differences](#differences:)
+    - [MinEmacs](#minemacs)
+      - [Points of similarity](#points-of-similarity:)
+      - [Differences](#differences:)
+    - [Emacs Prelude](#emacs-prelude)
+      - [Points of similarity](#points-of-similarity:)
+      - [Differences](#differences:)
+
 ## How to install
 
 1. First, you install Quake Emacs like usual:
