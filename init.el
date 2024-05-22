@@ -80,7 +80,7 @@ that text object minus the .inner and .outer qualifiers.")
                                   (hl-line-mode t)
                                   (electric-pair-mode)))
 
-    ;; Nicer behavior
+    ;; Nicer behavior [[denote:20240519T192644][this is a link to a Denote note!]] 
     (cua-mode t)
 
     (pixel-scroll-precision-mode 1)

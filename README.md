@@ -40,7 +40,7 @@ To update, just `git pull` to the latest tag. I recommend you check the release 
 ## Key Features
 
 - 🎯 **Lean and focused**: Quake Emacs includes just the packages and configuration you need for a beautiful, modern IDE-lite experience when coding and a focused, ergonomic experience when writing or taking notes, and *nothing else*. It even completely does away with the need for language-specific layers through the use of tree-sitter and LSP support. Consider Quake Emacs part of your editor — it's just there to give you a good out of the box experience, like [Helix](https://helix-editor.com/). The rest is up to you! 
-- 🚀 **Fast**: On my machine, Quake Emacs loads in 0.54 seconds on average. Every single package is carefully chosen with performance in mind, and the default load order is tuned obsessively to ensure Emacs starts as fast as possible. Enjoy fast startup times, or use it as extra headroom to add your own packages.
+- 🚀 **Fast**: On my machine, Quake Emacs loads in under 0.6 seconds. Every single package is carefully chosen with performance in mind, and the default load order is tuned obsessively to ensure Emacs starts as fast as possible. Enjoy fast startup times, or use it as extra headroom to add your own packages.
 - 🥇 **Just one single file**: The configuration framework itself is only one simple, extensively documented, self-contained 1000-line file. That's it. Just put the file in your Emacs directory and go. No external commands, no multiple thousands of lines of Lisp scattered throughout hundreds of files across interminable layers of abstraction. If you want to know where something is, or how it works, it's easy to find.
 - 🌐 **Modern and vanilla**: Despite having an opinionated UX out of the box, Quake Emacs prioritizes [using Emacs's built-in capabilities and packages that integrate well with them](https://b.tuxes.uk/avoiding-emacs-bankruptcy.html) as much as feasibly possible. Quake Emacs only introduces layers of abstraction over built-in vanilla Emacs when *absolutely necessary*. Vanilla Emacs instructions should still work in Quake Emacs!
 
@@ -74,21 +74,39 @@ While also offering IDE-class features besides completion, via [Eglot](https://g
 ![](./screenshots/ide-class-features2.png)
 ![](./screenshots/pretty-doc-tooltips.png)
 
+I've also spent a great deal of time setting up tree-sitter based structural text objects for selection, editing, and motion using [evil-textobj-tree-sitter]([https://github.com/meain/evil-textobj-tree-sitter]), supporting all the text objects Helix or NeoVim does thanks to reading Helix's source code and NeoVim's documentation. Enjoy the text generation of advanced text editing!
+
+![](./screenshots/structural-textobjects.webm)
+
 And, Quake Emacs wouldn't be able to live up to its name unless it had a classic Quake-style popup terminal! So here it is, implemented entirely without any external packages, and bound to `SPC ~`:
 
 ![](./screenshots/quake-term.gif)
 
 ### Writing
 
-For those of you who prefer to write your prose in Emacs, I've also created an excellent writing mode, which switches to [a variable pitch font](https://github.com/iaolo/iA-Fonts/tree/master) of your choice, enables a [distraction-free writing mode](https://github.com/joaotavora/darkroom), enables [visual fill column mode](https://github.com/joostkremers/visual-fill-column), wrapped at 65 characters, so that lines behave pleasingly like in a WYSIWYG editor, and enables a flymake [proselint](https://github.com/amperser/proselint) backend to help you improve your prose. To enable all of that, just use `SPC o d`! Here's a sneak peak:
+For those of you who prefer to write your prose in Emacs, I've also created an excellent writing mode, which switches to [a variable pitch font](https://github.com/iaolo/iA-Fonts/tree/master) of your choice, enables a [distraction-free writing mode](https://github.com/joaotavora/darkroom), and enables [visual fill column mode](https://github.com/joostkremers/visual-fill-column) wrapped at 65 characters so that lines behave pleasingly like in a WYSIWYG editor:
 
 ![](./screenshots/proselint-enabled-writing-mode.png)
 
+Writing mode also enables a flymake [proselint](https://github.com/amperser/proselint) backend to help you improve your prose:
+
+![](./screenshots/proselint-up-close.png)
+
+To enable all of that, just use `SPC o d`!
+
 ### Note-taking
 
-For those that want Emacs to serve as their second brain, Quake Emacs uses [Denote](https://protesilaos.com/emacs/denote), a lightweight personal hypertext information manager that can incorporate an extensible list of markup languages (*not just org*), external files (links to and from, including buttonization as a minor-mode), and even non-text-markup files (such as PDFs, images, or code files like iPython Notebooks) directly into its linking and searching system. It offers all of the same basic features as `org-roam` without locking you down to using only Org, or requiring you to use an SQLite database, while also offering optional excellent integration with org if you want it. It also makes deep use of existing Emacs built-ins, as well as integrating explicitly with packages like vertico, marginalia, and consult via [consult-notes](https://github.com/mclear-tools/consult-notes). I've even created a set of convenient leader key keybinds for managing it.
+For those that want Emacs to serve as their note-taking machine, Quake Emacs uses [Denote](https://protesilaos.com/emacs/denote), a lightweight personal hypertext information manager that offers all of the same basic features as `org-roam`, without locking you down to using only Org, or requiring you to use an SQLite database, while also offering optional excellent integration with org if you want it. It can incorporate an extensible list of markup languages instead of just org and markdown, or even non-text-markup files directly into its linking and searching system. Moreover, it also makes deep use of existing Emacs built-ins, as well as integrating explicitly with packages like marginalia, and consult (via [consult-notes](https://github.com/mclear-tools/consult-notes)). And of course I've created a set of convenient leader key keybinds for managing it.
 
 ![](./screenshots/denote.png)
+
+I've also unlocked the power of having your code editor, word processor, and note-taking application all be one and the same through enabling global [buttonization and insertion of denote links](https://github.com/protesilaos/denote/issues/364). Now **you can link to your notes from any file you open, no matter where it is or what file type it is.** Want to keep a huge library of notes on your various projects and link to them in the comments of your code? Now you can.
+
+![](./screenshots/denote-global-links.png)
+
+Want to have several separate Zettelkasten for different projects? I've created a [custom command](https://github.com/protesilaos/denote/issues/367) that allows you to automatically create a new denote silo and add it to `project.el`, so you can manage your silos just like any other project without having to put them in version control.
+
+![](./screenshots/denote-note-project.png)
 
 ## Justification
 
