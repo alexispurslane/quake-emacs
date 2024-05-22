@@ -202,7 +202,15 @@ that text object minus the .inner and .outer qualifiers.")
         (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
 
     (use-package highlight-defined
-        :hook (emacs-lisp-mode . highlight-defined-mode)))
+        :hook (emacs-lisp-mode . highlight-defined-mode))
+
+    (use-package outline
+	:hook ((prog-mode . outline-minor-mode)
+	       (text-mode . outline-minor-mode))
+	:config
+	(add-hook 'outline-minor-mode-hook (lambda ()
+					       (outline-show-all)
+					       (outline-hide-body)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE EDITING PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -285,7 +293,10 @@ that text object minus the .inner and .outer qualifiers.")
             "gT" #'centaur-tabs-backward
             ;; Nice commenting
             "gc" #'comment-region
-            "gC" #'uncomment-region)
+            "gC" #'uncomment-region
+	    ;; keybindings for outline mode
+	    "TAB" #'outline-show-entry
+	    "S-TAB" #'outline-hide-body)
 
         (general-create-definer +core--internal-local-map!
             :states '(insert emacs visual normal)
