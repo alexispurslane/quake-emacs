@@ -6,7 +6,6 @@
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
 (setq use-package-always-ensure t
-      use-package-compute-statistics t
       package-enable-at-startup nil)
 
 (defvar quake-color-theme
@@ -148,9 +147,7 @@ that text object minus the .inner and .outer qualifiers.")
 		    ("M-RET" . icomplete-fido-exit)
 		    ("TAB" . icomplete-force-complete)
 		    ("<down>" . icomplete-forward-completions)
-		    ("C-n" . icomplete-forward-completions)
-		    ("<up>" . icomplete-backward-completions)
-		    ("C-p" . icomplete-backward-completions))
+		    ("<up>" . icomplete-backward-completions))
 	:config
 	;; remove arbitrary optimization limits that make icomplete
 	;; feel old-fashioned
@@ -171,12 +168,7 @@ that text object minus the .inner and .outer qualifiers.")
         :bind (:map minibuffer-local-map
                     ("M-A" . marginalia-cycle))
 
-        ;; The :init section is always executed.
         :init
-
-        ;; Marginalia must be activated in the :init section of use-package such that
-        ;; the mode gets enabled right away. Note that this forces loading the
-        ;; package.
         (marginalia-mode))
 
     (use-package orderless
@@ -789,7 +781,7 @@ in `denote-link'."
 	(setq project-vc-extra-root-markers '(".dir-locals.el"))
 
 	(defun denote-silo (dir)
-	    "Create a new directory DIR to function as a `denote' silo. Adds it to the project list."
+	    "Create a new directory DIR to function as a `denote' silo and add it to the project list."
 	    (interactive (list (read-directory-name "Silo directory: ")))
 	    (if (not (make-directory dir t))
 		    (progn
@@ -798,7 +790,8 @@ in `denote-link'."
 ;;; Directory Local Variables            -*- no-byte-compile: t -*-
 ;;; For more information see (info \"(emacs) Directory Variables\")
 ((nil . ((denote-directory . \"%s\"))))" (expand-file-name dir))))
-			(project-remember-project (expand-file-name dir))))))
+			(add-to-list 'project--list `(,(expand-file-name dir)))
+			(project--write-project-list)))))
 
     (use-package consult-notes
 	:after (denote)
