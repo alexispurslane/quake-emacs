@@ -1,7 +1,56 @@
-;; -*- lexical-binding: t; -*-
+;;; init.el --- implements the Quake Emacs distribution of Emacs -*- lexical-binding: t -*-
+
+;; Author: Alexis Purslane <alexispurlsane@pm.me>
+;; URL: https://github.com/alexispurslane/quake-emacs
+;; Package-Requires: ((emacs "29.1") (cl-lib "1.0"))
+;; Version: 1.0.0-alpha
+;; Keywords: emacs-configuration, emacs-distribution, doom-emacs, note-taking, writing, code
+
+;; This file is not part of GNU Emacs.
+
+;; Copyright (c) by Alexis Purslane 2024.
+;; 
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+;; This is the initialization file for Quake Emacs, a self-contained
+;; one-file Emacs distribution focused on leveraging modern vanilla
+;; Emacs' built in capabities as much as possible and providing a
+;; lean, fast and focused modern experience for code editing, writing,
+;; and note-taking out of the box, while also serving as a good
+;; starting point for further configuration.
+;; 
+;; Installation instructions:
+;; git clone https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
+;; mkdir -p ~/.quake.d/ && cp user.el ~/.quake.d/
+;;
+;; Update instructions:
+;; git pull
+;;
+;; Switching to development branch instructions:
+;; git checkout origin/develop
+;; 
+;; IF YOU DID NOT OBTAIN THIS FILE BY CLONING THE GIT REPOSITORY,
+;; PLEASE DO SO INSTEAD OF USING THIS FILE DIRECTLY
+
+;; For more information, see the README in the online repository.
+
+;;; Code:
+
 (require 'cl-lib)
 
-;; Package setup
+;;; Package.el setup
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
@@ -24,91 +73,80 @@ where the first element is a string, KEY, and the second object is
 either a string or a list containing the query to be made for
 that text object minus the .inner and .outer qualifiers.")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; BASE EMACS CONFIG ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; A few more useful configurations... 
+;;; Configuration and activation of basic Emacs settings
 (use-package emacs
     :init
-    ;; Enable indentation+completion using the TAB key.
-    ;; `completion-at-point' is often bound to M-TAB.
-    (setq tab-always-indent 'complete)
+    ;;;; Setting up Emacs to behave in a more familiar and pleasing way
 
-    ;; Less annoying emacs
-    (setq inhibit-startup-message t
-          visible-bell t
-          make-backup-files nil
-          lisp-body-indent 4
-          vc-follow-symlinks t
-          warning-minimum-level :emergency
-          display-line-numbers 'relative
-          custom-file "~/.emacs.d/custom.el"
-          fill-column 65)
-    (global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+    (setq inhibit-startup-message t        ; we're going to have our own dashboard
+	  visible-bell t                   ; nobody likes being beeped at
+	  make-backup-files nil            ; don't litter all over the place
+	  lisp-body-indent 4               ; four space tabs
+	  vc-follow-symlinks t             ; we'll always want to follow symlinks
+	  warning-minimum-level :emergency ; don't completely shit the bed on errors
+	  display-line-numbers 'relative   ; whether you use evil or not, these are useful
+	  custom-file "~/.emacs.d/custom.el" ; dump all the shit from custom somewhere else
+	  fill-column 65)                  ; this will be used in reading modes, so set it to something nice
+    (setq tab-always-indent 'complete)     ; more modern completion behavior
+    (setq read-file-name-completion-ignore-case t ; ignore case when completing file names
+          read-buffer-completion-ignore-case t    ; ignore case when completing buffer names
+          completion-ignore-case t)               ; fucking ignore case in general!
+    (setopt use-short-answers t)                  ; so you don't have to type out "yes" or "no" and hit enter
+    (global-set-key (kbd "<escape>") 'keyboard-escape-quit) ; people are used to ESC quitting things
 
-    ;; Possibly cargo-cult optimization settings
-    (setq jit-lock-stealth-time 0.2
-          jit-lock-defer-time 0.0
-          jit-lock-context-time 0.2
-          jit-lock-stealth-load 200)
-    ;; Optimize for long lines. If you use a RtL language, just unset
-    ;; these
-    (setq-default bidi-paragraph-direction 'left-to-right
-                  bidi-inhibit-bpa t)
-    (setopt use-short-answers t)
-    (customize-set-variable 'treesit-font-lock-level 4)
-
-    ;; Fonts
-    (when (find-font (font-spec :name "JetBrains Mono"))
-        (set-face-attribute 'default nil :font "JetBrains Mono" :height 120))
-    (when (find-font (font-spec :name "Cantarell"))
-        (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 120))
-    (when (find-font (font-spec :name "iA Writer Quattro V"))
-        (setq buffer-face-mode-face '(:family "iA Writer Quattro V")))
-
-    ;; Nicer appearance
+    ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode -1)
     (tool-bar-mode -1)
     (scroll-bar-mode -1)
     (set-frame-parameter nil 'undecorated t)
-    
-    (column-number-mode)
 
-    ;; Basic programmming mode to build off of
-    (add-hook 'prog-mode-hook (lambda ()
-                                  (display-line-numbers-mode 1)
-                                  (setq display-line-numbers 'relative)
-                                  (hl-line-mode t)
-                                  (electric-pair-mode)))
-
-    ;; Nicer behavior [[denote:20240519T192644][this is a link to a Denote note!]] 
-    (cua-mode t)
-
-    (pixel-scroll-precision-mode 1)
-    (setq pixel-scroll-precision-use-momentum t
-          pixel-scroll-precision-large-scroll-height 40.0)
-
-    (winner-mode 1)
-
-    (recentf-mode 1)
-    (savehist-mode 1)
+    ;;;;; Enable some modes that give nicer, more modern behavior
+    (pixel-scroll-precision-mode 1) ; smooth scrolling
+    (cua-mode t)                    ; Ctrl-C, Ctrl-V, etc
+    (winner-mode 1)                 ; better window manipulation
+    (recentf-mode 1)                ; remember recent files
     (setq recentf-max-menu-items 25
           recentf-max-saved-items 25)
+    (savehist-mode 1)               ; remember commands
+    (column-number-mode)            ; keep track of column number for the useful modeline readout
 
-    ;; Ignore case!
-    (setq read-file-name-completion-ignore-case t
-          read-buffer-completion-ignore-case t
-          completion-ignore-case t)
+    ;;;;; A basic programmming mode to build off of that adds some expected things
+    (add-hook 'prog-mode-hook (lambda ()
+				  (display-line-numbers-mode 1)
+				  (setq display-line-numbers 'relative)
+				  (hl-line-mode t)
+				  (electric-pair-mode)))
 
+    ;;;;; Performance tuning
+
+    ;;;;;; Optimize font-locking for greater responsiveness
+    (setq jit-lock-stealth-time 0.2
+          jit-lock-defer-time 0.0
+          jit-lock-context-time 0.2
+          jit-lock-stealth-load 200)
+
+    ;;;;;; Optimize for long lines. 
+    (setq-default bidi-paragraph-direction 'left-to-right ; assume we're using LtR text unless explicitly told otherwise
+                  bidi-inhibit-bpa t)                     ; turn off bidirectional paren display algorithm, it is expensive
+
+    ;;;;;; Faster minibuffer
     (defun setup-fast-minibuffer ()
         (setq gc-cons-threshold most-positive-fixnum))
     (defun close-fast-minibuffer ()
         (setq gc-cons-threshold 800000))
 
     (add-hook 'minibuffer-setup-hook #'setup-fast-minibuffer)
-    (add-hook 'minibuffer-exit-hook #'close-fast-minibuffer))
+    (add-hook 'minibuffer-exit-hook #'close-fast-minibuffer)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE USABILITY PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    ;;;; Fonts
+    (when (find-font (font-spec :name "JetBrains Mono"))
+        (set-face-attribute 'default nil :font "JetBrains Mono" :height 120))
+    (when (find-font (font-spec :name "Cantarell"))
+        (set-face-attribute 'variable-pitch nil :font "Cantarell" :height 120))
+    (when (find-font (font-spec :name "iA Writer Quattro V"))
+        (setq buffer-face-mode-face '(:family "iA Writer Quattro V"))))
 
+;;; Basic packages to make Emacs more usable by default
 (defun core/usability-layer ()
     "Loads the core packages needed to make Emacs more usable in the
   modern day.
@@ -124,22 +162,8 @@ that text object minus the .inner and .outer qualifiers.")
   minibuffers (useful for xref)
   - `elisp-def', `elisp-demos', and `highlight-defined' to make
   the experience of configuring your editor much nicer. "
-    (use-package which-key
-        :init (which-key-mode)
-        :diminish which-key-mode
-        :custom
-        (which-key-idle-delay 0.1)
-        (which-key-idle-secondary-delay nil)
-        (which-key-sort-order #'which-key-key-order-alpha))
 
-    ;; Better docs are always good
-    (use-package helpful
-        :commands (helpful-key helpful-callable helpful-command helpful-variable))
-
-    ;; Now that icomplete has a vertical interface, with a little
-    ;; customization, Emacs's built-in completion capabilities can
-    ;; feel just as modern and fast as Vertico! No need for external
-    ;; dependencies for this!
+    ;;;; Minibuffer completion and searching improvement packages
     (use-package icomplete
         :hook (pre-command . fido-mode)
         :bind (:map icomplete-minibuffer-map
@@ -162,9 +186,6 @@ that text object minus the .inner and .outer qualifiers.")
 
     (use-package marginalia
         :after icomplete
-        ;; Bind `marginalia-cycle' locally in the minibuffer.  To make the binding
-        ;; available in the *Completions* buffer, add it to the
-        ;; `completion-list-mode-map'.
         :bind (:map minibuffer-local-map
                     ("M-A" . marginalia-cycle))
 
@@ -178,11 +199,10 @@ that text object minus the .inner and .outer qualifiers.")
               completion-category-defaults nil
               completion-category-overrides '((file (styles partial-completion)))))
 
-    ;; Vertical completion UI superpowers like grep!
     (use-package consult
         :commands (consult-grep consult-ripgrep consult-man)
         :config
-        ;; We also want to use this for in-buffer completion, which vertico can't do alone
+        ;; We also want to use this for in-buffer completion, which icomplete can't do alone
         (setq xref-show-xrefs-function #'consult-xref
               xref-show-definitions-function #'consult-xref)
         (setq completion-in-region-function
@@ -192,7 +212,19 @@ that text object minus the .inner and .outer qualifiers.")
                              #'completion--in-region)
                          args))))
 
-    ;; Emacs Lisp
+    ;;;; Better help messages and popups
+    (use-package helpful
+        :commands (helpful-key helpful-callable helpful-command helpful-variable))
+
+    (use-package which-key
+	:init (which-key-mode)
+	:diminish which-key-mode
+	:custom
+	(which-key-idle-delay 0.1)
+	(which-key-idle-secondary-delay nil)
+	(which-key-sort-order #'which-key-key-order-alpha))
+
+    ;;;; Better Emacs Lisp editing experience
     (use-package elisp-def
         :hook (emacs-lisp-mode . elisp-def-mode))
 
@@ -210,10 +242,9 @@ that text object minus the .inner and .outer qualifiers.")
 	:config
 	(add-hook 'outline-minor-mode-hook (lambda ()
 					       (outline-show-all)
-					       (outline-hide-body)))))
+					       (outline-hide-sublevels 1)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; CORE EDITING PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;; Evil Mode plugins and keybindings to give Emacs a superior text editor
 (defun core/editor-layer ()
     "'Emacs is a great OS, if only it had a good editor.' With
   the powerful text-object based command language of Vim, and the
@@ -227,7 +258,8 @@ that text object minus the .inner and .outer qualifiers.")
   keybinding system, and an extensive set of leader key
   keybindings, so you can control Emacs from the comfort of your
   leader key"
-    ;; Join the vim side :evil_grin:
+
+    ;;;; Evil mode itself (and associated integrations)
     (use-package evil
         :custom
         (evil-want-integration t)
@@ -257,8 +289,7 @@ that text object minus the .inner and .outer qualifiers.")
         :config
         (evil-collection-init))
 
-    ;; A basic keymap for managing emacs using an evil mode leader key instead of
-    ;; pure repetitive strain injury (copied from MinEmacs originally :))
+    ;;;; Custom evil mode key bindings
     (use-package general
         ;; PERF: Loading `general' early make Emacs very slow on startup.
         :after (evil evil-collection)
@@ -269,6 +300,7 @@ that text object minus the .inner and .outer qualifiers.")
         ;; aliases (like `nmap') for VIM mapping functions.
         (general-evil-setup t)
 
+	;;;;; CUA integration
         ;; We want to be able to use ctrl-v and ctrl-c just for
         ;; convenience/user-friendliness, especially since ctrl-shift-v
         ;; doesn't work in evil, unlike (terminal) vim
@@ -279,6 +311,7 @@ that text object minus the .inner and .outer qualifiers.")
             "C-z" #'undo
             "C-y" #'undo-redo)
 
+	;;;;; Miscillanious useful keybindings for emacs capabilities
         (general-nvmap
             ;; fill-region >> vim gqq
             "gq" #'fill-region-as-paragraph
@@ -295,15 +328,16 @@ that text object minus the .inner and .outer qualifiers.")
             "gc" #'comment-region
             "gC" #'uncomment-region
 	    ;; keybindings for outline mode
-	    "TAB" #'outline-show-entry
-	    "S-TAB" #'outline-hide-body)
+	    "TAB" #'evil-toggle-fold)
 
+	;;;;; Create the mode-specific leader key mapping function
         (general-create-definer +core--internal-local-map!
             :states '(insert emacs visual normal)
             :keymaps 'override              
             :prefix "SPC m"      
             :global-prefix "M-SPC m")
 
+	;;;;; Add mode-specific keybindings for elisp
         (add-hook 'emacs-lisp-mode-hook
                   (lambda ()
                       (+core--internal-local-map!
@@ -312,6 +346,8 @@ that text object minus the .inner and .outer qualifiers.")
                           "b" #'eval-buffer
                           "r" #'eval-region)))
 
+	;;;;; Spacemacs/Doom-like evil mode leader key keybindings
+
         ;; gobal keybindgs that are truly global
         (general-create-definer tyrant-def
             :states '(normal insert motion emacs)
@@ -319,7 +355,7 @@ that text object minus the .inner and .outer qualifiers.")
             :prefix "SPC"
             :non-normal-prefix "M-SPC")
 
-        ;; Define the built-in global keybindings
+        ;; Define the built-in global keybindings — this is the heart of this editor!
         (tyrant-def
             ;; ====== Top level functions ======
             "SPC"  '(execute-extended-command :wk "M-x")
@@ -350,6 +386,8 @@ that text object minus the .inner and .outer qualifiers.")
             "ft"   #'recover-this-file
             "fT"   #'recover-file
             "fr"   #'consult-recent-file
+	    "fa"   #'outline-show-all
+	    "fh"   #'outline-hide-sublevels
 
             ;; ====== Personal Profile ======
             "P"    '(nil :wk "profile")
@@ -517,6 +555,7 @@ that text object minus the .inner and .outer qualifiers.")
             "psr" #'project-query-replace-regexp
             "psf" #'project-find-regexp))
 
+    ;;;; Evil mode text object support
     (use-package evil-textobj-tree-sitter
         :after (evil evil-collection general)
         :config
@@ -585,8 +624,8 @@ macroexpansion."
                                    finally (return exprs)))))
         (define-textobjs)))
 
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; TASK-SPECIFIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;; Individual task specific layers: coding, writing, and note-taking
+;;;; Coding layer
 (defun task/coding-layer ()
     "All the basic components needed for a Visual Studio Code-style
   IDE-lite experience in Emacs... but better.
@@ -605,6 +644,7 @@ macroexpansion."
   formatting not matching a project's again.
   - `yasnippet' and `yasnippet-corfu', so you don't have to type all
   that rote boilerplate"
+
     ;; This wouldn't be Quake emacs without the preconfigured ability
     ;; to have a Quake style dropdown terminal!
     (add-to-list 'display-buffer-alist
@@ -612,6 +652,8 @@ macroexpansion."
                    (display-buffer-in-side-window)
                    (side . top)
                    (window-height . 10)))
+
+    ;;;;; Version-control
 
     ;; Emacs' entire selling point right here!
     (use-package magit
@@ -626,13 +668,29 @@ macroexpansion."
 
     (use-package diff-hl :hook (prog-mode . diff-hl-mode))
 
-    ;; We like syntax highlighting in this house
+    ;;;;; Treesit and Eglot configuration
+
+    (customize-set-variable 'treesit-font-lock-level 4)
+
     (use-package treesit-auto
         :custom
         (treesit-auto-install 'prompt)
         :config
         (treesit-auto-add-to-auto-mode-alist 'all)
         (global-treesit-auto-mode))
+
+    (with-eval-after-load 'eglot
+        (setq eglot-autoshutdown t
+              eglot-events-buffer-size 0
+              eglot-sync-connect nil)
+        (add-hook 'eglot-connect-hook (lambda (server)
+                                          (message "Server connected")))
+        (add-to-list 'eglot-server-programs
+                     '((typescript-ts-mode js-ts-mode) . ("typescript-language-server" "--stdio")))
+        (add-to-list 'eglot-server-programs
+                     '((rust-ts-mode) . ("rust-analyzer"))))
+
+    ;;;;; An actually good completion-at-point UI for completion inside buffers
 
     (defun corfu-enable-in-minibuffer ()
         "Enable Corfu in the minibuffer."
@@ -661,18 +719,9 @@ macroexpansion."
             (require 'corfu-popupinfo)
             (set-face-attribute 'corfu-popupinfo nil :inherit 'variable-pitch)
             (corfu-popupinfo-mode))
-        (add-hook 'corfu-mode-hook #'corfu-popupinfo-start))
+        (add-hook 'corfu-mode-hook #'corfu-popupinfo-start)) 
 
-    (with-eval-after-load 'eglot
-        (setq eglot-autoshutdown t
-              eglot-events-buffer-size 0
-              eglot-sync-connect nil)
-        (add-hook 'eglot-connect-hook (lambda (server)
-                                          (message "Server connected")))
-        (add-to-list 'eglot-server-programs
-                     '((typescript-ts-mode js-ts-mode) . ("typescript-language-server" "--stdio")))
-        (add-to-list 'eglot-server-programs
-                     '((rust-ts-mode) . ("rust-analyzer"))))
+    ;;;;; Project- and language-aware autoformatting
 
     ;; Global autoformatting
     (use-package apheleia
@@ -685,7 +734,7 @@ macroexpansion."
 
     (use-package editorconfig :hook (prog-mode . editorconfig-mode))
 
-    ;; Snippets are useful for an IDE-lite experience!
+    ;;;;; Snippets
     (use-package yasnippet
         :hook (prog-mode . yas-minor-mode)
         :config (yas-reload-all))
@@ -695,6 +744,7 @@ macroexpansion."
         :config
         (add-to-list 'completion-at-point-functions #'yasnippet-capf)))
 
+;;;; Writing layer
 (defun task/writing-layer ()
     "If you're like me and you use Emacs to write blog posts and/or
   fiction, a good focus mode is priceless.
@@ -741,6 +791,7 @@ macroexpansion."
     (use-package latex-preview-pane
         :commands (latex-preview-pane-mode latex-preview-pane-enable)))
 
+;;;; Zettelkasten note-taking layer
 (defun task/notes-layer ()
     "For those who take notes in Emacs without being tied down to any
   one markup language or program.
@@ -811,8 +862,8 @@ in `denote-link'."
         ;; search only for text files in denote dir
         (setq consult-notes-denote-files-function (function denote-directory-text-only-files))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; RECOMMENDED AESTHETIC PLUGINS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;; Aesthetic configuration and packages
+;;;; Layer for highly-recommended aesthetic packages that make Quake Emacs look like Quake Emacs
 (defun core/aesthetic-layer ()
     "If you're going to be staring at your editor all day, it might as well look nice.
 
@@ -909,8 +960,7 @@ in `denote-link'."
     (use-package breadcrumb
         :hook (eglot-managed-mode . breadcrumb-local-mode)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; OPTIONAL AESTHETIC BLING ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;;; Layer for supererogatory, fun, fancy bling some may dismiss as "hipster"
 (defun optional/bling-layer ()
     "If you want your editor to wow the hipsters, or you just like
   looking at the fancy pretty colors, you need some bling.
@@ -975,6 +1025,7 @@ in `denote-link'."
                                              "\\\\" "://"))
         :hook (prog-mode . ligature-mode)))
 
+;;;; A layer for IDE-lite-like GUI elements that might be familiar to users coming from e.g. VSC or ST
 (defun optional/ide-layer ()
     "If you want your editor to feel even more like a GUI-based IDE,
   but faster and more flexible, this layer is for you.
@@ -1008,7 +1059,6 @@ in `denote-link'."
         :after (treemacs evil)
         :ensure t)
 
-
     (use-package centaur-tabs
         :commands (centaur-tabs-mode)
         :custom
@@ -1021,8 +1071,7 @@ in `denote-link'."
         :config
         (centaur-tabs-change-fonts "Cantarell" 120)))
 
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; RUN LAYERS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;; Core code to load the enabled layers from user.el and run the layers
 (load "~/.quake.d/user.el")
 
 ;; no garbage collection during startup — we can amortize it later
@@ -1041,8 +1090,8 @@ in `denote-link'."
     (funcall (symbol-function layer)))
 
 
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;; CODE MOVED IN-TREE FOR PERFORMANCE ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+;;; Appendix: code moved in-tree for performance reasons
+;;;; Flymake-Proselint
 (defvar-local flymake-proselint-backend--proc nil)
 
 ;; See https://www.gnu.org/software/emacs//manual/html_node/flymake/An-annotated-example-backend.html
@@ -1118,6 +1167,7 @@ in `denote-link'."
             (process-send-region flymake-proselint-backend--proc (point-min) (point-max))
             (process-send-eof flymake-proselint-backend--proc))))
 
+;;;; Togglable-shell
 (defvar existing-shell nil)
 
 (defun shell-toggle ()
