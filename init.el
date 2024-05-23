@@ -79,16 +79,16 @@ that text object minus the .inner and .outer qualifiers.")
     :init
 ;;;; Setting up Emacs to behave in a more familiar and pleasing way
 
-    (setq inhibit-startup-message t        ; we're going to have our own dashboard
-	  visible-bell t                   ; nobody likes being beeped at
-	  make-backup-files nil            ; don't litter all over the place
-	  lisp-body-indent 4               ; four space tabs
-	  vc-follow-symlinks t             ; we'll always want to follow symlinks
-	  warning-minimum-level :emergency ; don't completely shit the bed on errors
-	  display-line-numbers 'relative   ; whether you use evil or not, these are useful
-	  custom-file "~/.emacs.d/custom.el" ; dump all the shit from custom somewhere else
-	  fill-column 65)                  ; this will be used in reading modes, so set it to something nice
-    (setq tab-always-indent 'complete)     ; more modern completion behavior
+    (setq inhibit-startup-message t          ; we're going to have our own dashboard
+	  visible-bell t                     ; nobody likes being beeped at
+	  make-backup-files nil              ; don't litter all over the place
+	  lisp-body-indent 4                 ; four space tabs
+	  vc-follow-symlinks t               ; we'll always want to follow symlinks
+	  warning-minimum-level :emergency   ; don't completely shit the bed on errors
+	  display-line-numbers 'relative     ; whether you use evil or not, these are useful
+	  custom-file "~/.emacs.d/custom.el") ; dump all the shit from custom somewhere else
+    (setq-default fill-column 65)             ; this will be used in reading modes, so set it to something nice
+    (setq tab-always-indent 'complete)        ; more modern completion behavior
     (setq read-file-name-completion-ignore-case t ; ignore case when completing file names
           read-buffer-completion-ignore-case t    ; ignore case when completing buffer names
           completion-ignore-case t)               ; fucking ignore case in general!
@@ -102,6 +102,8 @@ that text object minus the .inner and .outer qualifiers.")
     (set-frame-parameter nil 'undecorated t)
 
 ;;;;; Enable some modes that give nicer, more modern behavior
+    (setq pixel-scroll-precision-interpolate-mice t
+	  pixel-scroll-precision-interpolate-page t)
     (pixel-scroll-precision-mode 1) ; smooth scrolling
     (cua-mode t)                    ; Ctrl-C, Ctrl-V, etc
     (winner-mode 1)                 ; better window manipulation
@@ -110,6 +112,7 @@ that text object minus the .inner and .outer qualifiers.")
           recentf-max-saved-items 25)
     (savehist-mode 1)               ; remember commands
     (column-number-mode)            ; keep track of column number for the useful modeline readout
+    (global-visual-line-mode)              ; wrap lines at end of window
 
 ;;;;; A basic programmming mode to build off of that adds some expected things
     (add-hook 'prog-mode-hook (lambda ()
@@ -145,8 +148,8 @@ that text object minus the .inner and .outer qualifiers.")
 	       (find-font (font-spec :name "iA Writer Quattro V")))
 	(custom-set-faces
 	 '(default ((t (:height 120 :font "JetBrains Mono"))))
-	 '(variable-pitch ((t (:height 120 :font "Cantarell"))))
-	 (setq-default buffer-face-mode-face '(:family "iA Writer Quattro V"))))
+	 '(variable-pitch ((t (:height 120 :font "Cantarell")))))
+	(setq buffer-face-mode-face '(:family "iA Writer Quattro V")))
 
     (custom-set-faces
      '(outline-1 ((t (:height 1.25 :weight bold))))
@@ -156,7 +159,7 @@ that text object minus the .inner and .outer qualifiers.")
      standard-display-table
      'selective-display
      (let ((face-offset (* (face-id 'shadow) (lsh 1 22))))
-	 (vconcat (mapcar (lambda (c) (+ face-offset c)) " +")))))
+	 (vconcat (mapcar (lambda (c) (+ face-offset c)) " ")))))
 
 ;;; Basic packages to make Emacs more usable by default
 (defun core/usability-layer ()
@@ -300,6 +303,10 @@ that text object minus the .inner and .outer qualifiers.")
         :config
         (evil-collection-init))
 
+    (use-package evil-org
+	:after org
+	:hook (org-mode . evil-org-mode))
+
 ;;;; Custom evil mode key bindings
     (use-package general
         ;; PERF: Loading `general' early make Emacs very slow on startup.
@@ -346,11 +353,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    "gc" #'comment-region
 	    "gC" #'uncomment-region
 	    ;; keybindings for outline mode
-	    "TAB" #'evil-toggle-fold
-	    "nj"  #'outline-move-subtree-down
-	    "nk"  #'outline-move-subtree-up
-	    "nh"  #'outline-promote
-	    "nl"  #'outline-demote)
+	    "TAB" #'evil-toggle-fold)
 
 ;;;;; Create the mode-specific leader key mapping function
         (general-create-definer +core--internal-local-map!
@@ -359,7 +362,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    :prefix "SPC m"      
 	    :global-prefix "M-SPC m")
 
-;;;;; Add mode-specific keybindings for elisp
+;;;;; Add mode-specific keybindings
         (add-hook 'emacs-lisp-mode-hook
                   (lambda ()
 		      (+core--internal-local-map!
@@ -367,6 +370,25 @@ that text object minus the .inner and .outer qualifiers.")
                           "d" #'eval-defun
                           "b" #'eval-buffer
                           "r" #'eval-region)))
+
+	(add-hook 'pandoc-mode-hook
+		  (lambda ()
+		      (+core--internal-local-map!
+			  "p" #'pandoc-main-hydra/body)))
+
+	(add-hook 'outline-minor-mode
+		  (lambda ()
+		      (+core--internal-local-map!
+			  "j"  #'outline-move-subtree-down
+			  "k"  #'outline-move-subtree-up
+			  "h"  #'outline-promote
+			  "l"  #'outline-demote)))
+
+	(add-hook 'org-mode-hook
+		  (lambda ()
+		      (general-nmap
+			  "g RET" #'org-open-at-point
+			  "L"   #'org-insert-link)))
 
 ;;;;; Spacemacs/Doom-like evil mode leader key keybindings
 
@@ -400,8 +422,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    "qr"   #'restart-emacs
 
 	    ;; ====== Files ======
-	    "f"    '(nil :wk "file")
-	    "fS"   '(write-file :wk "Save as ...")
+	    "f"    '(nil :wk "file") "fS"   '(write-file :wk "Save as ...")
 	    "fi"   #'auto-insert
 	    "ff"   #'find-file
 	    "fs"   #'save-buffer
@@ -409,7 +430,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    "fT"   #'recover-file
 	    "fr"   #'consult-recent-file
 	    "fa"   #'outline-show-all
-	    "fh"   (lambda () (outline-hide-sublevels 1))
+	    "fh"   (lambda () (interactive) (outline-hide-sublevels 1))
 
 	    ;; ====== Personal Profile ======
 	    "P"    '(nil :wk "profile")
@@ -476,6 +497,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    "ot"   #'treemacs
 	    "oT"   #'centaur-tabs-mode
 	    "od"   #'darkroom-mode
+	    "op"   #'pandoc-mode
 	    "o="   #'calc
 
 	    ;; ====== Search ======
@@ -772,15 +794,34 @@ macroexpansion."
   fiction, a good focus mode is priceless.
 
   Loads:
+  - `pandoc-mode' one mode to rule them all for managing
+    conversions and compilations of all your files!
   - `visual-fill-column' for dealing with those line-paragraphs
   - `darkroom', the focus mode of your dreams
   - `flymake-proselint', to help you improve your prose
   - `latex-preview-pane', so if you're writing LaTeX, you can see
   what it will produce"
-    ;; Ability to fill words into the width of the screen as proper
-    ;; WYSIWYG editors do
+    (use-package org
+	:config
+	(setq org-ellipsis "  " ;; folding symbol
+	      org-image-actual-width (list 550)      ; no one wants gigantic images inline
+	      org-hide-emphasis-markers t
+	      ;; show actually italicized text instead of /italicized text/
+	      org-agenda-block-separator ""
+	      org-fontify-whole-heading-line t
+	      org-fontify-done-headline t
+	      org-fontify-quote-and-verse-blocks t))
+
+    (use-package pandoc-mode
+	:hook ((markdown-mode . pandoc-mode)
+	       (org-mode . pandoc-mode)
+	       (latex-mode . pandoc-mode)
+	       (doc-view-mode . pandoc-mode)))
+
     (use-package visual-fill-column
-        :commands (visual-fill-column-mode))
+        :commands (visual-fill-column-mode)
+	:init
+	(setq-default visual-fill-column-center-text t))
 
     (defun flymake-proselint-setup ()
         "Enable flymake backend."
@@ -790,16 +831,16 @@ macroexpansion."
     (defun distraction-free-writing-mode ()
         "Enhance `darkroom-mode' with more things for writing."
         ;; Faster performance on long lines
+	(setq line-spacing 0.1)
         (column-number-mode -1)
         (ligature-mode -1)
         (prettify-symbols-mode -1)
         ;; Less distracting fringe
         (setq left-fringe-width 0)
         (setq right-fringe-width 0)
-        (visual-fill-column-mode)
         (if darkroom-mode
-                (buffer-face-mode 1) ; enable variable pitch in buffer if entering
-	    (buffer-face-mode -1)) ; disable it if exiting
+                (progn (buffer-face-mode 1)) ; enable variable pitch in buffer if entering
+	    (progn (buffer-face-mode -1))) ; disable it if exiting
         ;; Proselint
         (flymake-mode)
         (flymake-proselint-setup))
