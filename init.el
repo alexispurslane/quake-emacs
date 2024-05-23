@@ -60,6 +60,22 @@
       use-package-compute-statistics t)
 
 ;;; User-modifiable variables
+(defvar quake-enabled-layers
+    '(core/usability-layer
+      core/editor-layer
+      task/coding-layer
+      task/writing-layer
+      task/notes-layer
+      core/aesthetic-layer
+      optional/bling-layer
+      ;; optional/ide-layer
+      ;; optional/blog-layer
+      )
+    "The symbols of the function names for the layers that Quake Emacs
+should enable on startup. This has a default value so that
+`init.el' will function without `user.el' if the user just wants
+all-defaults. DO NOT CHANGE THIS YOURSELF, IT MAY BREAK UPDATES.")
+
 (defvar quake-color-theme
     'doom-gruvbox
     "The theme quake loads and uses at startup.")
@@ -78,8 +94,12 @@ that text object minus the .inner and .outer qualifiers.")
 
 ;;; Load the user script
 
-(load "~/.quake.d/user.el")
-(user/before-layer-load)
+(when (file-exists-p "~/.quake.d/user.el")
+    (load "~/.quake.d/user.el"))
+
+(when (fboundp 'user/before-layer-load)
+    (user/before-layer-load))
+
 ;; we load the user script at the beginning so that some of their
 ;; config can run *before* layer initialization happens, and
 ;; their custom layers can run during and after, thus producing a
@@ -1313,7 +1333,7 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
      (message "gc-cons-threshold and file-name-handler-alist restored")))
 
 ;; Enable layers
-(dolist (layer (user/enabled-layers))
+(dolist (layer quake-enabled-layers)
     (message (format "Enabling the %s layer" layer))
     (funcall (symbol-function layer)))
 

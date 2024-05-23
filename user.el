@@ -9,14 +9,14 @@ things like setting your `denote-directory' and your
 `org-static-blog' settings."
     )
 
-(defun user/enabled-layers ()
-    '(core/usability-layer
-      core/editor-layer
-      task/coding-layer
-      task/writing-layer
-      task/notes-layer
-      core/aesthetic-layer
-      optional/bling-layer
-      ;; optional/ide-layer
-      ;; optional/blog-layer
-      ))
+(setq quake-enabled-layers
+      '(core/usability-layer
+	core/editor-layer
+	task/coding-layer
+	task/writing-layer
+	task/notes-layer
+	core/aesthetic-layer
+	optional/bling-layer
+	;; optional/ide-layer
+	;; optional/blog-layer
+	))
