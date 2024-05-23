@@ -122,7 +122,7 @@ Writing mode also enables a flymake [[https://github.com/amperser/proselint][pro
 
 To enable all of that, just use =SPC o d=!
 
-Lusting after the capabilities of [GNU Hyperbole](https://www.gnu.org/software/hyperbole/) but not so sure about such a gigantic package? Quake Emacs also installs [Embark](https://github.com/oantolin/embark) by default, to imbue all your text buffers with meaning and actions without any need for explicit syntax or buttonization. Now every text buffer is an active hypertext experience!
+Lusting after the capabilities of [[https://www.gnu.org/software/hyperbole/][GNU Hyperbole]] but not so sure about such a gigantic package? Quake Emacs also installs [[https://github.com/oantolin/embark][Embark]] by default, to imbue all your text buffers with meaning and actions without any need for explicit syntax or buttonization. Now every text buffer is an active hypertext experience!
 
 [[./screenshots/embark-implicit-button.png]]
 
