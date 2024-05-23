@@ -286,6 +286,7 @@ that text object minus the .inner and .outer qualifiers.")
         (evil-want-C-u-scroll t)
         (evil-want-C-i-jump nil)
         (evil-undo-system 'undo-redo)
+	(evil-kill-on-visual-paste nil) ;; oh thank god
         :config
         (evil-mode 1)
         
@@ -816,13 +817,24 @@ macroexpansion."
 	(setq org-ellipsis "  " ;; folding symbol
 	      org-startup-indented t
 	      org-image-actual-width (list 300)      ; no one wants gigantic images inline
-	      org-hide-emphasis-markers t            ; show actually italicized text instead of /italicized text/
+	      org-hide-emphasis-markers t            ; show italicized text as italicized, etc
               org-pretty-entities t                  ; make things like superscripts and lists look nicer
               org-use-sub-superscripts "{}"          ; force super/subscripts to use curlies
 	      org-agenda-block-separator ""
 	      org-fontify-whole-heading-line nil     ; don't fontify the whole like, so tags don't look weird
 	      org-fontify-done-headline t
-	      org-fontify-quote-and-verse-blocks t))
+	      org-fontify-quote-and-verse-blocks t)
+
+	(defun org-toggle-link-display ()
+	    "Toggle the literal or descriptive display of links."
+	    (interactive)
+	    (if org-descriptive-links
+		    (progn (org-remove-from-invisibility-spec '(org-link))
+			   (org-restart-font-lock)
+			   (setq org-descriptive-links nil))
+		(progn (add-to-invisibility-spec '(org-link))
+		       (org-restart-font-lock)
+		       (setq org-descriptive-links t)))))
 
     (use-package evil-org
 	:after org
