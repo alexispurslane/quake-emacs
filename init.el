@@ -259,48 +259,66 @@ that text object minus the .inner and .outer qualifiers.")
 					       (outline-show-all))))
 
 ;;;; Embark
-
     (use-package embark
 	:commands (embark-act embark-dwim)
+	:bind (:map embark-general-map
+		    ("G" . embark-internet-search))
 	:config
-	(defun embark-which-key-indicator ()
-	    "An embark indicator that displays keymaps using which-key.
-The which-key help message will show the type and value of the
-current target followed by an ellipsis if there are further
-targets."
-	    (lambda (&optional keymap targets prefix)
-		(if (null keymap)
-			(which-key--hide-popup-ignore-command)
-		    (which-key--show-keymap
-		     (if (eq (plist-get (car targets) :type) 'embark-become)
-			     "Become"
-			 (format "Act on %s '%s'%s"
-				 (plist-get (car targets) :type)
-				 (embark--truncate-target (plist-get (car targets) :target))
-				 (if (cdr targets) "…" "")))
-		     (if prefix
-			     (pcase (lookup-key keymap prefix 'accept-default)
-				 ((and (pred keymapp) km) km)
-				 (_ (key-binding prefix 'accept-default)))
-			 keymap)
-		     nil nil t (lambda (binding)
-				   (not (string-suffix-p "-argument" (cdr binding))))))))
+;;;;; Add useful Hyperbole-style actions to Embark
+;;;;;; Search DuckDuckGo for the given term
+	(defun embark-internet-search (term)
+	    (interactive "sSearch Term: ")
+	    (browse-url
+	     (format "https://duckduckgo.com/search?q=%s" term)))
+;;;;;; Run default action in another Emacs window
+	(defun embark-default-action-in-other-window ()
+	    "Run the default embark action in another window."
+	    (interactive))
 
-	(setq embark-indicators
-	      '(embark-which-key-indicator
-		embark-highlight-indicator
-		embark-isearch-highlight-indicator))
+	(cl-defun run-default-action-in-other-window
+		(&rest rest &key run type &allow-other-keys)
+	    (let ((default-action (embark--default-action type)))
+		(split-window-below) ; or your preferred way to split
+		(funcall run :action default-action :type type rest)))
 
-	(defun embark-hide-which-key-indicator (fn &rest args)
-	    "Hide the which-key indicator immediately when using the completing-read prompter."
-	    (which-key--hide-popup-ignore-command)
-	    (let ((embark-indicators
-		   (remq #'embark-which-key-indicator embark-indicators)))
-		(apply fn args)))
+	(setf (alist-get 'embark-default-action-in-other-window
+			 embark-around-action-hooks)
+	      '(run-default-action-in-other-window))
 
-	(advice-add #'embark-completing-read-prompter
-		    :around #'embark-hide-which-key-indicator)))
+	(define-key embark-general-map "O" #'embark-default-action-in-other-window) ; or whatever key you prefer
+;;;;;; Magit status of repo containing a given file
+	(defun embark-magit-status (file)
+	    "Run `magit-status` on repo containing the embark target."
+	    (interactive "GFile: ")
+	    (magit-status (locate-dominating-file file ".git")))
+;;;;;; GNU Hyperbole-style execute textual representation of keyboard macro
+	(defun embark-kmacro-target ()
+	    "Target a textual kmacro in braces."
+	    (save-excursion
+		(let ((beg (progn (skip-chars-backward "^{}\n") (point)))
+		      (end (progn (skip-chars-forward "^{}\n") (point))))
+		    (when (and (eq (char-before beg) ?{) (eq (char-after end) ?}))
+			`(kmacro ,(buffer-substring-no-properties beg end)
+				 . (,(1- beg) . ,(1+ end)))))))
 
+	(add-to-list 'embark-target-finders 'embark-kmacro-target)
+
+	(defun embark-kmacro-run (arg kmacro)
+	    (interactive "p\nsKmacro: ")
+	    (kmacro-call-macro arg t nil (kbd kmacro)))
+
+	(defun embark-kmacro-name (kmacro name)
+	    (interactive "sKmacro: \nSName: ")
+	    (let ((last-kbd-macro (kbd kmacro)))
+		(kmacro-name-last-macro name)))
+
+	(defvar-keymap embark-kmacro-map
+	    :doc "Actions on kmacros."
+	    :parent embark-general-map
+	    "RET" #'embark-kmacro-run
+	    "n" #'embark-kmacro-name)
+
+	(add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map))))
 ;;; Evil Mode layer to give Emacs a superior text editor
 (defun core/editor-layer ()
     "'Emacs is a great OS, if only it had a good editor.' With
@@ -369,7 +387,6 @@ targets."
 	    "C-z" #'undo
 	    "C-y" #'undo-redo
 	    "M-RET"  #'outline-insert-heading)
-
 ;;;;; Miscillanious useful keybindings for emacs capabilities
         (general-nvmap
 	    "ga" #'embark-act
@@ -395,14 +412,12 @@ targets."
 	    "gC" #'uncomment-region
 	    ;; keybindings for outline mode
 	    "TAB" #'evil-toggle-fold)
-
 ;;;;; Create the mode-specific leader key mapping function
         (general-create-definer +core--internal-local-map!
 	    :states '(insert emacs visual normal)
 	    :keymaps 'override              
 	    :prefix "SPC m"      
 	    :global-prefix "M-SPC m")
-
 ;;;;; Add mode-specific keybindings
         (add-hook 'emacs-lisp-mode-hook
                   (lambda ()
@@ -430,9 +445,7 @@ targets."
 		      (general-nmap
 			  "g RET" #'org-open-at-point
 			  "L"   #'org-insert-link)))
-
 ;;;;; Spacemacs/Doom-like evil mode leader key keybindings
-
         ;; gobal keybindgs that are truly global
         (general-create-definer tyrant-def
 	    :states '(normal insert motion emacs)
