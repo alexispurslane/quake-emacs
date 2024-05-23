@@ -26,6 +26,7 @@ jobs:
       - name: Deploy to image-data branch
         uses: peaceiris/actions-gh-pages@v3
         with:
+          keep_files: true
           publish_dir: ./output
           publish_branch: image-data
           github_token: ${{ secrets.REPO_TOKEN }}
