@@ -14,7 +14,7 @@
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
+;; (at your option) any later version. [[denote:20240519T192644][foo]] 
 
 ;; This program is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -59,6 +59,7 @@
       package-enable-at-startup nil
       use-package-compute-statistics t)
 
+;;; User-modifiable variables
 (defvar quake-color-theme
     'doom-gruvbox
     "The theme quake loads and uses at startup.")
@@ -74,6 +75,15 @@
 where the first element is a string, KEY, and the second object is
 either a string or a list containing the query to be made for
 that text object minus the .inner and .outer qualifiers.")
+
+;;; Load the user script
+
+(load "~/.quake.d/user.el")
+(user/before-layer-load)
+;; we load the user script at the beginning so that some of their
+;; config can run *before* layer initialization happens, and
+;; their custom layers can run during and after, thus producing a
+;; nice clean
 
 ;;; Configuration and activation of basic Emacs settings
 (use-package emacs
@@ -258,6 +268,9 @@ that text object minus the .inner and .outer qualifiers.")
 	(add-hook 'outline-minor-mode-hook (lambda ()
 					       (outline-show-all))))
 
+;;;; Better peformance using asynchronous processing with subordinate Emacs processes 
+    (use-package async
+	:commands (async-start async-start-process))
 ;;;; Embark
     (use-package embark
 	:commands (embark-act embark-dwim)
@@ -381,27 +394,28 @@ that text object minus the .inner and .outer qualifiers.")
         ;; convenience/user-friendliness, especially since ctrl-shift-v
         ;; doesn't work in evil, unlike (terminal) vim
         (general-imap
-	    "C-c" #'cua-copy-region
-	    "C-v" #'cua-paste
-	    "C-x" #'cua-cut-region
-	    "C-z" #'undo
-	    "C-y" #'undo-redo
+	    "C-c"    #'cua-copy-region
+	    "C-v"    #'cua-paste
+	    "C-x"    #'cua-cut-region
+	    "C-z"    #'undo
+	    "C-y"    #'undo-redo
 	    "M-RET"  #'outline-insert-heading)
 ;;;;; Miscillanious useful keybindings for emacs capabilities
         (general-nvmap
-	    "ga" #'embark-act
+	    "ga"   #'embark-act
+	    "g RET" #'org-open-at-point-global
 	    ;; fill-region >> vim gqq
-	    "gq" #'fill-region-as-paragraph
+	    "gq"   #'fill-region-as-paragraph
 	    ;; Support for visual fill column mode and visual line mode
 	    ;; Make evil-mode up/down operate in screen lines instead of logical lines
-	    "j" #'evil-next-visual-line
-	    "k" #'evil-previous-visual-line
+	    "j"    #'evil-next-visual-line
+	    "k"    #'evil-previous-visual-line
 	    ;; outline keybindings
-	    "gh" #'outline-up-heading
-	    "gj" #'outline-forward-same-level
-	    "gk" #'outline-backward-same-level
-	    "gl" #'outline-next-visible-heading
-	    "gu" #'outline-previous-visible-heading)
+	    "gh"   #'outline-up-heading
+	    "gj"   #'outline-forward-same-level
+	    "gk"   #'outline-backward-same-level
+	    "gl"   #'outline-next-visible-heading
+	    "gu"   #'outline-previous-visible-heading)
 
         (general-nmap
 	    ;; Centaur tab (optional) supporj
@@ -442,9 +456,9 @@ that text object minus the .inner and .outer qualifiers.")
 
 	(add-hook 'org-mode-hook
 		  (lambda ()
-		      (general-nmap
-			  "g RET" #'org-open-at-point
-			  "L"   #'org-insert-link)))
+		      (+core--internal-local-map!
+			  "p"     #'org-static-blog-publish-async
+			  "L"     #'org-insert-link)))
 ;;;;; Spacemacs/Doom-like evil mode leader key keybindings
         ;; gobal keybindgs that are truly global
         (general-create-definer tyrant-def
@@ -868,24 +882,12 @@ macroexpansion."
 	(setq org-ellipsis "  " ;; folding symbol
 	      org-startup-indented t
 	      org-image-actual-width (list 300)      ; no one wants gigantic images inline
-	      org-hide-emphasis-markers t            ; show italicized text as italicized, etc
-              org-pretty-entities t                  ; make things like superscripts and lists look nicer
-              org-use-sub-superscripts "{}"          ; force super/subscripts to use curlies
+	      org-hide-emphasis-markers nil         
+              org-pretty-entities nil                  ; part of the benefit of lightweight markup is seeing these 
 	      org-agenda-block-separator ""
-	      org-fontify-whole-heading-line nil     ; don't fontify the whole like, so tags don't look weird
+	      org-fontify-whole-heading-line t     ; don't fontify the whole like, so tags don't look weird
 	      org-fontify-done-headline t
-	      org-fontify-quote-and-verse-blocks t)
-
-	(defun org-toggle-link-display ()
-	    "Toggle the literal or descriptive display of links."
-	    (interactive)
-	    (if org-descriptive-links
-		    (progn (org-remove-from-invisibility-spec '(org-link))
-			   (org-restart-font-lock)
-			   (setq org-descriptive-links nil))
-		(progn (add-to-invisibility-spec '(org-link))
-		       (org-restart-font-lock)
-		       (setq org-descriptive-links t)))))
+	      org-fontify-quote-and-verse-blocks t))
 
     (use-package evil-org
 	:after org
@@ -903,10 +905,7 @@ macroexpansion."
 
 ;;;;; Fully-fledged word processing minor mode
 
-    (defun flymake-proselint-setup ()
-	"Enable flymake backend."
-	(message "Initializing proselint flymake backend")
-	(add-hook 'flymake-diagnostic-functions #'flymake-proselint-backend nil t))
+    (use-package flymake-proselint)
 
     (use-package darkroom
         :commands (darkroom-mode darkroom-tentative-mode))
@@ -945,8 +944,10 @@ faces, and the flymake `proselint' backend is enabled."
 			  (darkroom-mode 1)
 			  (buffer-face-mode 1)))
 		  ;; Proselint
-		  (flymake-mode)
-		  (flymake-proselint-setup)
+		  (when (fboundp 'flymake-proselint-setup)
+		      (flymake-proselint-setup)
+		      (flymake-mode))
+		  
 		  ;; Spellcheck
 		  (flyspell-mode))))
 
@@ -976,6 +977,12 @@ faces, and the flymake `proselint' backend is enabled."
         ;; link function instead of just fucking with core denote
         ;; sanity-checking functions. See:
         ;; https://github.com/protesilaos/denote/issues/364
+	;; 
+	;; FIXME 2: this *does not* buttonize Denote links in
+	;; non-markup-language buffers automatically, except for
+	;; right after you insert that link. This is fine for now
+	;; though, because you can use `embark' on org-mode links
+	;; whether or not they are buttonized.
         (defun denote-link-global (file file-type description &optional id-only)
 	    "Like the `denote-link', but works in any buffer.
 The FILE, FILE-TYPE, DESCRIPTION, and ID-ONLY have the same meaning as
@@ -1227,8 +1234,73 @@ in `denote-link'."
         :config
         (centaur-tabs-change-fonts "Cantarell" 120)))
 
+;;;; A simple, lightweight static site generator layer, with added asynchronicity
+(defun optional/blog-layer ()
+    "Blog writing is one of the most common writing tasks there
+is. With the existing `task/writing-layer' you should have all
+you need to write blog entries, but in case you want to fully
+generate and manage your entire blog from inside Emacs, then this
+layer is for you.
+
+Loads:
+- `org-static-blog': A beautifully simple SSG for org. No
+external programs, no templating languages, nothing to fiddle
+with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
+    (use-package org-static-blog
+	:commands (org-static-blog-publish org-static-blog-publish-file org-static-blog-mode))
+    
+    (defun org-static-blog-publish-async ()
+	(interactive)
+	(async-start
+	 `(lambda ()
+	      (let ((start-time (current-time)))
+		  (setq load-path ',load-path)
+		  (require 'org-static-blog)
+		  ;; transfer variables without having to load this entire init.el file again
+		  ,@(cl-loop for org-static-blog-state-variable in '(org-static-blog-publish-url
+								     org-static-blog-publish-title
+								     org-static-blog-publish-directory
+								     org-static-blog-posts-directory
+								     org-static-blog-drafts-directory
+								     org-static-blog-index-file
+								     org-static-blog-index-length
+								     org-static-blog-archive-file
+								     org-static-blog-tags-file
+								     org-static-blog-enable-tags
+								     org-static-blog-enable-deprecation-warning
+								     org-static-blog-rss-file
+								     org-static-blog-rss-excluded-tag
+								     org-static-blog-no-comments-tag
+								     org-static-blog-rss-extra
+								     org-static-blog-rss-max-entries
+								     org-static-blog-enable-tag-rss
+								     org-static-blog-page-header
+								     org-static-blog-page-preamble
+								     org-static-blog-page-postamble
+								     org-static-blog-index-front-matter
+								     org-static-blog-post-preamble-text
+								     org-static-blog-post-postamble-text
+								     org-static-blog-post-comments
+								     org-static-blog-langcode
+								     org-static-blog-use-preview
+								     org-static-blog-preview-start
+								     org-static-blog-preview-end
+								     org-static-blog-preview-convert-titles
+								     org-static-blog-preview-ellipsis
+								     org-static-blog-no-post-tag
+								     org-static-blog-preview-link-p
+								     org-static-blog-preview-date-first-p
+								     org-static-blog-suggested-filename-cleaning-regexp
+								     org-static-blog-enable-og-tags
+								     org-static-blog-image)
+			     when (boundp org-static-blog-state-variable)
+			     collect `(setq ,org-static-blog-state-variable ,(symbol-value org-static-blog-state-variable)))
+		  (org-static-blog-publish)
+		  (format "%.2f" (float-time (time-since start-time)))))
+	 (lambda (publish-time)
+	     (message (format "Finished publishing blog after %s seconds" publish-time))))))
+
 ;;; Core code to load the enabled layers from user.el and run the layers
-(load "~/.quake.d/user.el")
 
 ;; no garbage collection during startup — we can amortize it later
 (setq gc-cons-threshold-original gc-cons-threshold)
@@ -1244,84 +1316,6 @@ in `denote-link'."
 (dolist (layer (user/enabled-layers))
     (message (format "Enabling the %s layer" layer))
     (funcall (symbol-function layer)))
-
-
-;;; Appendix: code moved in-tree for performance reasons
-;;;; Flymake-Proselint
-(defvar-local flymake-proselint-backend--proc nil)
-
-;; See https://www.gnu.org/software/emacs//manual/html_node/flymake/An-annotated-example-backend.html
-(defun flymake-proselint-backend (report-fn &rest _args)
-    ;; Not having a proselint interpreter is a serious problem which
-    ;; should cause the backend to disable itself, so an error is
-    ;; signaled.
-    (unless (executable-find "proselint") 
-        (error "Cannot find a suitable proselint executable. Try installing it with pip?"))
-
-    ;; If a live process launched in an earlier check was found, that
-    ;; process is killed.  When that process's sentinel eventually runs,
-    ;; it will notice its obsoletion, since it have since reset
-    ;; `flymake-proselint-backend-proc' to a different value
-    ;;
-    (when (process-live-p flymake-proselint-backend--proc)
-        (kill-process flymake-proselint-backend--proc))
-
-    ;; Save the current buffer, the narrowing restriction, remove any
-    ;; narrowing restriction.
-    (let ((source (current-buffer)))
-        (save-restriction
-	    (widen)
-	    ;; Reset the `flymake-proselint-backend--proc' process to a new process
-	    ;; calling the proselint tool.
-	    (setq
-	     flymake-proselint-backend--proc
-	     (make-process
-	      :name "proselint-flymake" :noquery t :connection-type 'pipe
-	      ;; Make output go to a temporary buffer.
-	      ;;
-	      :buffer (generate-new-buffer " *proselint-flymake*")
-	      :command '("proselint")
-	      :sentinel
-	      (lambda (proc _event)
-                  ;; Check that the process has indeed exited, as it might
-                  ;; be simply suspended.
-                  (when (memq (process-status proc) '(exit signal))
-		      (unwind-protect
-			      ;; Only proceed if `proc' is the same as
-			      ;; `flymake-proselint-backend--proc', which indicates that
-			      ;; `proc' is not an obsolete process.
-			      (if (with-current-buffer source (eq proc flymake-proselint-backend--proc))
-				      (with-current-buffer (process-buffer proc)
-                                          (goto-char (point-min))
-                                          ;; Parse the output buffer for diagnostic's
-                                          ;; messages and locations, collect them in a list
-                                          ;; of objects, and call `report-fn'.
-                                          ;;
-                                          (cl-loop
-                                           while (search-forward-regexp
-                                                  "^.+:\\([[:digit:]]+\\):\\([[:digit:]]+\\): \\(.+\\)$"
-                                                  nil t)
-                                           for lnum = (string-to-number (match-string 1))
-                                           for lcol = (string-to-number (match-string 2))
-                                           for msg = (match-string 3)
-                                           for (beg . end) = (flymake-diag-region source lnum lcol)
-                                           when (and beg end)
-                                           collect (flymake-make-diagnostic source
-									    beg
-									    end
-									    :warning
-									    msg)
-                                           into diags
-                                           finally (funcall report-fn diags)))
-                                  (flymake-log :warning "Canceling obsolete check %s"
-					       proc))
-                          ;; Cleanup the temporary buffer used to hold the
-                          ;; check's output.
-                          (kill-buffer (process-buffer proc)))))))
-	    ;; Send the buffer contents to the process's stdin, followed by
-	    ;; an EOF.
-	    (process-send-region flymake-proselint-backend--proc (point-min) (point-max))
-	    (process-send-eof flymake-proselint-backend--proc))))
 
 ;;;; Togglable-shell
 (defvar existing-shell nil)
