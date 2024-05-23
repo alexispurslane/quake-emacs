@@ -13,7 +13,7 @@
 
 #+begin_html
   <p align="center">
-  <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/dashboard.png" width="25%"/>
+  <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/dashboard.png" width="25%"/>
   </p>
 #+end_html
 
@@ -63,7 +63,7 @@ To update, just =git pull= to the latest tag. I recommend you check the release 
 *** Simple Config
 Before I get to showing you any of the fancy things Quake Emacs can do, the most important thing is proving that it will be manageable for you to understand and fork if necessary, and won't lead either you or me to Emacs bankruptcy. One of the key things I've done in this regard is optimizing the layout of =init.el= to work with Emacs's built-in =outline-minor-mode= to help you get an overview of it and jump to specific things in it without needing finnicky text search or getting overwhelmed:
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/outline-mode-compat.gif]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/outline-mode-compat.gif]]
 
 It's much more difficult to demonstrate code clarity and simplicity in a gif, though, so if you're still skeptical, I highly encourage you to skim the [[https://github.com/alexispurslane/quake-emacs/blob/develop/init.el][source code]] yourself.
 
@@ -85,23 +85,23 @@ Quake Emacs has fuzzy autocompletion with [[https://elpa.gnu.org/packages/doc/co
 
 Full autocompletion even works in the Lisp Eval line (=M-:=). It's a real repl, so why not have a real coding experience in it?
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/fast-autocompletion-everywhere2.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fast-autocompletion-everywhere2.png]]
 
 We also have vertical fuzzy searching with live narrowing, like you're used to in other modern editors, available *using Emacs's built-in completion UI*, [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Icomplete.html][Icomplete]]! No need for Vertico now that we have =icomplete-vertical-mode= and the ability to tweak icomplete's existing settings to remove all the limits and delays, and especially since [[https://github.com/oantolin/orderless][Orderless]], [[https://github.com/minad/marginalia][Marginalia]], and [[https://github.com/minad/consult][Consult]] integrate with vanilla Emacs's existing functions and capabilities, so anything tha makes use of them is automatically enhanced!
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/fuzzy-searching-everywhere.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fuzzy-searching-everywhere.png]]
 
 Quake Emacs has an optionally pretty rich GUI with inclusion of [[https://github.com/ema2159/centaur-tabs][Centaur Tabs]] and [[https://github.com/Alexander-Miller/treemacs][Treemacs]] (only loaded when requested, so if you don't use them, you don't pay for them), both configured to look their best. (Also notice [[https://github.com/abo-abo/hydra?tab=readme-ov-file][hydra]], [[https://github.com/abo-abo/hydra?tab=readme-ov-file][which-key]], and my meticulous [[https://github.com/emacs-evil/evil][evil-mode]] leader key keybindings, made with [[https://github.com/noctuid/general.el][general]]).
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/optionally-ui-rich.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/optionally-ui-rich.png]]
 
 But Quake Emacs is also minimal and focused by default, if you prefer.
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/optionally-minimal.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/optionally-minimal.png]]
 
 While also offering IDE-class features besides completion, via [[https://github.com/joaotavora/eglot][Eglot]], [[https://github.com/casouri/eldoc-box][eldoc-box]], [[https://www.emacswiki.org/emacs/Tree-sitter][tree-sitter]], and [[https://github.com/renzmann/treesit-auto][treesit-auto]].
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/ide-class-features1.png]] [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/ide-class-features2.png]] [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/pretty-doc-tooltips.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/ide-class-features1.png]] [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/ide-class-features2.png]] [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/pretty-doc-tooltips.png]]
 
 I've also spent a great deal of time setting up tree-sitter based structural text objects for selection, editing, and motion using [[file:%5Bhttps://github.com/meain/evil-textobj-tree-sitter%5D][evil-textobj-tree-sitter]], supporting all the text objects Helix or NeoVim does thanks to reading Helix's source code and NeoVim's documentation. Enjoy the text generation of advanced text editing!
 
@@ -109,35 +109,39 @@ I've also spent a great deal of time setting up tree-sitter based structural tex
 
 And, Quake Emacs wouldn't be able to live up to its name unless it had a classic Quake-style popup terminal! So here it is, implemented entirely without any external packages, and bound to =SPC ~=:
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/quake-term.gif]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/quake-term.gif]]
 
 *** Writing
 For those of you who prefer to write your prose in Emacs, I've also created an excellent writing mode, which switches to [[https://github.com/iaolo/iA-Fonts/tree/master][a variable pitch font]] of your choice, enables a [[https://github.com/joaotavora/darkroom][distraction-free writing mode]], and enables [[https://github.com/joostkremers/visual-fill-column][visual fill column mode]] wrapped at 65 characters so that lines behave pleasingly like in a WYSIWYG editor:
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/proselint-enabled-writing-mode.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/proselint-enabled-writing-mode.png]]
 
 Writing mode also enables a flymake [[https://github.com/amperser/proselint][proselint]] backend to help you improve your prose:
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/proselint-up-close.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/proselint-up-close.png]]
 
 To enable all of that, just use =SPC o d=!
 
-Lusting after the capabilities of [[https://www.gnu.org/software/hyperbole/][GNU Hyperbole]] but not so sure about such a gigantic package? Quake Emacs also installs [[https://github.com/oantolin/embark][Embark]] by default, to imbue all your text buffers with meaning and actions without any need for explicit syntax or buttonization. Now every text buffer is an active hypertext experience!
+Lusting after the capabilities of [[https://www.gnu.org/software/hyperbole/][GNU Hyperbole]] but not so sure about such a gigantic package, that doesn't integrate well with Emacs's standard UI? Quake Emacs has [[https://github.com/oantolin/embark][Embark]] by default, to imbue all your text buffers with meaning and actions without any need for explicit syntax or buttonization. Now every text buffer is an active hypertext experience! Embark is even integrated with =which-key= by default:
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/embark-implicit-button.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/embark-which-key.png]]
+
+But provides a fuzzy-searching minibuffer completion UI if you want help for any given action as well:
+
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/embark-help-minibuffer.png]]
 
 *** Note-taking
 For those that want Emacs to serve as their note-taking machine, Quake Emacs uses [[https://protesilaos.com/emacs/denote][Denote]], a lightweight personal hypertext information manager that offers all of the same basic features as =org-roam=, without locking you down to using only Org, or requiring you to use an SQLite database, while also offering optional excellent integration with org if you want it. It can incorporate an extensible list of markup languages instead of just org and markdown, or even non-text-markup files directly into its linking and searching system. Moreover, it also makes deep use of existing Emacs built-ins, as well as integrating explicitly with packages like marginalia, and consult (via [[https://github.com/mclear-tools/consult-notes][consult-notes]]). And of course I've created a set of convenient leader key keybinds for managing it.
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/denote.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/denote.png]]
 
 I've also unlocked the power of having your code editor, word processor, and note-taking application all be one and the same through enabling global [[https://github.com/protesilaos/denote/issues/364][buttonization and insertion of denote links]]. Now *you can link to your notes from any file you open, no matter where it is or what file type it is.* Want to keep a huge library of notes on your various projects and link to them in the comments of your code? Now you can.
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/denote-global-links.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/denote-global-links.png]]
 
 Want to have several separate Zettelkasten for different projects? I've created a [[https://github.com/protesilaos/denote/issues/367][custom command]] that allows you to automatically create a new denote silo and add it to =project.el=, so you can manage your silos just like any other project without having to put them in version control.
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/screenshots/denote-note-project.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/denote-note-project.png]]
 
 ** Justification
 With the introduction of various modern Emacs features in the last few years, and the emergence of a new generation of Emacs packages focused on integrating with vanilla Emacs, Emacs distributions as we have known them are less and less relevant.
