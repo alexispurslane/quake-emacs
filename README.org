@@ -1,4 +1,6 @@
-#+begin_html
+#+STARTUP: indent
+
+#+begin_HTML
 <div align="center">
   <img src="./banner-quake.png" height="128" style="display: block; margin: 0 auto"/>
   <h1>Quake Emacs</h1>
@@ -16,6 +18,7 @@
 #+end_html
 
 If you want to use Emacs, but you:
+
 1. just want to sit down and have your new text editor work well and look good /right away/, and
 2. don't want the complexity, abstraction, and lack of documentation of a larger Emacs distribution or configuration framework,
 
@@ -23,7 +26,7 @@ then Quake Emacs is for you.
 
 Text editors are most often used for three core tasks: *code editing*, *writing*, and *note-taking*. Quake Emacs is a single-file Emacs distribution architected around those three fundamental tasks, aiming to provide a lean, fast, focused, and complete experience for all three right out of the box, while remaining as simple and vanilla as possible, so you can use it as a great foundation for bare-metal Emacs configuration.
 
-** Table of Contents :TOC_2_gh:
+** Table of Contents                                               :TOC_2_gh:
   - [[#how-to-install][How To Install]]
   - [[#key-features][Key Features]]
   - [[#showcase][Showcase]]
@@ -32,7 +35,6 @@ Text editors are most often used for three core tasks: *code editing*, *writing*
 
 ** How To Install
 1. First, you install Quake Emacs like usual:
-
 
 #+begin_src sh
   git clone https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
@@ -119,6 +121,10 @@ Writing mode also enables a flymake [[https://github.com/amperser/proselint][pro
 [[./screenshots/proselint-up-close.png]]
 
 To enable all of that, just use =SPC o d=!
+
+Lusting after the capabilities of [GNU Hyperbole](https://www.gnu.org/software/hyperbole/) but not so sure about such a gigantic package? Quake Emacs also installs [Embark](https://github.com/oantolin/embark) by default, to imbue all your text buffers with meaning and actions without any need for explicit syntax or buttonization. Now every text buffer is an active hypertext experience!
+
+[[./screenshots/embark-implicit-button.png]]
 
 *** Note-taking
 For those that want Emacs to serve as their note-taking machine, Quake Emacs uses [[https://protesilaos.com/emacs/denote][Denote]], a lightweight personal hypertext information manager that offers all of the same basic features as =org-roam=, without locking you down to using only Org, or requiring you to use an SQLite database, while also offering optional excellent integration with org if you want it. It can incorporate an extensible list of markup languages instead of just org and markdown, or even non-text-markup files directly into its linking and searching system. Moreover, it also makes deep use of existing Emacs built-ins, as well as integrating explicitly with packages like marginalia, and consult (via [[https://github.com/mclear-tools/consult-notes][consult-notes]]). And of course I've created a set of convenient leader key keybinds for managing it.

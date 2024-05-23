@@ -56,7 +56,8 @@
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
 (setq use-package-always-ensure t
-      package-enable-at-startup nil)
+      package-enable-at-startup nil
+      use-package-compute-statistics t)
 
 (defvar quake-color-theme
     'doom-gruvbox
@@ -151,10 +152,6 @@ that text object minus the .inner and .outer qualifiers.")
 	 '(variable-pitch ((t (:height 120 :font "Cantarell")))))
 	(setq buffer-face-mode-face '(:family "iA Writer Quattro V")))
 
-    (custom-set-faces
-     '(outline-1 ((t (:height 1.25 :weight bold))))
-     '(outline-2 ((t (:height 1.15 :weight bold))))
-     '(outline-3 ((t (:height 1.05 :weight bold)))))
     (set-display-table-slot
      standard-display-table
      'selective-display
@@ -172,11 +169,14 @@ that text object minus the .inner and .outer qualifiers.")
   - `helpful' to give slower, but better, documentation for Emacs Lisp
   - `icomplete' with careful configuration (thanks to Prot!) to
     make it work just as nicely as Vertico
-  - `marginalia', to add crucial metadata to icomplete completion candidates
+  - `marginalia', to add crucial metadata to icomplete completion
+    candidates
   - `consult', for the ability to use icomplete to find things in
   minibuffers (useful for xref)
   - `elisp-def', `elisp-demos', and `highlight-defined' to make
-  the experience of configuring your editor much nicer. "
+  the experience of configuring your editor much nicer.
+  - `embark' to offer a powerful Hyperbole-like experience with
+    better integration."
 
 ;;;; Minibuffer completion and searching improvement packages
     (use-package icomplete
@@ -256,7 +256,12 @@ that text object minus the .inner and .outer qualifiers.")
 	       (text-mode . outline-minor-mode))
 	:config
 	(add-hook 'outline-minor-mode-hook (lambda ()
-					       (outline-show-all)))))
+					       (outline-show-all))))
+
+;;;; Embark
+
+    (use-package embark
+	:commands (embark-act embark-dwim)))
 
 ;;; Evil Mode plugins and keybindings to give Emacs a superior text editor
 (defun core/editor-layer ()
@@ -303,10 +308,6 @@ that text object minus the .inner and .outer qualifiers.")
         :config
         (evil-collection-init))
 
-    (use-package evil-org
-	:after org
-	:hook (org-mode . evil-org-mode))
-
 ;;;; Custom evil mode key bindings
     (use-package general
         ;; PERF: Loading `general' early make Emacs very slow on startup.
@@ -332,6 +333,7 @@ that text object minus the .inner and .outer qualifiers.")
 
 ;;;;; Miscillanious useful keybindings for emacs capabilities
         (general-nvmap
+	    "ga" #'embark-act
 	    ;; fill-region >> vim gqq
 	    "gq" #'fill-region-as-paragraph
 	    ;; Support for visual fill column mode and visual line mode
@@ -496,7 +498,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    "o-"   '(dired :wk "Dired") ;; Will be overwritten if dirvish is used
 	    "ot"   #'treemacs
 	    "oT"   #'centaur-tabs-mode
-	    "od"   #'darkroom-mode
+	    "od"   #'word-processing-mode
 	    "op"   #'pandoc-mode
 	    "o="   #'calc
 
@@ -801,58 +803,89 @@ macroexpansion."
   - `flymake-proselint', to help you improve your prose
   - `latex-preview-pane', so if you're writing LaTeX, you can see
   what it will produce"
+;;;;; Set up org mode and evil-org
     (use-package org
+	:commands (org-mode)
 	:config
+	(set-face-attribute 'org-level-1 nil :height 2.0)
+	(set-face-attribute 'org-level-2 nil :height 1.7)
+	(set-face-attribute 'org-level-3 nil :height 1.4)
+	(set-face-attribute 'org-level-4 nil :height 1.1)
+	(set-face-attribute 'org-level-5 nil :height 1.0)
+
 	(setq org-ellipsis "  " ;; folding symbol
-	      org-image-actual-width (list 550)      ; no one wants gigantic images inline
-	      org-hide-emphasis-markers t
-	      ;; show actually italicized text instead of /italicized text/
+	      org-startup-indented t
+	      org-image-actual-width (list 300)      ; no one wants gigantic images inline
+	      org-hide-emphasis-markers t            ; show actually italicized text instead of /italicized text/
+              org-pretty-entities t                  ; make things like superscripts and lists look nicer
+              org-use-sub-superscripts "{}"          ; force super/subscripts to use curlies
 	      org-agenda-block-separator ""
-	      org-fontify-whole-heading-line t
+	      org-fontify-whole-heading-line nil     ; don't fontify the whole like, so tags don't look weird
 	      org-fontify-done-headline t
 	      org-fontify-quote-and-verse-blocks t))
 
+    (use-package evil-org
+	:after org
+	:hook (org-mode . evil-org-mode))
+
+;;;;; Typesetting packages (Latex, pandoc)
     (use-package pandoc-mode
 	:hook ((markdown-mode . pandoc-mode)
 	       (org-mode . pandoc-mode)
 	       (latex-mode . pandoc-mode)
 	       (doc-view-mode . pandoc-mode)))
 
-    (use-package visual-fill-column
-        :commands (visual-fill-column-mode)
-	:init
-	(setq-default visual-fill-column-center-text t))
+    (use-package latex-preview-pane
+	:commands (latex-preview-pane-mode latex-preview-pane-enable))
+
+;;;;; Fully-fledged word processing minor mode
 
     (defun flymake-proselint-setup ()
-        "Enable flymake backend."
-        (message "Initializing proselint flymake backend")
-        (add-hook 'flymake-diagnostic-functions #'flymake-proselint-backend nil t))
+	"Enable flymake backend."
+	(message "Initializing proselint flymake backend")
+	(add-hook 'flymake-diagnostic-functions #'flymake-proselint-backend nil t))
 
-    (defun distraction-free-writing-mode ()
-        "Enhance `darkroom-mode' with more things for writing."
-        ;; Faster performance on long lines
-	(setq line-spacing 0.1)
-        (column-number-mode -1)
-        (ligature-mode -1)
-        (prettify-symbols-mode -1)
-        ;; Less distracting fringe
-        (setq left-fringe-width 0)
-        (setq right-fringe-width 0)
-        (if darkroom-mode
-                (progn (buffer-face-mode 1)) ; enable variable pitch in buffer if entering
-	    (progn (buffer-face-mode -1))) ; disable it if exiting
-        ;; Proselint
-        (flymake-mode)
-        (flymake-proselint-setup))
-    
-    ;; Distraction free writing mode
     (use-package darkroom
-        :commands (darkroom-mode darkroom-tentative-mode)
-        :config
-        (add-hook 'darkroom-mode-hook #'distraction-free-writing-mode))
+        :commands (darkroom-mode darkroom-tentative-mode))
 
-    (use-package latex-preview-pane
-        :commands (latex-preview-pane-mode latex-preview-pane-enable)))
+    (define-minor-mode word-processing-mode
+	"Toggle Word Processing mode.
+Interactively with no argument, this command toggles the mode. A
+positive prefix argument enables the mode, any other prefix
+disables it. From Lisp, argument omitted or nil enables the mode,
+`toggle' toggles the state.
+
+When Word Processing mode is enabled, `darkroom-mode' is
+triggered for a distraction-free writing experience. In addition,
+column numbers, ligatures, prettified symbols, and fringes are
+disabled, `buffer-face-mode' is enabled to set the current buffer
+face to iA Writer Quattro V or your choice of writing-specific
+faces, and the flymake `proselint' backend is enabled."
+	nil
+	" Word Processing")
+
+    (add-hook 'word-processing-mode-hook
+	      (lambda ()
+		  ;; Faster performance on long lines
+		  (setq line-spacing 0.1)
+		  (column-number-mode -1)
+		  (ligature-mode -1)
+		  (prettify-symbols-mode -1)
+		  ;; Less distracting UI
+		  (setq left-fringe-width 0)
+		  (setq right-fringe-width 0)
+		  (if (and (boundp 'darkroom-mode) darkroom-mode)
+			  (progn
+			      (darkroom-mode -1)
+			      (buffer-face-mode -1))
+		      (progn
+			  (darkroom-mode 1)
+			  (buffer-face-mode 1)))
+		  ;; Proselint
+		  (flymake-mode)
+		  (flymake-proselint-setup)
+		  ;; Spellcheck
+		  (flyspell-mode))))
 
 ;;;; Zettelkasten note-taking layer
 (defun task/notes-layer ()
@@ -872,7 +905,6 @@ macroexpansion."
         (denote-infer-keywords t)
         (denote-prompts-with-history-as-completion t)
         (denote-prompts '(title keywords))
-        (denote-file-type 'markdown-yaml)
         (denote-backlinks-show-context t)
         :config
         (add-hook 'find-file-hook #'denote-link-buttonize-buffer)
@@ -1014,9 +1046,7 @@ in `denote-link'."
         :after (eldoc-box)
         :commands (markdown-mode)
         :custom
-        (markdown-asymmetric-header nil)
         (markdown-header-scaling t)
-        (markdown-marginalize-headers t)
         (markdown-enable-math t)
         (markdown-fontify-code-blocks-natively t))
 
