@@ -210,7 +210,7 @@ that text object minus the .inner and .outer qualifiers.")
 
 ;;;; Minibuffer completion and searching improvement packages
     (use-package icomplete
-        :hook (pre-command . fido-mode)
+	:demand t
         :bind (:map icomplete-minibuffer-map
 		    ("RET" . icomplete-force-complete-and-exit)
 		    ("M-RET" . icomplete-fido-exit)

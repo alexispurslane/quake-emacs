@@ -82,7 +82,7 @@ Full autocompletion even works in the Lisp Eval line (=M-:=). It's a real repl, 
 
 [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fast-autocompletion-everywhere2.png]]
 
-We also have vertical fuzzy searching with live narrowing, like you're used to in other modern editors, available *using Emacs's built-in completion UI*, [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Icomplete.html][Icomplete]]! No need for Vertico now that we have =icomplete-vertical-mode= and the ability to tweak icomplete's existing settings to remove all the limits and delays, and especially since [[https://github.com/oantolin/orderless][Orderless]], [[https://github.com/minad/marginalia][Marginalia]], and [[https://github.com/minad/consult][Consult]] integrate with vanilla Emacs's existing functions and capabilities, so anything tha makes use of them is automatically enhanced!
+We also have a vertical fuzzy searching UI for popups, with live narrowing, like you're used to in other modern editors, available *using Emacs's built-in completion UI*, [[https://www.gnu.org/software/emacs/manual/html_node/emacs/Icomplete.html][Icomplete]]! No need for Vertico now that we have =icomplete-vertical-mode= and the ability to tweak icomplete's existing settings to remove all the limits and delays, and especially since [[https://github.com/oantolin/orderless][Orderless]], [[https://github.com/minad/marginalia][Marginalia]], and [[https://github.com/minad/consult][Consult]] integrate with vanilla Emacs's existing functions and capabilities, so anything tha makes use of them is automatically enhanced!
 
 [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fuzzy-searching-everywhere.png]]
 
