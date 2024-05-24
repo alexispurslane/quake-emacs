@@ -110,21 +110,22 @@ that text object minus the .inner and .outer qualifiers.")
     :init
 ;;;; Setting up Emacs to behave in a more familiar and pleasing way
 
-    (setq inhibit-startup-message t          ; we're going to have our own dashboard
-	  visible-bell t                     ; nobody likes being beeped at
-	  make-backup-files nil              ; don't litter all over the place
-	  lisp-body-indent 4                 ; four space tabs
-	  vc-follow-symlinks t               ; we'll always want to follow symlinks
-	  warning-minimum-level :emergency   ; don't completely shit the bed on errors
-	  display-line-numbers 'relative     ; whether you use evil or not, these are useful
-	  custom-file "~/.emacs.d/custom.el") ; dump all the shit from custom somewhere else
-    (setq-default fill-column 65)             ; this will be used in reading modes, so set it to something nice
-    (setq tab-always-indent 'complete)        ; more modern completion behavior
+    (setq inhibit-startup-message t               ; we're going to have our own dashboard
+	  visible-bell t                          ; nobody likes being beeped at
+	  make-backup-files nil                   ; don't litter all over the place
+	  lisp-body-indent 4                      ; four space tabs
+	  vc-follow-symlinks t                    ; we'll always want to follow symlinks
+	  warning-minimum-level :emergency        ; don't completely shit the bed on errors
+	  display-line-numbers 'relative          ; whether you use evil or not, these are useful
+	  custom-file "~/.emacs.d/custom.el")     ; dump all the shit from custom somewhere else
+    (setq-default fill-column 65)                 ; this will be used in reading modes, so set it to something nice
+    (setq tab-always-indent 'complete)            ; more modern completion behavior
     (setq read-file-name-completion-ignore-case t ; ignore case when completing file names
           read-buffer-completion-ignore-case t    ; ignore case when completing buffer names
           completion-ignore-case t)               ; fucking ignore case in general!
     (setopt use-short-answers t)                  ; so you don't have to type out "yes" or "no" and hit enter
     (global-set-key (kbd "<escape>") 'keyboard-escape-quit) ; people are used to ESC quitting things
+    (setq eldoc-idle-delay 0.8)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
 
 ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode -1)
@@ -147,6 +148,7 @@ that text object minus the .inner and .outer qualifiers.")
 
 ;;;;; A basic programmming mode to build off of that adds some expected things
     (add-hook 'prog-mode-hook (lambda ()
+				  (prettify-symbols-mode 1)
 				  (display-line-numbers-mode 1)
 				  (setq display-line-numbers 'relative)
 				  (hl-line-mode t)
@@ -239,8 +241,8 @@ that text object minus the .inner and .outer qualifiers.")
 
     (use-package orderless
         :after icomplete
-        :init
-        (setq completion-styles '(orderless basic)
+        :config
+	(setq completion-styles '(orderless basic)
 	      completion-category-defaults nil
 	      completion-category-overrides '((file (styles partial-completion)))))
 
@@ -702,7 +704,7 @@ that text object minus the .inner and .outer qualifiers.")
                    (node (treesit-node-at start))
                    (parent (treesit-parent-until node
                                                  (lambda (n) (and (> start (treesit-node-start  n))
-                                                                  (< end (treesit-node-end n))))
+								  (< end (treesit-node-end n))))
                                                  nil))
                    (pstart (if parent (treesit-node-start parent) nil))
                    (pend (if parent (treesit-node-end parent) nil)))
@@ -816,8 +818,7 @@ macroexpansion."
         (setq eglot-autoshutdown t
 	      eglot-events-buffer-size 0
 	      eglot-sync-connect nil)
-        (add-hook 'eglot-connect-hook (lambda (server)
-                                          (message "Server connected")))
+	(add-hook 'prog-mode-hook #'eglot-ensure)
         (add-to-list 'eglot-server-programs
 		     '((typescript-ts-mode js-ts-mode) . ("typescript-language-server" "--stdio")))
         (add-to-list 'eglot-server-programs
@@ -862,6 +863,7 @@ macroexpansion."
 	    (corfu-mode 1)))
 
     (use-package corfu
+	:after (orderless)
         :hook ((prog-mode . corfu-mode)
 	       (shell-mode . corfu-mode)
 	       (minibuffer-setup . corfu-enable-in-minibuffer))
@@ -871,9 +873,9 @@ macroexpansion."
         (corfu-auto t)                 ;; Enable auto completion
         (corfu-separator ?\s)          ;; Orderless field separator
         (corfu-quit-no-match 'separator)
-        (corfu-auto-delay 0.12)
-        (corfu-auto-prefix 3)
-        (corfu-popupinfo-delay 0.22)
+        (corfu-auto-delay 0.22)
+        (corfu-auto-prefix 2)
+        (corfu-popupinfo-delay 0.3)
         (corfu-popupinfo-direction 'right)
         :config
 
@@ -1218,8 +1220,6 @@ in `denote-link'."
     ;; This assumes you've installed the package via MELPA.
     (use-package ligature
         :config
-        ;; Enable the "www" ligature in every possible major mode
-        (ligature-set-ligatures 't '("www"))
         ;; Enable traditional ligature support in eww-mode, if the
         ;; `variable-pitch' face supports it
         (ligature-set-ligatures 'eww-mode '("ff" "fi" "ffi"))
