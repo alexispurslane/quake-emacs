@@ -587,6 +587,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    "od"   #'word-processing-mode
 	    "op"   #'pandoc-mode
 	    "o="   #'calc
+	    "ow"   #'scratch-window-toggle
 
 	    ;; ====== Search ======
 	    "s"    '(nil :wk "search")
@@ -1354,3 +1355,13 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
          ((and existing-shell existing-window) (delete-window existing-window))
          ((and existing-shell (not existing-window)) (display-buffer existing-shell))
          (t (setq existing-shell (term (getenv "SHELL")))))))
+
+(defun scratch-window-toggle ()
+    (interactive)
+    (let* ((scratch (get-scratch-buffer-create))
+	   (existing-window (get-buffer-window scratch)))
+	(if existing-window
+		(delete-window existing-window)
+	    (progn
+		(display-buffer-at-bottom scratch '((window-height . 25)))
+		(other-window 1)))))
