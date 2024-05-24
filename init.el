@@ -925,7 +925,8 @@ macroexpansion."
 
 ;;;;; Fully-fledged word processing minor mode
 
-    (use-package flymake-proselint)
+    (use-package flymake-proselint
+	:hook (word-processing-mode . flymake-proselint-setup))
 
     (use-package darkroom
         :commands (darkroom-mode darkroom-tentative-mode))
@@ -963,9 +964,9 @@ faces, and the flymake `proselint' backend is enabled."
 		      (progn
 			  (darkroom-mode 1)
 			  (buffer-face-mode 1)))
+
 		  ;; Proselint
 		  (when (fboundp 'flymake-proselint-setup)
-		      (flymake-proselint-setup)
 		      (flymake-mode))
 		  
 		  ;; Spellcheck
@@ -1269,6 +1270,15 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
     (use-package org-static-blog
 	:commands (org-static-blog-publish org-static-blog-publish-file org-static-blog-mode))
     
+    (define-minor-mode org-static-blog-watch-mode
+	"Re-run `org-static-blog-publish-async' whenever the current file is saved."
+	nil
+	" Org-Static-Blog-Watch")
+
+    (add-hook 'org-static-blog-watch-mode-hook
+	      (lambda ()
+		  (add-hook 'after-save-hook #'org-static-blog-publish-async nil t)))
+
     (defun org-static-blog-publish-async ()
 	(interactive)
 	(async-start
