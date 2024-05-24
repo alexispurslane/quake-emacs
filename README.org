@@ -115,7 +115,7 @@ To enable all of that, just use =SPC o d=!
 
 Lusting after the capabilities of [[https://www.gnu.org/software/hyperbole/][GNU Hyperbole]] but not so sure about such a gigantic package, that doesn't integrate well with Emacs's standard UI? Quake Emacs has [[https://github.com/oantolin/embark][Embark]] by default, to imbue all your text buffers with meaning and actions without any need for explicit syntax or buttonization. Now every text buffer is an active hypertext experience!
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/embark.png]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/embark.gif]]
 
 *** Note-taking
 For those that want Emacs to serve as their note-taking machine, Quake Emacs uses [[https://protesilaos.com/emacs/denote][Denote]], a lightweight personal hypertext information manager that offers all of the same basic features as =org-roam=, without locking you down to using only Org, or requiring you to use an SQLite database, while also offering optional excellent integration with org if you want it. It can incorporate an extensible list of markup languages instead of just org and markdown, or even non-text-markup files directly into its linking and searching system. Moreover, it also makes deep use of existing Emacs built-ins, as well as integrating explicitly with packages like marginalia, and consult (via [[https://github.com/mclear-tools/consult-notes][consult-notes]]). And of course I've created a set of convenient leader key keybinds for managing it.
