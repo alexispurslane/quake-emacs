@@ -800,7 +800,7 @@ macroexpansion."
 
     (use-package diff-hl :hook (prog-mode . diff-hl-mode))
 
-;;;;; Treesit and Eglot configuration
+;;;;; Treesit and Eglot (LSP) configuration
 
     (customize-set-variable 'treesit-font-lock-level 4)
 
@@ -822,6 +822,35 @@ macroexpansion."
         (add-to-list 'eglot-server-programs
 		     '((rust-ts-mode) . ("rust-analyzer"))))
 
+;;;;; Eglot-compatible Debug Adapter Protocol client (for more IDE shit)
+    (use-package dape
+	:preface
+	(setq dape-key-prefix nil)
+	:hook
+	;; Save breakpoints on quit
+	((kill-emacs . dape-breakpoint-save)
+	 ;; Load breakpoints on startup
+	 (after-init . dape-breakpoint-load)
+	 ;; Local bindings for setting breakpoints with mouse
+	 (eglot-managed-mode  . dape-breakpoint-mode))
+	:init
+	;; To use window configuration like gud (gdb-mi)
+	(setq dape-buffer-window-arrangement 'right)
+	:config
+	;; To not display info and/or buffers on startup
+	(remove-hook 'dape-on-start-hooks 'dape-info)
+	(remove-hook 'dape-on-start-hooks 'dape-repl)
+
+	;; To display info and/or repl buffers on stopped
+	(add-hook 'dape-on-stopped-hooks 'dape-info)
+	(add-hook 'dape-on-stopped-hooks 'dape-repl)
+
+	;; Kill compile buffer on build success
+	(add-hook 'dape-compile-compile-hooks 'kill-buffer)
+
+	;; Save buffers on startup, useful for interpreted languages
+	(add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t)))
+	)
 ;;;;; An actually good completion-at-point UI for completion inside buffers
 
     (defun corfu-enable-in-minibuffer ()
@@ -1287,44 +1316,12 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
 		  (setq load-path ',load-path)
 		  (require 'org-static-blog)
 		  ;; transfer variables without having to load this entire init.el file again
-		  ,@(cl-loop for org-static-blog-state-variable in '(org-static-blog-publish-url
-								     org-static-blog-publish-title
-								     org-static-blog-publish-directory
-								     org-static-blog-posts-directory
-								     org-static-blog-drafts-directory
-								     org-static-blog-index-file
-								     org-static-blog-index-length
-								     org-static-blog-archive-file
-								     org-static-blog-tags-file
-								     org-static-blog-enable-tags
-								     org-static-blog-enable-deprecation-warning
-								     org-static-blog-rss-file
-								     org-static-blog-rss-excluded-tag
-								     org-static-blog-no-comments-tag
-								     org-static-blog-rss-extra
-								     org-static-blog-rss-max-entries
-								     org-static-blog-enable-tag-rss
-								     org-static-blog-page-header
-								     org-static-blog-page-preamble
-								     org-static-blog-page-postamble
-								     org-static-blog-index-front-matter
-								     org-static-blog-post-preamble-text
-								     org-static-blog-post-postamble-text
-								     org-static-blog-post-comments
-								     org-static-blog-langcode
-								     org-static-blog-use-preview
-								     org-static-blog-preview-start
-								     org-static-blog-preview-end
-								     org-static-blog-preview-convert-titles
-								     org-static-blog-preview-ellipsis
-								     org-static-blog-no-post-tag
-								     org-static-blog-preview-link-p
-								     org-static-blog-preview-date-first-p
-								     org-static-blog-suggested-filename-cleaning-regexp
-								     org-static-blog-enable-og-tags
-								     org-static-blog-image)
-			     when (boundp org-static-blog-state-variable)
-			     collect `(setq ,org-static-blog-state-variable ,(symbol-value org-static-blog-state-variable)))
+		  ,@(cl-loop for variable being the symbols
+			     when (boundp variable)
+			     for value = (symbol-value variable)
+			     when (and (or (stringp value) (numberp value) (eq t value) (eq nil value))
+				       (s-prefix? "org-static-blog" (symbol-name variable)))
+			     collect `(setq ,variable ,value))
 		  (org-static-blog-publish)
 		  (format "%.2f" (float-time (time-since start-time)))))
 	 (lambda (publish-time)
