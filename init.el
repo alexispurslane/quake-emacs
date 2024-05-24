@@ -214,11 +214,12 @@ that text object minus the .inner and .outer qualifiers.")
     (use-package icomplete
 	:demand t
         :bind (:map icomplete-minibuffer-map
-		    ("RET" . icomplete-force-complete-and-exit)
-		    ("M-RET" . icomplete-fido-exit)
-		    ("TAB" . icomplete-force-complete)
+		    ("RET"    . icomplete-force-complete-and-exit)
+		    ("M-RET"  . icomplete-fido-exit)
+		    ("TAB"    . icomplete-force-complete)
+		    ("DEL"    . icomplete-fido-backward-updir)
 		    ("<down>" . icomplete-forward-completions)
-		    ("<up>" . icomplete-backward-completions))
+		    ("<up>"   . icomplete-backward-completions))
         :config
         ;; remove arbitrary optimization limits that make icomplete
         ;; feel old-fashioned
@@ -241,8 +242,9 @@ that text object minus the .inner and .outer qualifiers.")
 
     (use-package orderless
         :after icomplete
-        :config
+        :init
 	(setq completion-styles '(orderless basic)
+	      orderless-component-separator "-"
 	      completion-category-defaults nil
 	      completion-category-overrides '((file (styles partial-completion)))))
 
