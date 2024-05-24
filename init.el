@@ -48,7 +48,7 @@
 
 ;; For more information, see the README in the online repository.
 
-;;; ====== Imported Packages======
+;;; ======Imported Packages======
 (require 'cl-lib)
 (require 'rx)
 
@@ -139,6 +139,8 @@ passed in as an argument."
     (global-set-key (kbd "<escape>") 'keyboard-escape-quit) ; people are used to ESC quitting things
     (setq eldoc-idle-delay 0.8)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
     (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
+    (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
+    (setq load-prefer-newer t)                    ; always prefer newer bytecode files
 ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode -1)
     (tool-bar-mode -1)
@@ -151,6 +153,7 @@ passed in as an argument."
     (cua-mode t)                           ; Ctrl-C, Ctrl-V, etc
     (winner-mode 1)                        ; better window manipulation
     (recentf-mode 1)                       ; remember recent files
+    (save-place-mode 1)                    ; save your place in files
     (setq recentf-max-menu-items 25
           recentf-max-saved-items 25)
     (savehist-mode 1)                      ; remember commands
