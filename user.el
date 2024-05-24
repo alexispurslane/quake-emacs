@@ -2,12 +2,9 @@
 ;; then manually modified by you to have all your customizations
 ;; in it.
 
-(defun user/before-layer-load ()
-    "Use this function for anything you want to run before Quake Emacs
-loads its layers and does its own configuration. Necessary for
-things like setting your `denote-directory' and your
-`org-static-blog' settings."
-    )
+;; Top level expressions are evaluated before the layers run, if
+;; you want to run something after the layers, create a layer and
+;; put it after in the layer order
 
 (setq quake-enabled-layers
       '(core/usability-layer
@@ -17,6 +14,5 @@ things like setting your `denote-directory' and your
 	task/notes-layer
 	core/aesthetic-layer
 	optional/bling-layer
-	;; optional/ide-layer
 	;; optional/blog-layer
 	))
