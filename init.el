@@ -194,13 +194,6 @@ passed in as an argument."
     (add-hook 'minibuffer-setup-hook #'setup-fast-minibuffer)
     (add-hook 'minibuffer-exit-hook #'close-fast-minibuffer)
 ;;;; Fonts
-    (when (and (find-font (font-spec :name "JetBrains Mono"))
-	       (find-font (font-spec :name "Cantarell"))
-	       (find-font (font-spec :name "iA Writer Quattro V")))
-        (set-face-attribute 'default nil :font "JetBrains Mono-12")
-        (set-face-attribute 'variable-pitch nil :font "Cantarell-12")
-	(setq buffer-face-mode-face '(:font "iA Writer Quattro V")))
-
     (set-display-table-slot
      standard-display-table
      'selective-display
@@ -609,6 +602,11 @@ passed in as an argument."
 	    "op"   #'pandoc-mode
 	    "o="   #'calc
 	    "ow"   #'scratch-window-toggle
+            "os" `(,(lambda () (interactive)
+                        (when current-prefix-arg 
+                            (select-frame (make-frame)))
+                        (funcall quake-term-preferred-command 'new))
+                   :wk "Open new shell")
 
 ;;;;;; Search
 	    "s"    '(nil :wk "search")
@@ -898,6 +896,7 @@ a flat list of the `define-key' expressions to set the text objects up."
 	:after (orderless)
         :hook ((prog-mode . corfu-mode)
 	       (shell-mode . corfu-mode)
+               (eshell-mode . corfu-mode)
 	       (minibuffer-setup . corfu-enable-in-minibuffer))
         ;; Optional customizations
         :custom
