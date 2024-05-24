@@ -1,9 +1,9 @@
 ;;; init.el --- implements the Quake Emacs distribution of Emacs -*- lexical-binding: t -*-
-;; eval: (outline-hide-sublevels 3)
+;; eval: (outline-hide-sublevels 4)
 
 ;; Author: Alexis Purslane <alexispurlsane@pm.me>
 ;; URL: https://github.com/alexispurslane/quake-emacs
-;; Package-Requires: ((emacs "29.1") (cl-lib "1.0"))
+;; Package-Requires: ((emacs "29.1") (cl-lib "1.0")) 
 ;; Version: 1.0.0-alpha
 ;; Keywords: emacs-configuration, emacs-distribution, doom-emacs, note-taking, writing, code
 
@@ -14,7 +14,7 @@
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version. [[denote:20240519T192644][foo]] 
+;; (at your option) any later version.
 
 ;; This program is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -25,6 +25,7 @@
 ;; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
+
 ;; This is the initialization file for Quake Emacs, a self-contained
 ;; one-file Emacs distribution focused on leveraging modern vanilla
 ;; Emacs' built in capabities as much as possible and providing a
@@ -47,11 +48,11 @@
 
 ;; For more information, see the README in the online repository.
 
-;;; Code:
-
+;;; ---Imported Packages---
 (require 'cl-lib)
+(require 'rx)
 
-;;; Package.el setup
+;;; ---Package Setup---
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
@@ -59,8 +60,12 @@
       package-enable-at-startup nil
       use-package-compute-statistics t)
 
-;;; User-modifiable variables
-(defvar quake-enabled-layers
+(defgroup quake nil
+    "A customization group for the Quake Emacs distribution."
+    :prefix "quake")
+
+;;; ---User-Modifiable Variables---
+(defcustom quake-enabled-layers
     '(core/usability-layer
       core/editor-layer
       task/coding-layer
@@ -68,32 +73,44 @@
       task/notes-layer
       core/aesthetic-layer
       optional/bling-layer
-      ;; optional/ide-layer
       ;; optional/blog-layer
       )
-    "The symbols of the function names for the layers that Quake Emacs
-should enable on startup. This has a default value so that
-`init.el' will function without `user.el' if the user just wants
-all-defaults. DO NOT CHANGE THIS YOURSELF, IT MAY BREAK UPDATES.")
+    "The function symbols for the layers that Quake Emacs
+should enable on startup.
 
-(defvar quake-color-theme
-    'doom-gruvbox
-    "The theme quake loads and uses at startup.")
+This has a default value so that `init.el' will function without
+`user.el' if the user just wants all-defaults. DO NOT CHANGE THIS
+YOURSELF, IT MAY BREAK UPDATES."
+    :group 'quake)
 
-(defvar quake-evil-text-objects
+(defcustom quake-color-theme 'doom-gruvbox
+    "The theme quake loads and uses at startup."
+    :group 'quake
+    :type 'symbol)
+
+(defcustom quake-evil-text-objects
     '(("f" . "function")
       ("s" . ("conditional" "loop" "assignment" "call" "block" "statement"))
       ("t" . "class")
       ("c" . "comment")
       ("a" . "parameter")
       ("T" . "test"))
-    "The text objects added to evil mode at startup. A list of pairs,
-where the first element is a string, KEY, and the second object is
-either a string or a list containing the query to be made for
-that text object minus the .inner and .outer qualifiers.")
+    "The text objects added to evil mode at startup.
 
-;;; Load the user script
+A list of pairs, where the first element is a string, KEY, and
+the second object is either a string or a list containing the
+query to be made for that text object minus the .inner and .outer
+qualifiers."
+    :group 'quake)
 
+(defcustom quake-term-preferred-command 'eshell
+    "Which Emacs command Quake Emacs's popup terminal will trigger.
+
+If you pass in term, your environment shell will be
+passed in as an argument."
+    :group 'quake)
+
+;;; ---Load User Script---
 (when (file-exists-p "~/.quake.d/user.el")
     (load "~/.quake.d/user.el"))
 
@@ -105,11 +122,10 @@ that text object minus the .inner and .outer qualifiers.")
 ;; their custom layers can run during and after, thus producing a
 ;; nice clean
 
-;;; Configuration and activation of basic Emacs settings
+;;; ---Vanilla Emacs---
 (use-package emacs
     :init
 ;;;; Setting up Emacs to behave in a more familiar and pleasing way
-
     (setq inhibit-startup-message t               ; we're going to have our own dashboard
 	  visible-bell t                          ; nobody likes being beeped at
 	  make-backup-files nil                   ; don't litter all over the place
@@ -126,26 +142,24 @@ that text object minus the .inner and .outer qualifiers.")
     (setopt use-short-answers t)                  ; so you don't have to type out "yes" or "no" and hit enter
     (global-set-key (kbd "<escape>") 'keyboard-escape-quit) ; people are used to ESC quitting things
     (setq eldoc-idle-delay 0.8)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
-
+    (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
 ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode -1)
     (tool-bar-mode -1)
-    (scroll-bar-mode -1)
+    (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
     (set-frame-parameter nil 'undecorated t)
-
 ;;;;; Enable some modes that give nicer, more modern behavior
     (setq pixel-scroll-precision-interpolate-mice t
 	  pixel-scroll-precision-interpolate-page t)
-    (pixel-scroll-precision-mode 1) ; smooth scrolling
-    (cua-mode t)                    ; Ctrl-C, Ctrl-V, etc
-    (winner-mode 1)                 ; better window manipulation
-    (recentf-mode 1)                ; remember recent files
+    (pixel-scroll-precision-mode 1)        ; smooth scrolling
+    (cua-mode t)                           ; Ctrl-C, Ctrl-V, etc
+    (winner-mode 1)                        ; better window manipulation
+    (recentf-mode 1)                       ; remember recent files
     (setq recentf-max-menu-items 25
           recentf-max-saved-items 25)
-    (savehist-mode 1)               ; remember commands
-    (column-number-mode)            ; keep track of column number for the useful modeline readout
+    (savehist-mode 1)                      ; remember commands
+    (column-number-mode)                   ; keep track of column number for the useful modeline readout
     (global-visual-line-mode)              ; wrap lines at end of window
-
 ;;;;; A basic programmming mode to build off of that adds some expected things
     (add-hook 'prog-mode-hook (lambda ()
 				  (prettify-symbols-mode 1)
@@ -153,19 +167,23 @@ that text object minus the .inner and .outer qualifiers.")
 				  (setq display-line-numbers 'relative)
 				  (hl-line-mode t)
 				  (electric-pair-mode)))
-
+;;;;; Customizing the built-in tab-bar to look nice
+    (setq tab-bar-auto-width nil)
+    (setq tab-bar-new-tab-choice "*dashboard*")
+    (setq tab-bar-button-relief 0)
+    (setq tab-bar-show nil)
+    (tab-bar-mode 1)
+    (defun core/current-tab-name ()
+	(alist-get 'name (tab-bar--current-tab)))
 ;;;;; Performance tuning
-
 ;;;;;; Optimize font-locking for greater responsiveness
     (setq jit-lock-stealth-time 0.2
           jit-lock-defer-time 0.0
           jit-lock-context-time 0.2
           jit-lock-stealth-load 200)
-
 ;;;;;; Optimize for long lines. 
     (setq-default bidi-paragraph-direction 'left-to-right ; assume we're using LtR text unless explicitly told otherwise
                   bidi-inhibit-bpa t)                     ; turn off bidirectional paren display algorithm, it is expensive
-
 ;;;;;; Faster minibuffer
     (defun setup-fast-minibuffer ()
         (setq gc-cons-threshold most-positive-fixnum))
@@ -174,7 +192,6 @@ that text object minus the .inner and .outer qualifiers.")
 
     (add-hook 'minibuffer-setup-hook #'setup-fast-minibuffer)
     (add-hook 'minibuffer-exit-hook #'close-fast-minibuffer)
-
 ;;;; Fonts
     (when (and (find-font (font-spec :name "JetBrains Mono"))
 	       (find-font (font-spec :name "Cantarell"))
@@ -189,8 +206,30 @@ that text object minus the .inner and .outer qualifiers.")
      'selective-display
      (let ((face-offset (* (face-id 'shadow) (lsh 1 22))))
 	 (vconcat (mapcar (lambda (c) (+ face-offset c)) " ")))))
+;;;; Vertico-style IComplete
+(use-package icomplete
+    :demand t
+    :bind (:map icomplete-minibuffer-map
+		("RET"    . icomplete-force-complete-and-exit)
+		("M-RET"  . icomplete-fido-exit)
+		("TAB"    . icomplete-force-complete)
+		("DEL"    . icomplete-fido-backward-updir)
+		("C-RET"  . embark-act)
+		("<down>" . icomplete-forward-completions)
+		("<up>"   . icomplete-backward-completions))
+    :config
+    ;; remove arbitrary optimization limits that make icomplete
+    ;; feel old-fashioned
+    (setq icomplete-delay-completions-threshold 0)
+    (setq icomplete-max-delay-chars 0)
+    (setq icomplete-compute-delay 0)
+    (setq icomplete-show-matches-on-no-input t)
+    (setq icomplete-hide-common-prefix nil)
+    (setq icomplete-prospects-height 15)
+    (setq icomplete-with-completion-tables t)
+    (icomplete-vertical-mode 1))
 
-;;; Basic packages to make Emacs more usable by default
+;;; ---Basic Packages---
 (defun core/usability-layer ()
     "Loads the core packages needed to make Emacs more usable in the
   modern day.
@@ -211,27 +250,6 @@ that text object minus the .inner and .outer qualifiers.")
     better integration."
 
 ;;;; Minibuffer completion and searching improvement packages
-    (use-package icomplete
-	:demand t
-        :bind (:map icomplete-minibuffer-map
-		    ("RET"    . icomplete-force-complete-and-exit)
-		    ("M-RET"  . icomplete-fido-exit)
-		    ("TAB"    . icomplete-force-complete)
-		    ("DEL"    . icomplete-fido-backward-updir)
-		    ("<down>" . icomplete-forward-completions)
-		    ("<up>"   . icomplete-backward-completions))
-        :config
-        ;; remove arbitrary optimization limits that make icomplete
-        ;; feel old-fashioned
-        (setq icomplete-delay-completions-threshold 0)
-        (setq icomplete-max-delay-chars 0)
-        (setq icomplete-compute-delay 0)
-        (setq icomplete-show-matches-on-no-input t)
-        (setq icomplete-hide-common-prefix nil)
-        (setq icomplete-prospects-height 15)
-        (setq icomplete-with-completion-tables t)
-        (icomplete-vertical-mode 1))
-
     (use-package marginalia
         :after icomplete
         :bind (:map minibuffer-local-map
@@ -260,7 +278,6 @@ that text object minus the .inner and .outer qualifiers.")
                                  #'consult-completion-in-region
 			     #'completion--in-region)
                          args))))
-
 ;;;; Better help messages and popups
     (use-package helpful
         :commands (helpful-key helpful-callable helpful-command helpful-variable))
@@ -272,7 +289,6 @@ that text object minus the .inner and .outer qualifiers.")
 	(which-key-idle-delay 0.1)
 	(which-key-idle-secondary-delay nil)
 	(which-key-sort-order #'which-key-key-order-alpha))
-
 ;;;; Better Emacs Lisp editing experience
     (use-package elisp-def
         :hook (emacs-lisp-mode . elisp-def-mode))
@@ -291,7 +307,6 @@ that text object minus the .inner and .outer qualifiers.")
 	:config
 	(add-hook 'outline-minor-mode-hook (lambda ()
 					       (outline-show-all))))
-
 ;;;; Better peformance using asynchronous processing with subordinate Emacs processes 
     (use-package async
 	:commands (async-start async-start-process))
@@ -299,7 +314,8 @@ that text object minus the .inner and .outer qualifiers.")
     (use-package embark
 	:commands (embark-act embark-dwim)
 	:bind (:map embark-general-map
-		    ("G" . embark-internet-search))
+		    ("G" . embark-internet-search)
+		    ("O" . embark-default-action-in-other-window))
 	:config
 ;;;;; Add useful Hyperbole-style actions to Embark
 ;;;;;; Search DuckDuckGo for the given term
@@ -321,13 +337,6 @@ that text object minus the .inner and .outer qualifiers.")
 	(setf (alist-get 'embark-default-action-in-other-window
 			 embark-around-action-hooks)
 	      '(run-default-action-in-other-window))
-
-	(define-key embark-general-map "O" #'embark-default-action-in-other-window) ; or whatever key you prefer
-;;;;;; Magit status of repo containing a given file
-	(defun embark-magit-status (file)
-	    "Run `magit-status` on repo containing the embark target."
-	    (interactive "GFile: ")
-	    (magit-status (locate-dominating-file file ".git")))
 ;;;;;; GNU Hyperbole-style execute textual representation of keyboard macro
 	(defun embark-kmacro-target ()
 	    "Target a textual kmacro in braces."
@@ -356,7 +365,9 @@ that text object minus the .inner and .outer qualifiers.")
 	    "n" #'embark-kmacro-name)
 
 	(add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map))))
-;;; Evil Mode layer to give Emacs a superior text editor
+
+
+;;; ---Evil Mode Layer---
 (defun core/editor-layer ()
     "'Emacs is a great OS, if only it had a good editor.' With
   the powerful text-object based command language of Vim, and the
@@ -401,7 +412,6 @@ that text object minus the .inner and .outer qualifiers.")
         :after (evil)
         :config
         (evil-collection-init))
-
 ;;;; Custom evil mode key bindings
     (use-package general
         ;; PERF: Loading `general' early make Emacs very slow on startup.
@@ -427,7 +437,7 @@ that text object minus the .inner and .outer qualifiers.")
 ;;;;; Miscillanious useful keybindings for emacs capabilities
         (general-nvmap
 	    "ga"   #'embark-act
-	    "g RET" #'org-open-at-point-global
+	    "g RET" #'embark-dwim
 	    ;; fill-region >> vim gqq
 	    "gq"   #'fill-region-as-paragraph
 	    ;; Support for visual fill column mode and visual line mode
@@ -442,9 +452,11 @@ that text object minus the .inner and .outer qualifiers.")
 	    "gu"   #'outline-previous-visible-heading)
 
         (general-nmap
-	    ;; Centaur tab (optional) supporj
-	    "gt" #'centaur-tabs-forward
-	    "gT" #'centaur-tabs-backward
+	    ;; tab bar mode
+	    "gR" #'tab-rename
+	    "gn" #'tab-bar-new-tab
+	    "gx" #'tab-bar-close-tab
+	    "gX" #'tab-bar-close-other-tabs
 	    ;; Nice commenting
 	    "gc" #'comment-region
 	    "gC" #'uncomment-region
@@ -493,7 +505,7 @@ that text object minus the .inner and .outer qualifiers.")
 
         ;; Define the built-in global keybindings — this is the heart of this editor!
         (tyrant-def
-	    ;; ====== Top level functions ======
+;;;;;; Top level functions
 	    "SPC"  '(execute-extended-command :wk "M-x")
 	    ":"    '(pp-eval-expression :wk "Eval expression")
 	    ";"    #'project-find-file
@@ -503,7 +515,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    "r"    #'restart-emacs
 	    "~"    #'shell-toggle
 
-	    ;; ====== Quit/Session ======
+;;;;;; Quit/Session
 	    "q"    '(nil :wk "quit/session")
 	    "qq"   #'save-buffers-kill-terminal
 	    "qQ"   #'kill-emacs
@@ -513,7 +525,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    "qs"   #'desktop-save
 	    "qr"   #'restart-emacs
 
-	    ;; ====== Files ======
+;;;;;; Files 
 	    "f"    '(nil :wk "file") "fS"   '(write-file :wk "Save as ...")
 	    "fi"   #'auto-insert
 	    "ff"   #'find-file
@@ -523,16 +535,18 @@ that text object minus the .inner and .outer qualifiers.")
 	    "fr"   #'consult-recent-file
 	    "fa"   #'outline-show-all
 	    "fh"   (lambda () (interactive) (outline-hide-sublevels 1))
+	    "ft"   #'tab-switch
 
-	    ;; ====== Personal Profile ======
+;;;;;; Personal Profile 
 	    "P"    '(nil :wk "profile")
 	    "Pf"   `(,(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
 		     :wk "Open framework config")
 	    "Pu"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
 		     :wk "Open user config")
 
-	    ;; ====== Buffers ======
+;;;;;; Buffers 
 	    "b"    '(nil :wk "buffer")
+	    "bB"   #'switch-to-buffer-other-tab
 	    "bb"   #'consult-buffer
 	    "bI"   #'ibuffer
 	    "bx"   #'bury-buffer
@@ -544,15 +558,14 @@ that text object minus the .inner and .outer qualifiers.")
 	    "bR"   '(rename-buffer :wk "Rename")
 	    "bn"    '(switch-to-next-buffer :wk "Next buffer")
 	    "bp"    '(switch-to-prev-buffer :wk "Previous buffer")
-
-	    ;; Lines
+;;;;;;; Lines
 	    "bl"   '(nil :wk "line")
 	    "blk"  #'keep-lines ;; Will be overwritten with `consult-keep-lines'
-	    ;; Bookmarks
+;;;;;;; Bookmarks
 	    "bm"   '(nil :wk "bookmark")
 	    "bmm"  #'bookmark-set
 	    "bmd"  #'bookmark-delete
-	    ;; Files / Local variables
+;;;;;;; Files / Local variables
 	    "bv"   '(nil :wk "locals")
 	    "bvv"  '(add-file-local-variable :wk "Add")
 	    "bvV"  '(delete-file-local-variable :wk "Delete")
@@ -561,13 +574,20 @@ that text object minus the .inner and .outer qualifiers.")
 	    "bvd"  '(add-dir-local-variable :wk "Add to dir-locals")
 	    "bvD"  '(delete-dir-local-variable :wk "Delete from dir-locals")
 
-	    ;; ====== Insert ======
+;;;;;; Insert
 	    "i"    '(nil :wk "insert")
 	    "iu"   '(insert-char :wk "Unicode char")
 	    "ip"   #'yank-pop ;; Will be overwritten with `consult-yank-pop'
-	    "ie"   #'emojify-insert-emoji
+	    "iei"  #'emoji-insert
+	    "ie+"  #'emoji-zoom-increase
+	    "ie-"  #'emoji-zoom-decrease
+	    "ie0"  #'emoji-zoom-reset
+	    "ied"  #'emoji-describe
+	    "iel"  #'emoji-list
+	    "ier"  #'emoji-recent
+	    "iee"  #'emoji-search
 
-	    ;; ====== Window ======
+;;;;;; Window
 	    "w"    '(nil :wk "window")
 	    "wd"   #'delete-window
 	    "wD"   #'delete-windows-on
@@ -583,30 +603,30 @@ that text object minus the .inner and .outer qualifiers.")
 	    "wv"   #'split-window-horizontally
 	    "ww"   #'other-window
 
-	    ;; ====== Applications (Open) ======
+;;;;;; Applications (Open)
 	    "o"    '(nil :wk "open")
 	    "o-"   '(dired :wk "Dired") ;; Will be overwritten if dirvish is used
 	    "ot"   #'treemacs
-	    "oT"   #'centaur-tabs-mode
+	    "oT"   #'toggle-frame-tab-bar
 	    "od"   #'word-processing-mode
 	    "op"   #'pandoc-mode
 	    "o="   #'calc
 	    "ow"   #'scratch-window-toggle
 
-	    ;; ====== Search ======
+;;;;;; Search
 	    "s"    '(nil :wk "search")
 	    "si"    #'consult-imenu
 	    "sr"    #'consult-ripgrep
 	    "sf"    #'consult-find
 
-	    ;; ======  Mode specific a.k.a. "local leader" ======
+;;;;;; Mode specific a.k.a. "local leader" 
 	    "m"    '(nil :wk "mode-specific")
 
-	    ;; ====== VC ======
+;;;;; Version Control
 	    "g"    '(nil :wk "git/vc")
 	    "gg"   #'magit
 
-	    ;; ====== Toggle ======
+;;;;;; Toggle ======
 	    "t"    '(nil :wk "toggle")
 	    "td"   #'toggle-debug-on-error
 	    "tr"   #'read-only-mode
@@ -614,7 +634,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    "tv"   #'visible-mode
 	    "tf"   #'flymake-mode
 
-	    ;; ====== Code ======
+;;;;;; ====== Language Server ======
 	    "l"    '(nil :wk "lsp and flymake")
 	    "le"    #'eglot
 	    "lr"    #'eglot-rename
@@ -625,11 +645,12 @@ that text object minus the .inner and .outer qualifiers.")
 	    "ln"    #'flymake-goto-next-error
 	    "lp"    #'flymake-goto-prev-error
 
-	    ;; ====== Debug ======
+;;;;;; ====== Debug ======
 	    "d"    '(nil :wk "debug")
 	    "dG"   #'gdb
+	    "dd"   #'dape
 
-	    ;; ====== Notes ======
+;;;;;; ====== Notes ======
 	    "n"    '(nil :wk "notes")
 	    "ns"   #'denote-silo
 	    "nc"   #'denote
@@ -643,7 +664,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    "nB"   #'denote-find-backlink
 	    "nR"   #'denote-region
 
-	    ;; ====== Help ======
+;;;;;; ====== Help ======
 	    "h"    '(nil :wk "help")
 	    "hi"   #'info
 	    "hg"   #'general-describe-keybindings
@@ -662,10 +683,7 @@ that text object minus the .inner and .outer qualifiers.")
 	    "hs"  #'describe-symbol
 	    "hp"  #'describe-package
 
-	    ;; ====== Extras ======
-	    "e"    '(nil :wk "extras")
-
-	    ;; ====== Project ======
+;;;;;; ====== Project ======
 	    "p"    '(nil :wk "project")
 	    "pp"  #'project-switch-project
 	    "pc"  #'project-compile
@@ -675,17 +693,17 @@ that text object minus the .inner and .outer qualifiers.")
 	    "pb"  #'project-switch-to-buffer
 	    "p-"  #'project-dired
 	    "px"  #'project-execute-extended-command
-	    ;; compile/test
+;;;;;;; Compile / Test
 	    "pc" #'project-compile
-	    ;; run
+;;;;;;; Run
 	    "pr"  '(nil :wk "run")
 	    "prc" #'project-shell-command
 	    "prC" #'project-async-shell-command
-	    ;; forget
+;;;;;;; Forget
 	    "pF"  '(nil :wk "forget/cleanup")
 	    "pFp" #'project-forget-project
 	    "pFu" #'project-forget-projects-under
-	    ;; search/replace
+;;;;;;; Search / Replace
 	    "ps"  '(nil :wk "search/replace")
 	    "pss" #'project-search
 	    "psn" '(fileloop-continue :wk "Next match")
@@ -727,9 +745,7 @@ that text object minus the .inner and .outer qualifiers.")
         (eval-when-compile
 	    (defmacro define-textobjs ()
                 "Loop through `quake-evil-text-objects' and construct
-a flat list of the `define-key' expressions needed to set the text
-objects up with the correct values already substituted in for further
-macroexpansion."
+a flat list of the `define-key' expressions to set the text objects up."
                 `(progn ,@(cl-loop for thing in quake-evil-text-objects
                                    for key = (car thing)
                                    for query = (if (listp (cdr thing)) (cdr thing) (list (cdr thing)))
@@ -759,9 +775,9 @@ macroexpansion."
                                    into exprs
 
                                    finally (return exprs)))))
-        (define-textobjs)))
+	(define-textobjs)))
 
-;;; Individual task specific layers: coding, writing, and note-taking
+;;; ---Task Specific Layers---
 ;;;; Coding layer
 (defun task/coding-layer ()
     "All the basic components needed for a Visual Studio Code-style
@@ -772,6 +788,8 @@ macroexpansion."
   anything from trivial to complex git commands with just a few
   mnemonic keypresses, all with helpful command palettes to guide
   you on your way, and `diff-hl' so you can see what's changed in-editor
+  - `treemacs' to get a high-level overview of your project
+    without leaving whatever you're doing
   - `treesit-auto', to automatically install and use the tree-sitter mode
   for any recognized language, so you have IDE-class syntax
   highlighting for nearly anything, out of the box.
@@ -785,13 +803,12 @@ macroexpansion."
     ;; This wouldn't be Quake emacs without the preconfigured ability
     ;; to have a Quake style dropdown terminal!
     (add-to-list 'display-buffer-alist
-                 '("\\*terminal\\*"
+                 `(,(rx "*" (or "terminal" "shell" "eshell" "vterm") "*")
                    (display-buffer-in-side-window)
                    (side . top)
                    (window-height . 10)))
 
-;;;;; Version-control
-
+;;;;; Version-control and project management
     ;; Emacs' entire selling point right here!
     (use-package magit
         :commands (magit-status magit-get-current-branch)
@@ -804,7 +821,26 @@ macroexpansion."
          "<escape>" 'transient-quit-one))
 
     (use-package diff-hl :hook (prog-mode . diff-hl-mode))
+    (use-package treemacs
+        :commands (treemacs)
+        :config
+        (dolist (face '(treemacs-root-face
+                        treemacs-git-unmodified-face
+                        treemacs-git-modified-face
+                        treemacs-git-renamed-face
+                        treemacs-git-ignored-face
+                        treemacs-git-untracked-face
+                        treemacs-git-added-face
+                        treemacs-git-conflict-face
+                        treemacs-directory-face
+                        treemacs-directory-collapsed-face
+                        treemacs-file-face
+                        treemacs-tags-face))
+	    (set-face-attribute face nil :inherit 'variable-pitch :height 120)))
 
+    (use-package treemacs-evil
+        :after (treemacs evil)
+        :ensure t)
 ;;;;; Treesit and Eglot (LSP) configuration
 
     (customize-set-variable 'treesit-font-lock-level 4)
@@ -820,7 +856,8 @@ macroexpansion."
         (setq eglot-autoshutdown t
 	      eglot-events-buffer-size 0
 	      eglot-sync-connect nil)
-	(add-hook 'prog-mode-hook #'eglot-ensure)
+	(add-hook 'prog-mode-hook (lambda ()
+				      (message "Tip: Press `SPC l e' to activate your LSP if you have one!")))
         (add-to-list 'eglot-server-programs
 		     '((typescript-ts-mode js-ts-mode) . ("typescript-language-server" "--stdio")))
         (add-to-list 'eglot-server-programs
@@ -833,8 +870,6 @@ macroexpansion."
 	:hook
 	;; Save breakpoints on quit
 	((kill-emacs . dape-breakpoint-save)
-	 ;; Load breakpoints on startup
-	 (after-init . dape-breakpoint-load)
 	 ;; Local bindings for setting breakpoints with mouse
 	 (eglot-managed-mode  . dape-breakpoint-mode))
 	:init
@@ -888,7 +923,6 @@ macroexpansion."
         (add-hook 'corfu-mode-hook #'corfu-popupinfo-start)) 
 
 ;;;;; Project- and language-aware autoformatting
-
     ;; Global autoformatting
     (use-package apheleia
         :config
@@ -899,7 +933,6 @@ macroexpansion."
         :hook (prog-mode . apheleia-mode))
 
     (use-package editorconfig :hook (prog-mode . editorconfig-mode))
-
 ;;;;; Snippets
     (use-package yasnippet
         :hook (prog-mode . yas-minor-mode)
@@ -909,7 +942,6 @@ macroexpansion."
         :after (corfu yasnippet)
         :config
         (add-to-list 'completion-at-point-functions #'yasnippet-capf)))
-
 ;;;; Writing layer
 (defun task/writing-layer ()
     "If you're like me and you use Emacs to write blog posts and/or
@@ -946,7 +978,6 @@ macroexpansion."
     (use-package evil-org
 	:after org
 	:hook (org-mode . evil-org-mode))
-
 ;;;;; Typesetting packages (Latex, pandoc)
     (use-package pandoc-mode
 	:hook ((markdown-mode . pandoc-mode)
@@ -956,9 +987,7 @@ macroexpansion."
 
     (use-package latex-preview-pane
 	:commands (latex-preview-pane-mode latex-preview-pane-enable))
-
 ;;;;; Fully-fledged word processing minor mode
-
     (use-package flymake-proselint
 	:hook (word-processing-mode . flymake-proselint-setup))
 
@@ -1068,10 +1097,11 @@ in `denote-link'."
 	    (if (not (make-directory dir t))
 		    (progn
                         (with-temp-file (file-name-concat dir ".dir-locals.el")
-			    (insert (format "
-;;; Directory Local Variables            -*- no-byte-compile: t -*-
-;;; For more information see (info \"(emacs) Directory Variables\")
-((nil . ((denote-directory . \"%s\"))))" (expand-file-name dir))))
+			    (insert (format (concat 
+					     ";;; Directory Local Variables            -*- no-byte-compile: t -*-"
+					     ";;; For more information see (info \"(emacs) Directory Variables\")"
+					     "((nil . ((denote-directory . \"%s\"))))")
+					    (expand-file-name dir))))
                         (add-to-list 'project--list `(,(expand-file-name dir)))
                         (project--write-project-list)))))
 
@@ -1082,8 +1112,9 @@ in `denote-link'."
         ;; search only for text files in denote dir
         (setq consult-notes-denote-files-function (function denote-directory-text-only-files))))
 
-;;; Aesthetic configuration and packages
-;;;; Layer for highly-recommended aesthetic packages that make Quake Emacs look like Quake Emacs
+
+;;; ---Aesthetic Packages---
+;;;; Core Aesthetic Packages
 (defun core/aesthetic-layer ()
     "If you're going to be staring at your editor all day, it might as well look nice.
 
@@ -1132,16 +1163,16 @@ in `denote-link'."
         (mood-line-format
          (mood-line-defformat
           :left
-          (((mood-line-segment-modal) . " ")
+          (((mood-line-segment-modal) . "\t")
            ((or (mood-line-segment-buffer-status) " ") . " ")
-           ((mood-line-segment-buffer-name) . " ")
+           ((mood-line-segment-buffer-name) . "\t")
            ((mood-line-segment-cursor-position) . " ")
            (mood-line-segment-scroll))
           :right
-          (((mood-line-segment-vc) . " ")
-           ((mood-line-segment-major-mode) . " ")
-           ((mood-line-segment-checker) . " ")
-           ((mood-line-segment-process) . " "))))
+          (((mood-line-segment-vc) . "\t")
+           ((mood-line-segment-major-mode) . "\t")
+           ((mood-line-segment-checker) . "\t")
+	   (core/current-tab-name))))
         :config
         (mood-line-mode))
 
@@ -1178,7 +1209,7 @@ in `denote-link'."
     (use-package breadcrumb
         :hook (eglot-managed-mode . breadcrumb-local-mode)))
 
-;;;; Layer for supererogatory, fun, fancy bling some may dismiss as "hipster"
+;;;; Optional Aesthetic Packages
 (defun optional/bling-layer ()
     "If you want your editor to wow the hipsters, or you just like
   looking at the fancy pretty colors, you need some bling.
@@ -1188,7 +1219,6 @@ in `denote-link'."
   - `nerd-icons', `nerd-icons-completion', and `nerd-icons-corfu',
   because there's really nothing better than a nice set of icons to
   spice things up, and we want integration *everywhere*
-  - `emojify', because emojis are cool
   - `ligature', because ligatures are cool"
     (use-package hl-todo
         :commands (hl-todo-mode)
@@ -1213,12 +1243,6 @@ in `denote-link'."
         :after (corfu nerd-icons)
         :config (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
 
-    (use-package emojify
-        :config
-        (setq emojify-display-style 'unicode)
-        (setq emojify-emoji-styles '(unicode))
-        :hook (after-init-hook . global-emojify-mode))
-
     ;; This assumes you've installed the package via MELPA.
     (use-package ligature
         :config
@@ -1240,52 +1264,6 @@ in `denote-link'."
 					     "?=" "?." "??" ";;" "/*" "/=" "/>" "//" "__" "~~" "(*" "*)"
 					     "\\\\" "://"))
         :hook (prog-mode . ligature-mode)))
-
-;;;; A layer for IDE-lite-like GUI elements that might be familiar to users coming from e.g. VSC or ST
-(defun optional/ide-layer ()
-    "If you want your editor to feel even more like a GUI-based IDE,
-  but faster and more flexible, this layer is for you.
-
-  Loads:
-  - `treemacs' and `treemacs-evil', for a fully graphical project tree
-    explorer sidebar
-  - `centaur-tabs', because nothing screams 'this isn't a regular
-  text editor, this is an IDE' like fully-GUI tabs, curved in a
-  way text could never emulate"
-    ;; Integrate nerd icons with dired (I never use dired)
-
-    (use-package treemacs
-        :commands (treemacs)
-        :config
-        (dolist (face '(treemacs-root-face
-                        treemacs-git-unmodified-face
-                        treemacs-git-modified-face
-                        treemacs-git-renamed-face
-                        treemacs-git-ignored-face
-                        treemacs-git-untracked-face
-                        treemacs-git-added-face
-                        treemacs-git-conflict-face
-                        treemacs-directory-face
-                        treemacs-directory-collapsed-face
-                        treemacs-file-face
-                        treemacs-tags-face))
-	    (set-face-attribute face nil :inherit 'variable-pitch :height 120)))
-
-    (use-package treemacs-evil
-        :after (treemacs evil)
-        :ensure t)
-
-    (use-package centaur-tabs
-        :commands (centaur-tabs-mode)
-        :custom
-        (centaur-tabs-style "wave")
-        (centaur-tabs-height 32)
-        (centaur-tabs-set-icons t)
-        (centaur-tabs-gray-out-icons 'buffer)
-        (centaur-tabs-set-modified-marker t)
-        (centaur-tabs-label-fixed-length 15)
-        :config
-        (centaur-tabs-change-fonts "Cantarell" 120)))
 
 ;;;; A simple, lightweight static site generator layer, with added asynchronicity
 (defun optional/blog-layer ()
@@ -1318,20 +1296,18 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
 	      (let ((start-time (current-time)))
 		  (setq load-path ',load-path)
 		  (require 'org-static-blog)
-		  ;; transfer variables without having to load this entire init.el file again
-		  ,@(cl-loop for variable being the symbols
-			     when (boundp variable)
+		  transfer variables without having to load this entire init.el file again
+		  ,@(cl-loop for x in (cl-remove 'custom-group (custom-group-members group nil)
+						 :key #'cadr)
+			     for variable = (car x)
 			     for value = (symbol-value variable)
-			     when (and (or (stringp value) (numberp value) (eq t value) (eq nil value))
-				       (s-prefix? "org-static-blog" (symbol-name variable)))
 			     collect `(setq ,variable ,value))
 		  (org-static-blog-publish)
 		  (format "%.2f" (float-time (time-since start-time)))))
 	 (lambda (publish-time)
 	     (message (format "Finished publishing blog after %s seconds" publish-time))))))
 
-;;; Core code to load the enabled layers from user.el and run the layers
-
+;;; ---Load Layers---
 ;; no garbage collection during startup — we can amortize it later
 (setq gc-cons-threshold-original gc-cons-threshold)
 (setq gc-cons-threshold most-positive-fixnum)
@@ -1347,7 +1323,7 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
     (message (format "Enabling the %s layer" layer))
     (funcall (symbol-function layer)))
 
-;;;; Togglable-shell
+;;; ---Appendix: Togglable Shell---
 (defvar existing-shell nil)
 
 (defun shell-toggle ()
@@ -1356,7 +1332,9 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
         (cond
          ((and existing-shell existing-window) (delete-window existing-window))
          ((and existing-shell (not existing-window)) (display-buffer existing-shell))
-         (t (setq existing-shell (term (getenv "SHELL")))))))
+         (t (setq existing-shell (funcall quake-term-preferred-command
+					  (when (eq quake-term-preferred-command 'term)
+					      (getenv "SHELL"))))))))
 
 (defun scratch-window-toggle ()
     (interactive)

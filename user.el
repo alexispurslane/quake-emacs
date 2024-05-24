@@ -17,6 +17,5 @@ things like setting your `denote-directory' and your
 	task/notes-layer
 	core/aesthetic-layer
 	optional/bling-layer
-	;; optional/ide-layer
 	;; optional/blog-layer
 	))
