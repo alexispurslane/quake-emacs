@@ -48,11 +48,11 @@
 
 ;; For more information, see the README in the online repository.
 
-;;; ---Imported Packages---
+;;; ====== Imported Packages======
 (require 'cl-lib)
 (require 'rx)
 
-;;; ---Package Setup---
+;;; ======Package Setup======
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
@@ -64,7 +64,7 @@
     "A customization group for the Quake Emacs distribution."
     :prefix "quake")
 
-;;; ---User-Modifiable Variables---
+;;; ======User-Modifiable Variables======
 (defcustom quake-enabled-layers
     '(core/usability-layer
       core/editor-layer
@@ -110,19 +110,15 @@ If you pass in term, your environment shell will be
 passed in as an argument."
     :group 'quake)
 
-;;; ---Load User Script---
-(when (file-exists-p "~/.quake.d/user.el")
-    (load "~/.quake.d/user.el"))
-
-(when (fboundp 'user/before-layer-load)
-    (user/before-layer-load))
-
+;;; ======Load User Script======
 ;; we load the user script at the beginning so that some of their
 ;; config can run *before* layer initialization happens, and
 ;; their custom layers can run during and after, thus producing a
 ;; nice clean
+(when (file-exists-p "~/.quake.d/user.el")
+    (load "~/.quake.d/user.el"))
 
-;;; ---Vanilla Emacs---
+;;; ======Vanilla Emacs======
 (use-package emacs
     :init
 ;;;; Setting up Emacs to behave in a more familiar and pleasing way
@@ -229,7 +225,7 @@ passed in as an argument."
     (setq icomplete-with-completion-tables t)
     (icomplete-vertical-mode 1))
 
-;;; ---Basic Packages---
+;;; ======Basic Packages======
 (defun core/usability-layer ()
     "Loads the core packages needed to make Emacs more usable in the
   modern day.
@@ -367,7 +363,7 @@ passed in as an argument."
 	(add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map))))
 
 
-;;; ---Evil Mode Layer---
+;;; ======Evil Mode Layer======
 (defun core/editor-layer ()
     "'Emacs is a great OS, if only it had a good editor.' With
   the powerful text-object based command language of Vim, and the
@@ -626,7 +622,7 @@ passed in as an argument."
 	    "g"    '(nil :wk "git/vc")
 	    "gg"   #'magit
 
-;;;;;; Toggle ======
+;;;;;; Toggle
 	    "t"    '(nil :wk "toggle")
 	    "td"   #'toggle-debug-on-error
 	    "tr"   #'read-only-mode
@@ -634,7 +630,7 @@ passed in as an argument."
 	    "tv"   #'visible-mode
 	    "tf"   #'flymake-mode
 
-;;;;;; ====== Language Server ======
+;;;;;; Language Server
 	    "l"    '(nil :wk "lsp and flymake")
 	    "le"    #'eglot
 	    "lr"    #'eglot-rename
@@ -645,12 +641,12 @@ passed in as an argument."
 	    "ln"    #'flymake-goto-next-error
 	    "lp"    #'flymake-goto-prev-error
 
-;;;;;; ====== Debug ======
+;;;;;; Debug
 	    "d"    '(nil :wk "debug")
 	    "dG"   #'gdb
 	    "dd"   #'dape
 
-;;;;;; ====== Notes ======
+;;;;;; Notes
 	    "n"    '(nil :wk "notes")
 	    "ns"   #'denote-silo
 	    "nc"   #'denote
@@ -664,7 +660,7 @@ passed in as an argument."
 	    "nB"   #'denote-find-backlink
 	    "nR"   #'denote-region
 
-;;;;;; ====== Help ======
+;;;;;; Help
 	    "h"    '(nil :wk "help")
 	    "hi"   #'info
 	    "hg"   #'general-describe-keybindings
@@ -683,7 +679,7 @@ passed in as an argument."
 	    "hs"  #'describe-symbol
 	    "hp"  #'describe-package
 
-;;;;;; ====== Project ======
+;;;;;; Project
 	    "p"    '(nil :wk "project")
 	    "pp"  #'project-switch-project
 	    "pc"  #'project-compile
@@ -777,7 +773,7 @@ a flat list of the `define-key' expressions to set the text objects up."
                                    finally (return exprs)))))
 	(define-textobjs)))
 
-;;; ---Task Specific Layers---
+;;; ======Task Specific Layers======
 ;;;; Coding layer
 (defun task/coding-layer ()
     "All the basic components needed for a Visual Studio Code-style
@@ -888,10 +884,8 @@ a flat list of the `define-key' expressions to set the text objects up."
 	(add-hook 'dape-compile-compile-hooks 'kill-buffer)
 
 	;; Save buffers on startup, useful for interpreted languages
-	(add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t)))
-	)
+	(add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t))))
 ;;;;; An actually good completion-at-point UI for completion inside buffers
-
     (defun corfu-enable-in-minibuffer ()
         "Enable Corfu in the minibuffer."
         (when (local-variable-p 'completion-at-point-functions)
@@ -910,7 +904,7 @@ a flat list of the `define-key' expressions to set the text objects up."
         (corfu-auto t)                 ;; Enable auto completion
         (corfu-separator ?\s)          ;; Orderless field separator
         (corfu-quit-no-match 'separator)
-        (corfu-auto-delay 0.22)
+        (corfu-auto-delay 0.15)
         (corfu-auto-prefix 2)
         (corfu-popupinfo-delay 0.3)
         (corfu-popupinfo-direction 'right)
@@ -1113,7 +1107,7 @@ in `denote-link'."
         (setq consult-notes-denote-files-function (function denote-directory-text-only-files))))
 
 
-;;; ---Aesthetic Packages---
+;;; ======Aesthetic Packages======
 ;;;; Core Aesthetic Packages
 (defun core/aesthetic-layer ()
     "If you're going to be staring at your editor all day, it might as well look nice.
@@ -1252,7 +1246,7 @@ in `denote-link'."
         ;; Enable all Cascadia Code ligatures in programming modes
         (ligature-set-ligatures 'prog-mode '("|||>" "<|||" "<==>" "<!--" "####" "~~>" "***" "||=" "||>"
 					     ":::" "::=" "=:=" "===" "==>" "=!=" "=>>" "=<<" "=/=" "!=="
-					     "!!." ">=>" ">>=" ">>>" ">>-" ">->" "->>" "-->" "---" "-<<"
+					     "!!." ">=>" ">>=" ">>>" ">>-" ">->" "->>" "-->" "======" "-<<"
 					     "<~~" "<~>" "<*>" "<||" "<|>" "<$>" "<==" "<=>" "<=<" "<->"
 					     "<--" "<-<" "<<=" "<<-" "<<<" "<+>" "</>" "###" "#_(" "..<"
 					     "..." "+++" "/==" "///" "_|_" "www" "&&" "^=" "~~" "~@" "~="
@@ -1307,7 +1301,7 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
 	 (lambda (publish-time)
 	     (message (format "Finished publishing blog after %s seconds" publish-time))))))
 
-;;; ---Load Layers---
+;;; ======Load Layers======
 ;; no garbage collection during startup — we can amortize it later
 (setq gc-cons-threshold-original gc-cons-threshold)
 (setq gc-cons-threshold most-positive-fixnum)
@@ -1323,7 +1317,7 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
     (message (format "Enabling the %s layer" layer))
     (funcall (symbol-function layer)))
 
-;;; ---Appendix: Togglable Shell---
+;;; ======Appendix: Togglable Shell======
 (defvar existing-shell nil)
 
 (defun shell-toggle ()
