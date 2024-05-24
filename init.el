@@ -175,6 +175,8 @@ passed in as an argument."
     (defun core/current-tab-name ()
 	(alist-get 'name (tab-bar--current-tab)))
 ;;;;; Performance tuning
+    (setq gc-cons-percentage 0.2
+          gc-cons-threshold (* 100 1024 1024))
 ;;;;;; Optimize font-locking for greater responsiveness
     (setq jit-lock-stealth-time 0.2
           jit-lock-defer-time 0.0
@@ -187,7 +189,7 @@ passed in as an argument."
     (defun setup-fast-minibuffer ()
         (setq gc-cons-threshold most-positive-fixnum))
     (defun close-fast-minibuffer ()
-        (setq gc-cons-threshold 800000))
+        (setq gc-cons-threshold (* 100 1024 1024)))
 
     (add-hook 'minibuffer-setup-hook #'setup-fast-minibuffer)
     (add-hook 'minibuffer-exit-hook #'close-fast-minibuffer)
@@ -195,10 +197,9 @@ passed in as an argument."
     (when (and (find-font (font-spec :name "JetBrains Mono"))
 	       (find-font (font-spec :name "Cantarell"))
 	       (find-font (font-spec :name "iA Writer Quattro V")))
-	(custom-set-faces
-	 '(default ((t (:height 120 :font "JetBrains Mono"))))
-	 '(variable-pitch ((t (:height 120 :font "Cantarell")))))
-	(setq buffer-face-mode-face '(:family "iA Writer Quattro V")))
+        (set-face-attribute 'default nil :font "JetBrains Mono-12")
+        (set-face-attribute 'variable-pitch nil :font "Cantarell-12")
+	(setq buffer-face-mode-face '(:font "iA Writer Quattro V")))
 
     (set-display-table-slot
      standard-display-table
@@ -251,9 +252,6 @@ passed in as an argument."
 ;;;; Minibuffer completion and searching improvement packages
     (use-package marginalia
         :after icomplete
-        :bind (:map minibuffer-local-map
-		    ("M-A" . marginalia-cycle))
-
         :init
         (marginalia-mode))
 
