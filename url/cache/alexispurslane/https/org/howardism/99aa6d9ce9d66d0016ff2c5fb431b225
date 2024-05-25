@@ -1,0 +1,20 @@
+HTTP/1.1 200 OK
+Date: Sat, 25 May 2024 19:10:51 GMT
+Server: Apache/2.4.54 (Ubuntu)
+Last-Modified: Mon, 15 Jan 2024 00:36:10 GMT
+ETag: "227-60ef133424190"
+Accept-Ranges: bytes
+Content-Length: 551
+Keep-Alive: timeout=5, max=100
+Connection: Keep-Alive
+Content-Type: image/svg+xml
+
+<?xml version="1.0" ?>
+<!DOCTYPE svg  PUBLIC '-//W3C//DTD SVG 1.1//EN'  'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'>
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="12" fill="#888888"/>
+    <path fill="none" d="M0 0h24v24H0z"/>
+    <circle cx="6.18" cy="17.82" r="2.18" fill="white"/>
+    <path d="M4 4.44v2.83c7.03 0 12.73 5.7 12.73 12.73h2.83c0-8.59-6.97-15.56-15.56-15.56zm0 5.66v2.83c3.9 0 7.07 3.17 7.07 7.07h2.83c0-5.47-4.43-9.9-9.9-9.9z"
+          fill="white"/>
+</svg>

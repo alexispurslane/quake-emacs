@@ -51,7 +51,6 @@
 ;;; ======Imported Packages======
 (require 'cl-lib)
 (require 'rx)
-
 ;;; ======Package Setup======
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
@@ -140,22 +139,17 @@ passed in as an argument."
     (setq eldoc-idle-delay 0.8)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
     (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
     (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
-    (setq load-prefer-newer t)                    ; always prefer newer bytecode files
+    (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))) ; show dashboard in new frames
 ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode -1)
     (tool-bar-mode -1)
     (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
-    (set-frame-parameter nil 'undecorated t)
 ;;;;; Enable some modes that give nicer, more modern behavior
     (setq pixel-scroll-precision-interpolate-mice t
 	  pixel-scroll-precision-interpolate-page t)
     (pixel-scroll-precision-mode 1)        ; smooth scrolling
     (cua-mode t)                           ; Ctrl-C, Ctrl-V, etc
     (winner-mode 1)                        ; better window manipulation
-    (recentf-mode 1)                       ; remember recent files
-    (save-place-mode 1)                    ; save your place in files
-    (setq recentf-max-menu-items 25
-          recentf-max-saved-items 25)
     (savehist-mode 1)                      ; remember commands
     (column-number-mode)                   ; keep track of column number for the useful modeline readout
     (global-visual-line-mode)              ; wrap lines at end of window
@@ -221,7 +215,14 @@ passed in as an argument."
     (setq icomplete-prospects-height 15)
     (setq icomplete-with-completion-tables t)
     (icomplete-vertical-mode 1))
-
+;;;; Recentf
+(use-package recentf
+    :custom
+    (recentf-max-menu-items 25)
+    (recentf-max-saved-items 25)
+    (recentf-auto-cleanup 10))
+(use-package tramp
+    :command (tramp-mode))
 ;;; ======Basic Packages======
 (defun core/usability-layer ()
     "Loads the core packages needed to make Emacs more usable in the
@@ -603,9 +604,9 @@ passed in as an argument."
 	    "o="   #'calc
 	    "ow"   #'scratch-window-toggle
             "os" `(,(lambda () (interactive)
-                        (when current-prefix-arg 
-                            (select-frame (make-frame)))
-                        (funcall quake-term-preferred-command 'new))
+                        (let ((new-shell-frame (make-frame)))
+                            (select-frame new-shell-frame)
+                            (funcall quake-term-preferred-command 'new)))
                    :wk "Open new shell")
 
 ;;;;;; Search
@@ -795,14 +796,6 @@ a flat list of the `define-key' expressions to set the text objects up."
   - `yasnippet' and `yasnippet-corfu', so you don't have to type all
   that rote boilerplate"
 
-    ;; This wouldn't be Quake emacs without the preconfigured ability
-    ;; to have a Quake style dropdown terminal!
-    (add-to-list 'display-buffer-alist
-                 `(,(rx "*" (or "terminal" "shell" "eshell" "vterm") "*")
-                   (display-buffer-in-side-window)
-                   (side . top)
-                   (window-height . 10)))
-
 ;;;;; Version-control and project management
     ;; Emacs' entire selling point right here!
     (use-package magit
@@ -841,21 +834,13 @@ a flat list of the `define-key' expressions to set the text objects up."
 	      eglot-events-buffer-size 0
 	      eglot-sync-connect nil)
 	(add-hook 'prog-mode-hook (lambda ()
-				      (message "Tip: Press `SPC l e' to activate your LSP if you have one!")))
-        (add-to-list 'eglot-server-programs
-		     '((typescript-ts-mode js-ts-mode) . ("typescript-language-server" "--stdio")))
-        (add-to-list 'eglot-server-programs
-		     '((rust-ts-mode) . ("rust-analyzer"))))
+				      (message "Tip: Press `SPC l e' to activate your LSP if you have one!"))))
 
 ;;;;; Eglot-compatible Debug Adapter Protocol client (for more IDE shit)
     (use-package dape
+        :commands (dape)
 	:preface
 	(setq dape-key-prefix nil)
-	:hook
-	;; Save breakpoints on quit
-	((kill-emacs . dape-breakpoint-save)
-	 ;; Local bindings for setting breakpoints with mouse
-	 (eglot-managed-mode  . dape-breakpoint-mode))
 	:init
 	;; To use window configuration like gud (gdb-mi)
 	(setq dape-buffer-window-arrangement 'right)
@@ -877,8 +862,7 @@ a flat list of the `define-key' expressions to set the text objects up."
     (defun corfu-enable-in-minibuffer ()
         "Enable Corfu in the minibuffer."
         (when (local-variable-p 'completion-at-point-functions)
-	    (setq-local corfu-echo-delay nil ;; Disable automatic echo and popup
-                        corfu-popupinfo-delay nil)
+	    (setq-local corfu-echo-delay nil) ;; Disable automatic echo and popup
 	    (corfu-mode 1)))
 
     (use-package corfu
@@ -978,7 +962,7 @@ a flat list of the `define-key' expressions to set the text objects up."
         :commands (darkroom-mode darkroom-tentative-mode))
 
     (define-minor-mode word-processing-mode
-	"Toggle Word Processing mode.
+        "Toggle Word Processing mode.
 Interactively with no argument, this command toggles the mode. A
 positive prefix argument enables the mode, any other prefix
 disables it. From Lisp, argument omitted or nil enables the mode,
@@ -990,33 +974,29 @@ column numbers, ligatures, prettified symbols, and fringes are
 disabled, `buffer-face-mode' is enabled to set the current buffer
 face to iA Writer Quattro V or your choice of writing-specific
 faces, and the flymake `proselint' backend is enabled."
-	nil
-	" Word Processing")
+	:init-value nil
+	:lighter " Word Processing"
+        (setq line-spacing 0.1)
+	(column-number-mode -1)
+	(ligature-mode -1)
+	(prettify-symbols-mode -1)
+	;; Less distracting UI
+	(setq left-fringe-width 0)
+	(setq right-fringe-width 0)
+	(if (and (boundp 'darkroom-mode) darkroom-mode)
+		(progn
+		    (darkroom-mode -1)
+		    (buffer-face-mode -1))
+	    (progn
+		(darkroom-mode 1)
+		(buffer-face-mode 1)))
 
-    (add-hook 'word-processing-mode-hook
-	      (lambda ()
-		  ;; Faster performance on long lines
-		  (setq line-spacing 0.1)
-		  (column-number-mode -1)
-		  (ligature-mode -1)
-		  (prettify-symbols-mode -1)
-		  ;; Less distracting UI
-		  (setq left-fringe-width 0)
-		  (setq right-fringe-width 0)
-		  (if (and (boundp 'darkroom-mode) darkroom-mode)
-			  (progn
-			      (darkroom-mode -1)
-			      (buffer-face-mode -1))
-		      (progn
-			  (darkroom-mode 1)
-			  (buffer-face-mode 1)))
-
-		  ;; Proselint
-		  (when (fboundp 'flymake-proselint-setup)
-		      (flymake-mode))
-		  
-		  ;; Spellcheck
-		  (flyspell-mode))))
+	;; Proselint
+	(when (fboundp 'flymake-proselint-setup)
+	    (flymake-mode))
+	
+	;; Spellcheck
+	(flyspell-mode)))
 
 ;;;; Zettelkasten note-taking layer
 (defun task/notes-layer ()
@@ -1126,12 +1106,8 @@ in `denote-link'."
     (use-package spacious-padding
         :after (doom-themes)
         :config
-        (spacious-padding-mode 1)
-        (defun quake/fix-fonts (frame)
-            (set-face-attribute 'mode-line frame :inherit 'variable-pitch :height 120)
-            (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line))
-        (add-hook 'after-make-frame-functions #'quake/fix-fonts)
-        (quake/fix-fonts nil))
+        (unless spacious-padding-mode 
+            (spacious-padding-mode 1)))
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
@@ -1268,12 +1244,9 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
     
     (define-minor-mode org-static-blog-watch-mode
 	"Re-run `org-static-blog-publish-async' whenever the current file is saved."
-	nil
-	" Org-Static-Blog-Watch")
-
-    (add-hook 'org-static-blog-watch-mode-hook
-	      (lambda ()
-		  (add-hook 'after-save-hook #'org-static-blog-publish-async nil t)))
+	:init-value nil
+	:lighter " Org-Static-Blog-Watch"
+        (add-hook 'after-save-hook #'org-static-blog-publish-async nil t))
 
     (defun org-static-blog-publish-async ()
 	(interactive)
@@ -1309,18 +1282,33 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
     (message (format "Enabling the %s layer" layer))
     (funcall (symbol-function layer)))
 
+;; Set some final settings that should always take precidence
+
+(defun quake/fix (frame)
+    (set-frame-parameter frame 'undecorated t)
+    (set-face-attribute 'mode-line frame :inherit 'variable-pitch :height 120)
+    (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line))
+(add-hook 'after-make-frame-functions #'quake/fix)
+(quake/fix nil)
+
 ;;; ======Appendix: Togglable Shell======
 (defvar existing-shell nil)
 
 (defun shell-toggle ()
     (interactive)
-    (let* ((existing-window (get-buffer-window existing-shell)))
-        (cond
-         ((and existing-shell existing-window) (delete-window existing-window))
-         ((and existing-shell (not existing-window)) (display-buffer existing-shell))
-         (t (setq existing-shell (funcall quake-term-preferred-command
-					  (when (eq quake-term-preferred-command 'term)
-					      (getenv "SHELL"))))))))
+    (let* ((existing-window (and existing-shell (get-buffer-window existing-shell))))
+        (if existing-window
+                (delete-window existing-window)
+            (let ((display-buffer-alist `((,(rx "\*" (or "terminal" "shell" "eshell" "vterm") "\*")
+                                           (display-buffer-in-side-window)
+                                           (side . top)
+                                           (window-height . 10)))))
+                (unless existing-shell
+                    (setq existing-shell (funcall quake-term-preferred-command
+					          (when (eq quake-term-preferred-command 'term)
+					              (getenv "SHELL")))))
+                (display-buffer existing-shell)
+                (select-window (get-buffer-window existing-shell))))))
 
 (defun scratch-window-toggle ()
     (interactive)
