@@ -139,12 +139,11 @@ passed in as an argument."
     (setq eldoc-idle-delay 0.8)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
     (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
     (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
-    (message "1")
+    (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))) ; show dashboard in new frames
 ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode -1)
     (tool-bar-mode -1)
     (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
-    (set-frame-parameter nil 'undecorated t)
 ;;;;; Enable some modes that give nicer, more modern behavior
     (setq pixel-scroll-precision-interpolate-mice t
 	  pixel-scroll-precision-interpolate-page t)
@@ -154,15 +153,13 @@ passed in as an argument."
     (savehist-mode 1)                      ; remember commands
     (column-number-mode)                   ; keep track of column number for the useful modeline readout
     (global-visual-line-mode)              ; wrap lines at end of window
-    (message "2")
 ;;;;; A basic programmming mode to build off of that adds some expected things
     (add-hook 'prog-mode-hook (lambda ()
 				  (prettify-symbols-mode 1)
 				  (display-line-numbers-mode 1)
 				  (setq display-line-numbers 'relative)
 				  (hl-line-mode t)
-				  (electric-pair-mode)
-                                  (message "4")))
+				  (electric-pair-mode)))
 ;;;;; Customizing the built-in tab-bar to look nice
     (setq tab-bar-auto-width nil)
     (setq tab-bar-new-tab-choice "*dashboard*")
@@ -195,8 +192,7 @@ passed in as an argument."
      standard-display-table
      'selective-display
      (let ((face-offset (* (face-id 'shadow) (lsh 1 22))))
-	 (vconcat (mapcar (lambda (c) (+ face-offset c)) " "))))
-    (message "4"))
+	 (vconcat (mapcar (lambda (c) (+ face-offset c)) " ")))))
 ;;;; Vertico-style IComplete
 (use-package icomplete
     :demand t
@@ -218,19 +214,15 @@ passed in as an argument."
     (setq icomplete-hide-common-prefix nil)
     (setq icomplete-prospects-height 15)
     (setq icomplete-with-completion-tables t)
-    (icomplete-vertical-mode 1)
-    (message "6"))
+    (icomplete-vertical-mode 1))
 ;;;; Recentf
 (use-package recentf
     :custom
     (recentf-max-menu-items 25)
     (recentf-max-saved-items 25)
-    (recentf-auto-cleanup 10)
-    :config
-    (message "7"))
+    (recentf-auto-cleanup 10))
 (use-package tramp
-    :config
-    (message "Loading tramp"))
+    :command (tramp-mode))
 ;;; ======Basic Packages======
 (defun core/usability-layer ()
     "Loads the core packages needed to make Emacs more usable in the
@@ -612,9 +604,9 @@ passed in as an argument."
 	    "o="   #'calc
 	    "ow"   #'scratch-window-toggle
             "os" `(,(lambda () (interactive)
-                        (when current-prefix-arg 
-                            (select-frame (make-frame)))
-                        (funcall quake-term-preferred-command 'new))
+                        (let ((new-shell-frame (make-frame)))
+                            (select-frame new-shell-frame)
+                            (funcall quake-term-preferred-command 'new)))
                    :wk "Open new shell")
 
 ;;;;;; Search
@@ -804,14 +796,6 @@ a flat list of the `define-key' expressions to set the text objects up."
   - `yasnippet' and `yasnippet-corfu', so you don't have to type all
   that rote boilerplate"
 
-    ;; This wouldn't be Quake emacs without the preconfigured ability
-    ;; to have a Quake style dropdown terminal!
-    (add-to-list 'display-buffer-alist
-                 `(,(rx "*" (or "terminal" "shell" "eshell" "vterm") "*")
-                   (display-buffer-in-side-window)
-                   (side . top)
-                   (window-height . 10)))
-
 ;;;;; Version-control and project management
     ;; Emacs' entire selling point right here!
     (use-package magit
@@ -854,6 +838,7 @@ a flat list of the `define-key' expressions to set the text objects up."
 
 ;;;;; Eglot-compatible Debug Adapter Protocol client (for more IDE shit)
     (use-package dape
+        :commands (dape)
 	:preface
 	(setq dape-key-prefix nil)
 	:init
@@ -877,8 +862,7 @@ a flat list of the `define-key' expressions to set the text objects up."
     (defun corfu-enable-in-minibuffer ()
         "Enable Corfu in the minibuffer."
         (when (local-variable-p 'completion-at-point-functions)
-	    (setq-local corfu-echo-delay nil ;; Disable automatic echo and popup
-                        corfu-popupinfo-delay nil)
+	    (setq-local corfu-echo-delay nil) ;; Disable automatic echo and popup
 	    (corfu-mode 1)))
 
     (use-package corfu
@@ -1122,12 +1106,8 @@ in `denote-link'."
     (use-package spacious-padding
         :after (doom-themes)
         :config
-        (spacious-padding-mode 1)
-        (defun quake/fix-fonts (frame)
-            (set-face-attribute 'mode-line frame :inherit 'variable-pitch :height 120)
-            (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line))
-        (add-hook 'after-make-frame-functions #'quake/fix-fonts)
-        (quake/fix-fonts nil))
+        (unless spacious-padding-mode 
+            (spacious-padding-mode 1)))
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
@@ -1302,18 +1282,33 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
     (message (format "Enabling the %s layer" layer))
     (funcall (symbol-function layer)))
 
+;; Set some final settings that should always take precidence
+
+(defun quake/fix (frame)
+    (set-frame-parameter frame 'undecorated t)
+    (set-face-attribute 'mode-line frame :inherit 'variable-pitch :height 120)
+    (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line))
+(add-hook 'after-make-frame-functions #'quake/fix)
+(quake/fix nil)
+
 ;;; ======Appendix: Togglable Shell======
 (defvar existing-shell nil)
 
 (defun shell-toggle ()
     (interactive)
-    (let* ((existing-window (get-buffer-window existing-shell)))
-        (cond
-         ((and existing-shell existing-window) (delete-window existing-window))
-         ((and existing-shell (not existing-window)) (display-buffer existing-shell))
-         (t (setq existing-shell (funcall quake-term-preferred-command
-					  (when (eq quake-term-preferred-command 'term)
-					      (getenv "SHELL"))))))))
+    (let* ((existing-window (and existing-shell (get-buffer-window existing-shell))))
+        (if existing-window
+                (delete-window existing-window)
+            (let ((display-buffer-alist `((,(rx "\*" (or "terminal" "shell" "eshell" "vterm") "\*")
+                                           (display-buffer-in-side-window)
+                                           (side . top)
+                                           (window-height . 10)))))
+                (unless existing-shell
+                    (setq existing-shell (funcall quake-term-preferred-command
+					          (when (eq quake-term-preferred-command 'term)
+					              (getenv "SHELL")))))
+                (display-buffer existing-shell)
+                (select-window (get-buffer-window existing-shell))))))
 
 (defun scratch-window-toggle ()
     (interactive)
@@ -1324,16 +1319,3 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
 	    (progn
 		(display-buffer-at-bottom scratch '((window-height . 25)))
 		(other-window 1)))))
-
-(with-eval-after-load 'project
-    (advice-add 'project--vc-list-files
-                :around (lambda (oldfun dir backend extra-ignores)
-                            "Edits the input of `project--vc-list-files' to sanitize TRAMP prefixes from it, and edits the output to re-add them."
-                            (let* ((split (reverse (split-string dir ":"))) ; reverse so the final path will be first and the prefix will be the rest
-                                   (prefix (cdr split)))
-                                (mapcar ; add the tramp prefix back so emacs knows to open the files over tramp
-                                 (lambda (f)
-                                     (string-join
-                                      (reverse (cons f prefix)) ; prefix is reversed, so add things on backwards first too and then reverse again so it all comes out the right order
-                                      ":"))
-                                 (funcall oldfun (car split) backend extra-ignores))))))

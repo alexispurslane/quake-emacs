@@ -27,3 +27,5 @@ load
 load/*
 custom.el
 history
+tramp
+places
