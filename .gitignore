@@ -1,34 +1,10 @@
-# Compiled
-*.elc
-
-# Packaging
-.cask
-
-# Backup files
-*~
-
-# Undo-tree save-files
-*.~undo-tree
-
-# Individual emacs stuff
-eln-cache/
-eln-cache/*
-elpa/
-elpa/*
-recentf
-transient/
-transient/*
-tree-sitter/
-tree-sitter/*
-.cache
-.cache/*
-projects
-load
-load/*
-custom.el
-history
-tramp
-places
-eshell
-eshell/*
-eshell/lastdir
+*
+!init.el
+!user.el
+!README.org
+!LICENSE
+!.gitignore
+!.tokignore
+!.github/
+!.github/*
+!banner-quake.png
