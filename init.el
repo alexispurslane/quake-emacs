@@ -819,19 +819,8 @@ a flat list of the `define-key' expressions to set the text objects up."
     (use-package treemacs
         :commands (treemacs)
         :config
-        (dolist (face '(treemacs-root-face
-                        treemacs-git-unmodified-face
-                        treemacs-git-modified-face
-                        treemacs-git-renamed-face
-                        treemacs-git-ignored-face
-                        treemacs-git-untracked-face
-                        treemacs-git-added-face
-                        treemacs-git-conflict-face
-                        treemacs-directory-face
-                        treemacs-directory-collapsed-face
-                        treemacs-file-face
-                        treemacs-tags-face))
-	    (set-face-attribute face nil :inherit 'variable-pitch :height 120)))
+        (dolist (face (custom-group-members 'treemacs-faces nil))
+	    (set-face-attribute (car face) nil :inherit 'variable-pitch :height 120)))
 
     (use-package treemacs-evil
         :after (treemacs evil)
@@ -1138,8 +1127,11 @@ in `denote-link'."
         :after (doom-themes)
         :config
         (spacious-padding-mode 1)
-        (set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
-        (set-face-attribute 'mode-line-inactive nil :inherit 'mode-line))
+        (defun quake/fix-fonts (frame)
+            (set-face-attribute 'mode-line frame :inherit 'variable-pitch :height 120)
+            (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line))
+        (add-hook 'after-make-frame-functions #'quake/fix-fonts)
+        (quake/fix-fonts nil))
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
