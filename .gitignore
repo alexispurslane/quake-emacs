@@ -31,3 +31,4 @@ tramp
 places
 eshell
 eshell/*
+eshell/lastdir
