@@ -29,3 +29,5 @@ custom.el
 history
 tramp
 places
+eshell
+eshell/*
