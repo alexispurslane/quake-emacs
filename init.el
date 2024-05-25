@@ -169,8 +169,7 @@ passed in as an argument."
     (defun core/current-tab-name ()
 	(alist-get 'name (tab-bar--current-tab)))
 ;;;;; Performance tuning
-    (setq gc-cons-percentage 0.2
-          gc-cons-threshold (* 100 1024 1024))
+    (setq gc-cons-percentage 0.2)
 ;;;;;; Optimize font-locking for greater responsiveness
     (setq jit-lock-stealth-time 0.2
           jit-lock-defer-time 0.0
@@ -183,7 +182,7 @@ passed in as an argument."
     (defun setup-fast-minibuffer ()
         (setq gc-cons-threshold most-positive-fixnum))
     (defun close-fast-minibuffer ()
-        (setq gc-cons-threshold (* 100 1024 1024)))
+        (setq gc-cons-threshold (* 8 1024 1024)))
 
     (add-hook 'minibuffer-setup-hook #'setup-fast-minibuffer)
     (add-hook 'minibuffer-exit-hook #'close-fast-minibuffer)
