@@ -496,9 +496,9 @@ passed in as an argument."
         ;; Define the built-in global keybindings — this is the heart of this editor!
         (tyrant-def
 ;;;;;; Top level functions
-	    "SPC"  '(execute-extended-command :wk "M-x")
+	    "'"  '(execute-extended-command :wk "M-x")
 	    ":"    '(pp-eval-expression :wk "Eval expression")
-	    ";"    #'project-find-file
+	    "SPC"    #'project-find-file
 	    "u"    '(universal-argument :wk "C-u")
 	    "C"    #'universal-coding-system-argument
 	    "O"    #'other-window-prefix
