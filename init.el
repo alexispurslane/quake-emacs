@@ -140,7 +140,6 @@ passed in as an argument."
     (setq eldoc-idle-delay 0.8)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
     (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
     (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
-    (setq load-prefer-newer t)                    ; always prefer newer bytecode files
 ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode -1)
     (tool-bar-mode -1)
