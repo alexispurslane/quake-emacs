@@ -48,7 +48,7 @@
 
 ;; For more information, see the README in the online repository.
 
-;;; ====== Imported Packages======
+;;; ======Imported Packages======
 (require 'cl-lib)
 (require 'rx)
 
@@ -139,6 +139,8 @@ passed in as an argument."
     (global-set-key (kbd "<escape>") 'keyboard-escape-quit) ; people are used to ESC quitting things
     (setq eldoc-idle-delay 0.8)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
     (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
+    (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
+    (setq load-prefer-newer t)                    ; always prefer newer bytecode files
 ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode -1)
     (tool-bar-mode -1)
@@ -151,6 +153,7 @@ passed in as an argument."
     (cua-mode t)                           ; Ctrl-C, Ctrl-V, etc
     (winner-mode 1)                        ; better window manipulation
     (recentf-mode 1)                       ; remember recent files
+    (save-place-mode 1)                    ; save your place in files
     (setq recentf-max-menu-items 25
           recentf-max-saved-items 25)
     (savehist-mode 1)                      ; remember commands
@@ -172,6 +175,8 @@ passed in as an argument."
     (defun core/current-tab-name ()
 	(alist-get 'name (tab-bar--current-tab)))
 ;;;;; Performance tuning
+    (setq gc-cons-percentage 0.2
+          gc-cons-threshold (* 100 1024 1024))
 ;;;;;; Optimize font-locking for greater responsiveness
     (setq jit-lock-stealth-time 0.2
           jit-lock-defer-time 0.0
@@ -184,19 +189,11 @@ passed in as an argument."
     (defun setup-fast-minibuffer ()
         (setq gc-cons-threshold most-positive-fixnum))
     (defun close-fast-minibuffer ()
-        (setq gc-cons-threshold 800000))
+        (setq gc-cons-threshold (* 100 1024 1024)))
 
     (add-hook 'minibuffer-setup-hook #'setup-fast-minibuffer)
     (add-hook 'minibuffer-exit-hook #'close-fast-minibuffer)
 ;;;; Fonts
-    (when (and (find-font (font-spec :name "JetBrains Mono"))
-	       (find-font (font-spec :name "Cantarell"))
-	       (find-font (font-spec :name "iA Writer Quattro V")))
-	(custom-set-faces
-	 '(default ((t (:height 120 :font "JetBrains Mono"))))
-	 '(variable-pitch ((t (:height 120 :font "Cantarell")))))
-	(setq buffer-face-mode-face '(:family "iA Writer Quattro V")))
-
     (set-display-table-slot
      standard-display-table
      'selective-display
@@ -248,9 +245,6 @@ passed in as an argument."
 ;;;; Minibuffer completion and searching improvement packages
     (use-package marginalia
         :after icomplete
-        :bind (:map minibuffer-local-map
-		    ("M-A" . marginalia-cycle))
-
         :init
         (marginalia-mode))
 
@@ -608,6 +602,11 @@ passed in as an argument."
 	    "op"   #'pandoc-mode
 	    "o="   #'calc
 	    "ow"   #'scratch-window-toggle
+            "os" `(,(lambda () (interactive)
+                        (when current-prefix-arg 
+                            (select-frame (make-frame)))
+                        (funcall quake-term-preferred-command 'new))
+                   :wk "Open new shell")
 
 ;;;;;; Search
 	    "s"    '(nil :wk "search")
@@ -820,19 +819,8 @@ a flat list of the `define-key' expressions to set the text objects up."
     (use-package treemacs
         :commands (treemacs)
         :config
-        (dolist (face '(treemacs-root-face
-                        treemacs-git-unmodified-face
-                        treemacs-git-modified-face
-                        treemacs-git-renamed-face
-                        treemacs-git-ignored-face
-                        treemacs-git-untracked-face
-                        treemacs-git-added-face
-                        treemacs-git-conflict-face
-                        treemacs-directory-face
-                        treemacs-directory-collapsed-face
-                        treemacs-file-face
-                        treemacs-tags-face))
-	    (set-face-attribute face nil :inherit 'variable-pitch :height 120)))
+        (dolist (face (custom-group-members 'treemacs-faces nil))
+	    (set-face-attribute (car face) nil :inherit 'variable-pitch :height 120)))
 
     (use-package treemacs-evil
         :after (treemacs evil)
@@ -897,6 +885,7 @@ a flat list of the `define-key' expressions to set the text objects up."
 	:after (orderless)
         :hook ((prog-mode . corfu-mode)
 	       (shell-mode . corfu-mode)
+               (eshell-mode . corfu-mode)
 	       (minibuffer-setup . corfu-enable-in-minibuffer))
         ;; Optional customizations
         :custom
@@ -1138,8 +1127,11 @@ in `denote-link'."
         :after (doom-themes)
         :config
         (spacious-padding-mode 1)
-        (set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
-        (set-face-attribute 'mode-line-inactive nil :inherit 'mode-line))
+        (defun quake/fix-fonts (frame)
+            (set-face-attribute 'mode-line frame :inherit 'variable-pitch :height 120)
+            (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line))
+        (add-hook 'after-make-frame-functions #'quake/fix-fonts)
+        (quake/fix-fonts nil))
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
