@@ -51,7 +51,6 @@
 ;;; ======Imported Packages======
 (require 'cl-lib)
 (require 'rx)
-
 ;;; ======Package Setup======
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
@@ -140,6 +139,7 @@ passed in as an argument."
     (setq eldoc-idle-delay 0.8)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
     (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
     (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
+    (message "1")
 ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode -1)
     (tool-bar-mode -1)
@@ -151,20 +151,18 @@ passed in as an argument."
     (pixel-scroll-precision-mode 1)        ; smooth scrolling
     (cua-mode t)                           ; Ctrl-C, Ctrl-V, etc
     (winner-mode 1)                        ; better window manipulation
-    (recentf-mode 1)                       ; remember recent files
-    (save-place-mode 1)                    ; save your place in files
-    (setq recentf-max-menu-items 25
-          recentf-max-saved-items 25)
     (savehist-mode 1)                      ; remember commands
     (column-number-mode)                   ; keep track of column number for the useful modeline readout
     (global-visual-line-mode)              ; wrap lines at end of window
+    (message "2")
 ;;;;; A basic programmming mode to build off of that adds some expected things
     (add-hook 'prog-mode-hook (lambda ()
 				  (prettify-symbols-mode 1)
 				  (display-line-numbers-mode 1)
 				  (setq display-line-numbers 'relative)
 				  (hl-line-mode t)
-				  (electric-pair-mode)))
+				  (electric-pair-mode)
+                                  (message "4")))
 ;;;;; Customizing the built-in tab-bar to look nice
     (setq tab-bar-auto-width nil)
     (setq tab-bar-new-tab-choice "*dashboard*")
@@ -197,7 +195,8 @@ passed in as an argument."
      standard-display-table
      'selective-display
      (let ((face-offset (* (face-id 'shadow) (lsh 1 22))))
-	 (vconcat (mapcar (lambda (c) (+ face-offset c)) " ")))))
+	 (vconcat (mapcar (lambda (c) (+ face-offset c)) " "))))
+    (message "4"))
 ;;;; Vertico-style IComplete
 (use-package icomplete
     :demand t
@@ -219,8 +218,19 @@ passed in as an argument."
     (setq icomplete-hide-common-prefix nil)
     (setq icomplete-prospects-height 15)
     (setq icomplete-with-completion-tables t)
-    (icomplete-vertical-mode 1))
-
+    (icomplete-vertical-mode 1)
+    (message "6"))
+;;;; Recentf
+(use-package recentf
+    :custom
+    (recentf-max-menu-items 25)
+    (recentf-max-saved-items 25)
+    (recentf-auto-cleanup 10)
+    :config
+    (message "7"))
+(use-package tramp
+    :config
+    (message "Loading tramp"))
 ;;; ======Basic Packages======
 (defun core/usability-layer ()
     "Loads the core packages needed to make Emacs more usable in the
@@ -840,21 +850,12 @@ a flat list of the `define-key' expressions to set the text objects up."
 	      eglot-events-buffer-size 0
 	      eglot-sync-connect nil)
 	(add-hook 'prog-mode-hook (lambda ()
-				      (message "Tip: Press `SPC l e' to activate your LSP if you have one!")))
-        (add-to-list 'eglot-server-programs
-		     '((typescript-ts-mode js-ts-mode) . ("typescript-language-server" "--stdio")))
-        (add-to-list 'eglot-server-programs
-		     '((rust-ts-mode) . ("rust-analyzer"))))
+				      (message "Tip: Press `SPC l e' to activate your LSP if you have one!"))))
 
 ;;;;; Eglot-compatible Debug Adapter Protocol client (for more IDE shit)
     (use-package dape
 	:preface
 	(setq dape-key-prefix nil)
-	:hook
-	;; Save breakpoints on quit
-	((kill-emacs . dape-breakpoint-save)
-	 ;; Local bindings for setting breakpoints with mouse
-	 (eglot-managed-mode  . dape-breakpoint-mode))
 	:init
 	;; To use window configuration like gud (gdb-mi)
 	(setq dape-buffer-window-arrangement 'right)
@@ -977,7 +978,7 @@ a flat list of the `define-key' expressions to set the text objects up."
         :commands (darkroom-mode darkroom-tentative-mode))
 
     (define-minor-mode word-processing-mode
-	"Toggle Word Processing mode.
+        "Toggle Word Processing mode.
 Interactively with no argument, this command toggles the mode. A
 positive prefix argument enables the mode, any other prefix
 disables it. From Lisp, argument omitted or nil enables the mode,
@@ -989,33 +990,29 @@ column numbers, ligatures, prettified symbols, and fringes are
 disabled, `buffer-face-mode' is enabled to set the current buffer
 face to iA Writer Quattro V or your choice of writing-specific
 faces, and the flymake `proselint' backend is enabled."
-	nil
-	" Word Processing")
+	:init-value nil
+	:lighter " Word Processing"
+        (setq line-spacing 0.1)
+	(column-number-mode -1)
+	(ligature-mode -1)
+	(prettify-symbols-mode -1)
+	;; Less distracting UI
+	(setq left-fringe-width 0)
+	(setq right-fringe-width 0)
+	(if (and (boundp 'darkroom-mode) darkroom-mode)
+		(progn
+		    (darkroom-mode -1)
+		    (buffer-face-mode -1))
+	    (progn
+		(darkroom-mode 1)
+		(buffer-face-mode 1)))
 
-    (add-hook 'word-processing-mode-hook
-	      (lambda ()
-		  ;; Faster performance on long lines
-		  (setq line-spacing 0.1)
-		  (column-number-mode -1)
-		  (ligature-mode -1)
-		  (prettify-symbols-mode -1)
-		  ;; Less distracting UI
-		  (setq left-fringe-width 0)
-		  (setq right-fringe-width 0)
-		  (if (and (boundp 'darkroom-mode) darkroom-mode)
-			  (progn
-			      (darkroom-mode -1)
-			      (buffer-face-mode -1))
-		      (progn
-			  (darkroom-mode 1)
-			  (buffer-face-mode 1)))
-
-		  ;; Proselint
-		  (when (fboundp 'flymake-proselint-setup)
-		      (flymake-mode))
-		  
-		  ;; Spellcheck
-		  (flyspell-mode))))
+	;; Proselint
+	(when (fboundp 'flymake-proselint-setup)
+	    (flymake-mode))
+	
+	;; Spellcheck
+	(flyspell-mode)))
 
 ;;;; Zettelkasten note-taking layer
 (defun task/notes-layer ()
@@ -1267,12 +1264,9 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
     
     (define-minor-mode org-static-blog-watch-mode
 	"Re-run `org-static-blog-publish-async' whenever the current file is saved."
-	nil
-	" Org-Static-Blog-Watch")
-
-    (add-hook 'org-static-blog-watch-mode-hook
-	      (lambda ()
-		  (add-hook 'after-save-hook #'org-static-blog-publish-async nil t)))
+	:init-value nil
+	:lighter " Org-Static-Blog-Watch"
+        (add-hook 'after-save-hook #'org-static-blog-publish-async nil t))
 
     (defun org-static-blog-publish-async ()
 	(interactive)
@@ -1330,3 +1324,16 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
 	    (progn
 		(display-buffer-at-bottom scratch '((window-height . 25)))
 		(other-window 1)))))
+
+(with-eval-after-load 'project
+    (advice-add 'project--vc-list-files
+                :around (lambda (oldfun dir backend extra-ignores)
+                            "Edits the input of `project--vc-list-files' to sanitize TRAMP prefixes from it, and edits the output to re-add them."
+                            (let* ((split (reverse (split-string dir ":"))) ; reverse so the final path will be first and the prefix will be the rest
+                                   (prefix (cdr split)))
+                                (mapcar ; add the tramp prefix back so emacs knows to open the files over tramp
+                                 (lambda (f)
+                                     (string-join
+                                      (reverse (cons f prefix)) ; prefix is reversed, so add things on backwards first too and then reverse again so it all comes out the right order
+                                      ":"))
+                                 (funcall oldfun (car split) backend extra-ignores))))))
