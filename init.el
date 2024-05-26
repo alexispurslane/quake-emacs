@@ -221,7 +221,7 @@ passed in as an argument."
     (recentf-max-saved-items 25)
     (recentf-auto-cleanup 10))
 (use-package tramp
-    :command (tramp-mode))
+    :commands (tramp-mode))
 ;;; ======Basic Packages======
 (defun core/usability-layer ()
     "Loads the core packages needed to make Emacs more usable in the
@@ -496,9 +496,9 @@ passed in as an argument."
         ;; Define the built-in global keybindings — this is the heart of this editor!
         (tyrant-def
 ;;;;;; Top level functions
-	    "'"  '(execute-extended-command :wk "M-x")
+	    "SPC"  '(execute-extended-command :wk "M-x")
 	    ":"    '(pp-eval-expression :wk "Eval expression")
-	    "SPC"    #'project-find-file
+	    ";"    #'project-find-file
 	    "u"    '(universal-argument :wk "C-u")
 	    "C"    #'universal-coding-system-argument
 	    "O"    #'other-window-prefix
@@ -934,7 +934,7 @@ a flat list of the `define-key' expressions to set the text objects up."
 	(setq org-ellipsis "  " ;; folding symbol
 	      org-startup-indented t
 	      org-image-actual-width (list 300)      ; no one wants gigantic images inline
-	      org-hide-emphasis-markers nil         
+	      org-hide-emphasis-markers t         
               org-pretty-entities nil                  ; part of the benefit of lightweight markup is seeing these 
 	      org-agenda-block-separator ""
 	      org-fontify-whole-heading-line t     ; don't fontify the whole like, so tags don't look weird
@@ -1056,16 +1056,15 @@ in `denote-link'."
         (defun denote-silo (dir)
 	    "Create a new directory DIR to function as a `denote' silo and add it to the project list."
 	    (interactive (list (read-directory-name "Silo directory: ")))
-	    (if (not (make-directory dir t))
-		    (progn
-                        (with-temp-file (file-name-concat dir ".dir-locals.el")
-			    (insert (format (concat 
-					     ";;; Directory Local Variables            -*- no-byte-compile: t -*-"
-					     ";;; For more information see (info \"(emacs) Directory Variables\")"
-					     "((nil . ((denote-directory . \"%s\"))))")
-					    (expand-file-name dir))))
-                        (add-to-list 'project--list `(,(expand-file-name dir)))
-                        (project--write-project-list)))))
+	    (unless (not (make-directory dir t))
+                (with-temp-file (file-name-concat dir ".dir-locals.el")
+		    (insert (format (concat 
+				     ";;; Directory Local Variables            -*- no-byte-compile: t -*-"
+				     ";;; For more information see (info \"(emacs) Directory Variables\")"
+				     "((nil . ((denote-directory . \"%s\"))))")
+				    (expand-file-name dir)))))
+            (add-to-list 'project--list `(,(expand-file-name dir)))
+            (project--write-project-list)))
 
     (use-package consult-notes
         :after (denote)
@@ -1284,6 +1283,7 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
 ;; Set some final settings that should always take precidence
 
 (defun quake/fix (frame)
+    (interactive)
     (set-frame-parameter frame 'undecorated t)
     (set-face-attribute 'mode-line frame :inherit 'variable-pitch :height 120)
     (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line))
