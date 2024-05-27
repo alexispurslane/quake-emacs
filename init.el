@@ -53,7 +53,6 @@
                         (setq gc-cons-threshold gc-cons-threshold-original)
                         (message "Restored GC cons threshold")))
 ;;; ======Prelude======
-(profiler-start 'cpu)
 (setq start-time (current-time))
 (require 'cl-lib)
 (require 'rx)
@@ -151,6 +150,7 @@ passed in as an argument."
     (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
     (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))) ; show dashboard in new frames
 ;;;;; Disabling ugly and largely unhelpful UI features 
+    (set-frame-parameter nil 'undecorated t)
     (menu-bar-mode -1)
     (tool-bar-mode -1)
     (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
@@ -1127,10 +1127,11 @@ in `denote-link'."
         :after (doom-themes)
         :config
         (unless spacious-padding-mode 
-            (spacious-padding-mode 1)
-            (set-frame-parameter nil 'undecorated t)
-            (set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
-            (set-face-attribute 'mode-line-inactive nil :inherit 'mode-line)))
+            (advice-add 'spacious-padding-set-faces
+                        :after (lambda (&rest _)
+                                   (set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
+                                   (set-face-attribute 'mode-line-inactive nil :inherit 'mode-line)))
+            (spacious-padding-mode 1)))
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
@@ -1331,4 +1332,3 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
 ;; Set some final settings that should always take precidence
 
 (add-hook 'after-make-frame-functions (lambda (frame) (set-frame-parameter frame 'undecorated t)))
-(profiler-stop)
