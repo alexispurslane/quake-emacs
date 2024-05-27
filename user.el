@@ -7,12 +7,13 @@
 ;; put it after in the layer order
 
 (setq quake-enabled-layers
-      '(core/usability-layer
-	core/editor-layer
-	task/coding-layer
-	task/writing-layer
-	task/notes-layer
-	core/aesthetic-layer
-	optional/bling-layer
-	;; optional/blog-layer
-	))
+      (list
+       #'core/usability-layer
+       #'core/editor-layer
+       #'task/coding-layer
+       #'task/writing-layer
+       #'task/notes-layer
+       #'core/aesthetic-layer
+       #'optional/bling-layer
+       ;; optional/blog-layer
+       ))
