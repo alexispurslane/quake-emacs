@@ -123,6 +123,7 @@ passed in as an argument."
 ;; nice clean
 (when (file-exists-p "~/.quake.d/user.el")
     (load "~/.quake.d/user.el"))
+(load-theme quake-color-theme t)
 
 (message "Finished user-config loading in %.2f seconds" (float-time (time-since start-time)))
 (setq start-time (current-time))
@@ -562,6 +563,7 @@ passed in as an argument."
             "bM"   #'view-echo-area-messages
             "bk"   `(,(lambda () (interactive) (kill-buffer (current-buffer)))
 	                 :wk "Kill this buffer")
+            "bK"   #'kill-buffer
             "br"   '(revert-buffer :wk "Revert")
             "bR"   '(rename-buffer :wk "Rename")
             "bn"    '(switch-to-next-buffer :wk "Next buffer")
@@ -1118,17 +1120,15 @@ in `denote-link'."
         (setq doom-themes-enable-bold t
 	          doom-themes-enable-italic t))
 
-    (load-theme quake-color-theme t)
-    (setq window-divider-default-right-width 3)
-    (set-face-foreground 'vertical-border (face-background 'mode-line))
-    (window-divider-mode)
-
     (use-package spacious-padding
         :after (doom-themes)
         :config
         (unless spacious-padding-mode 
             (advice-add 'spacious-padding-set-faces
                         :after (lambda (&rest _)
+                                   (set-face-foreground 'vertical-border (face-background 'mode-line))
+                                   (setq window-divider-default-right-width 3)
+                                   (window-divider-mode -11)
                                    (set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
                                    (set-face-attribute 'mode-line-inactive nil :inherit 'mode-line)))
             (spacious-padding-mode 1)))
