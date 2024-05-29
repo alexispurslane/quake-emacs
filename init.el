@@ -628,6 +628,7 @@ passed in as an argument."
                             (select-frame new-shell-frame)
                             (funcall quake-term-preferred-command 'new)))
                    :wk "Open new shell")
+            "oa"   #'org-agenda
 
 ;;;;;; Search
             "s"    '(nil :wk "search")
@@ -902,7 +903,8 @@ a flat list of the `define-key' expressions to set the text objects up."
         (corfu-popupinfo-delay 0.3)
         (corfu-popupinfo-direction 'right)
         :config
-
+        ;;;; Turn off return accepting completions!!
+        (define-key corfu-map (kbd "RET") nil)
         (defun corfu-popupinfo-start ()
             (require 'corfu-popupinfo)
             (set-face-attribute 'corfu-popupinfo nil :inherit 'variable-pitch)
