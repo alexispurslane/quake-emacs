@@ -123,7 +123,6 @@ passed in as an argument."
 ;; nice clean
 (when (file-exists-p "~/.quake.d/user.el")
     (load "~/.quake.d/user.el"))
-(load-theme quake-color-theme t)
 
 (message "Finished user-config loading in %.2f seconds" (float-time (time-since start-time)))
 (setq start-time (current-time))
@@ -891,6 +890,7 @@ a flat list of the `define-key' expressions to set the text objects up."
         :hook ((prog-mode . corfu-mode)
 	           (shell-mode . corfu-mode)
                (eshell-mode . corfu-mode)
+               (latex-mode . corfu-mode)
 	           (minibuffer-setup . corfu-enable-in-minibuffer))
         ;; Optional customizations
         :custom
@@ -1105,9 +1105,6 @@ in `denote-link'."
   Loads:
   - `doom-themes', for an unparalleled collection of excellent
   themes, so you never have to go searching for a theme again
-  - `spacious-padding', so your user interface feels less like a
-  cramped TTY and more like a modern editor. We can afford the
-  screen real-estate
   - `mood-line', for an incredibly fast and lightweight emacs modeline
   that offers just the features you need for a great experience
   - `dashboard', because a launchpad is always welcome
@@ -1122,18 +1119,24 @@ in `denote-link'."
         (setq doom-themes-enable-bold t
 	          doom-themes-enable-italic t))
 
-    (use-package spacious-padding
-        :after (doom-themes)
-        :config
-        (unless spacious-padding-mode 
-            (advice-add 'spacious-padding-set-faces
-                        :after (lambda (&rest _)
-                                   (set-face-foreground 'vertical-border (face-background 'mode-line))
-                                   (setq window-divider-default-right-width 3)
-                                   (window-divider-mode -11)
-                                   (set-face-attribute 'mode-line nil :inherit 'variable-pitch :height 120)
-                                   (set-face-attribute 'mode-line-inactive nil :inherit 'mode-line)))
-            (spacious-padding-mode 1)))
+    (load-theme quake-color-theme t)
+    (defun quake/set-aesthetics (frame)
+        (let ((mode-bg (face-background 'mode-line))
+              (main-bg (face-background 'default)))
+            (when (not (frame-parent frame))
+                (set-face-attribute 'internal-border frame :background main-bg)
+                (modify-frame-parameters frame `((internal-border-width . 12))))
+            (set-face-background 'line-number main-bg frame)
+            (set-face-foreground 'vertical-border mode-bg frame)
+            (setq window-divider-default-right-width 1)
+            (window-divider-mode 1)
+            (set-face-attribute 'mode-line frame
+                                :inherit 'variable-pitch
+                                :height 120
+                                :box `(:line-width 5 :color ,mode-bg :style nil))
+            (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line)))
+    (add-hook 'after-make-frame-functions #'quake/set-aesthetics)
+    (quake/set-aesthetics nil)
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
@@ -1183,6 +1186,7 @@ in `denote-link'."
     (use-package eldoc-box
         :config
         (set-face-attribute 'eldoc-box-body nil :inherit 'variable-pitch)
+        (set-face-foreground 'border (face-background 'mode-line))
         :hook (eldoc-mode . eldoc-box-hover-at-point-mode))
 
     ;; Pretty markdown formatting for eldoc-box
