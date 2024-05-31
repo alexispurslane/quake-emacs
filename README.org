@@ -37,7 +37,7 @@ Text editors are most often used for three core tasks: *code editing*, *writing*
 1. First, you install Quake Emacs like usual:
 
 #+begin_src sh
-  git clone https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
+  git clone --depth=1 -b main https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
 #+end_src
 
 2. Then copy the example =user.el= provided with Quake to your Quake Emacs configuration directory at =~/.quake.d/user.el=:

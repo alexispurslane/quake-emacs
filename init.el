@@ -1106,11 +1106,11 @@ in `denote-link'."
         (set-face-foreground 'vertical-border mode-bg frame)
         (setq window-divider-default-right-width 1)
         (window-divider-mode 1)
-        (set-face-attribute 'mode-line frame
-                            :inherit 'variable-pitch
+        (set-face-attribute 'mode-line frame :inherit 'variable-pitch
                             :height 120
                             :box `(:line-width 5 :color ,mode-bg :style nil))
-        (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line))
+        (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line
+                            :box `(:line-width 5 :color ,(face-background 'mode-line-inactive) :style nil)))
     (set-frame-parameter frame 'undecorated t))
 
 (defun core/aesthetic-layer ()
