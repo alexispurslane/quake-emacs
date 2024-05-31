@@ -53,7 +53,6 @@
                         (setq gc-cons-threshold gc-cons-threshold-original)
                         (message "Restored GC cons threshold")))
 ;;; ======Prelude======
-(setq start-time (current-time))
 (require 'cl-lib)
 (require 'rx)
 (require 'package)
@@ -63,8 +62,6 @@
       package-enable-at-startup nil
       use-package-compute-statistics t)
 
-(message "Finished prelude in %.2f seconds" (float-time (time-since start-time)))
-(setq start-time (current-time))
 (defgroup quake nil
     "A customization group for the Quake Emacs distribution."
     :prefix "quake")
@@ -124,8 +121,6 @@ passed in as an argument."
 (when (file-exists-p "~/.quake.d/user.el")
     (load "~/.quake.d/user.el"))
 
-(message "Finished user-config loading in %.2f seconds" (float-time (time-since start-time)))
-(setq start-time (current-time))
 ;;; ======Vanilla Emacs======
 (use-package emacs
     :init
@@ -170,13 +165,6 @@ passed in as an argument."
 			                      (setq display-line-numbers 'relative)
 			                      (hl-line-mode t)
 			                      (electric-pair-mode)))
-;;;;; Customizing the built-in tab-bar to look nice
-    (setq tab-bar-auto-width nil)
-    (setq tab-bar-new-tab-choice "*dashboard*")
-    (setq tab-bar-button-relief 0)
-    (setq tab-bar-show nil)
-    (defun core/current-tab-name ()
-        (alist-get 'name (tab-bar--current-tab)))
 ;;;;; Performance tuning
     (setq gc-cons-percentage 0.2)
 ;;;;;; Optimize font-locking for greater responsiveness
@@ -201,8 +189,23 @@ passed in as an argument."
      'selective-display
      (let ((face-offset (* (face-id 'shadow) (lsh 1 22))))
          (vconcat (mapcar (lambda (c) (+ face-offset c)) " ")))))
-(message "Finished configuring vanilla emacs in %.2f seconds" (float-time (time-since start-time)))
-(setq start-time (current-time))
+;;;; Customizing the built in tab-bar
+(use-package tab-bar
+    :commands (tab-bar-new-tab tab-bar-mode)
+    :init
+    (setq tab-bar-button-relief 0)
+    :config
+    (add-hook 'tab-bar-mode-hook
+              (lambda ()
+                  (set-face-attribute 'tab-bar nil :inherit 'variable-pitch)
+                  (set-face-attribute 'tab-bar-tab nil :box `(:line-width 5 :color ,(face-background 'tab-bar-tab) :style nil))
+                  (set-face-attribute 'tab-bar-tab-inactive nil
+                                      :box `(:line-width 5 :color ,(face-background 'tab-bar-tab-inactive) :style nil))))
+    (setq tab-bar-auto-width t
+          tab-bar-auto-width-max '(200 20)
+          tab-bar-auto-width-min '(200 20))
+    (setq tab-bar-new-tab-choice "*dashboard*")
+    (setq tab-bar-show t))
 ;;;; Vertico-style IComplete
 (use-package icomplete
     :demand t
@@ -233,12 +236,6 @@ passed in as an argument."
     (recentf-auto-cleanup 'never)
     :config
     (recentf-mode))
-(message "Finished configuring vanilla emacs packages in %.2f seconds" (float-time (time-since start-time)))
-(use-package tab-bar
-    :commands (tab-bar-new-tab)
-    ;;:config (tab-bar-mode 1)
-    )
-(setq start-time (current-time))
 ;;; ======Basic Packages======
 (defun core/usability-layer ()
     "Loads the core packages needed to make Emacs more usable in the
@@ -1099,6 +1096,23 @@ in `denote-link'."
 
 ;;; ======Aesthetic Packages======
 ;;;; Core Aesthetic Packages
+(defun quake/set-aesthetics (frame)
+    (let ((mode-bg (face-background 'mode-line))
+          (main-bg (face-background 'default)))
+        (when (not (frame-parent frame))
+            (set-face-attribute 'internal-border frame :background main-bg)
+            (modify-frame-parameters frame `((internal-border-width . 12))))
+        (set-face-background 'line-number main-bg frame)
+        (set-face-foreground 'vertical-border mode-bg frame)
+        (setq window-divider-default-right-width 1)
+        (window-divider-mode 1)
+        (set-face-attribute 'mode-line frame
+                            :inherit 'variable-pitch
+                            :height 120
+                            :box `(:line-width 5 :color ,mode-bg :style nil))
+        (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line))
+    (set-frame-parameter frame 'undecorated t))
+
 (defun core/aesthetic-layer ()
     "If you're going to be staring at your editor all day, it might as well look nice.
 
@@ -1120,23 +1134,7 @@ in `denote-link'."
 	          doom-themes-enable-italic t))
 
     (load-theme quake-color-theme t)
-    (defun quake/set-aesthetics (frame)
-        (let ((mode-bg (face-background 'mode-line))
-              (main-bg (face-background 'default)))
-            (when (not (frame-parent frame))
-                (set-face-attribute 'internal-border frame :background main-bg)
-                (modify-frame-parameters frame `((internal-border-width . 12))))
-            (set-face-background 'line-number main-bg frame)
-            (set-face-foreground 'vertical-border mode-bg frame)
-            (setq window-divider-default-right-width 1)
-            (window-divider-mode 1)
-            (set-face-attribute 'mode-line frame
-                                :inherit 'variable-pitch
-                                :height 120
-                                :box `(:line-width 5 :color ,mode-bg :style nil))
-            (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line)))
     (add-hook 'after-make-frame-functions #'quake/set-aesthetics)
-    (quake/set-aesthetics nil)
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
@@ -1162,8 +1160,7 @@ in `denote-link'."
           :right
           (((mood-line-segment-vc) . "\t")
            ((mood-line-segment-major-mode) . "\t")
-           ((mood-line-segment-checker) . "\t")
-           (core/current-tab-name))))
+           ((mood-line-segment-checker) . "\t"))))
         :config
         (mood-line-mode))
 
@@ -1266,9 +1263,7 @@ generate and manage your entire blog from inside Emacs, then this
 layer is for you.
 
 Loads:
-- `org-static-blog': A beautifully simple SSG for org. No
-external programs, no templating languages, nothing to fiddle
-with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
+- `org-static-blog': A beautifully simple SSG for org."
     (use-package org-static-blog
         :commands (org-static-blog-publish org-static-blog-publish-file org-static-blog-mode))
     
@@ -1296,26 +1291,24 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
          (lambda (publish-time)
              (message (format "Finished publishing blog after %s seconds" publish-time))))))
 
-(message "Finished defining layers in %.2f seconds" (float-time (time-since start-time)))
-(setq start-time (current-time))
 ;;; ======Appendix: Togglable Shell======
-(defvar existing-shell nil)
+(defvar quake--existing-shell nil)
 
 (defun shell-toggle ()
     (interactive)
-    (let* ((existing-window (and existing-shell (get-buffer-window existing-shell))))
+    (let* ((existing-window (and quake--existing-shell (get-buffer-window quake--existing-shell))))
         (if existing-window
                 (delete-window existing-window)
             (let ((display-buffer-alist `((,(rx "\*" (or "terminal" "shell" "eshell" "vterm") "\*")
                                            (display-buffer-in-side-window)
                                            (side . top)
                                            (window-height . 10)))))
-                (unless existing-shell
-                    (setq existing-shell (funcall quake-term-preferred-command
-					                              (when (eq quake-term-preferred-command 'term)
-					                                  (getenv "SHELL")))))
-                (display-buffer existing-shell)
-                (select-window (get-buffer-window existing-shell))))))
+                (unless quake--existing-shell
+                    (setq quake--existing-shell (funcall quake-term-preferred-command
+					                                     (when (eq quake-term-preferred-command 'term)
+					                                         (getenv "SHELL")))))
+                (display-buffer quake--existing-shell)
+                (select-window (get-buffer-window quake--existing-shell))))))
 
 (defun scratch-window-toggle ()
     (interactive)
@@ -1331,10 +1324,9 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
 ;; no garbage collection during startup — we can amortize it later
 ;; Enable layers
 (dolist (layer quake-enabled-layers)
+    (setq start-time (current-time))
     (funcall layer)
-    (message "Finished enabling layers %s in %.2f seconds" layer (float-time (time-since start-time)))
-    (setq start-time (current-time)))
+    (message "Finished enabling layers %s in %.2f seconds" layer (float-time (time-since start-time))))
 
-;; Set some final settings that should always take precidence
-
-(add-hook 'after-make-frame-functions (lambda (frame) (set-frame-parameter frame 'undecorated t)))
+;; Fix the aesthetics
+(quake/set-aesthetics nil)
