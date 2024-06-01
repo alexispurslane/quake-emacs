@@ -561,6 +561,10 @@ configuration"
         :config
 ;;;;; General convenience keybindings
         (general-emacs-define-key 'global-map
+            "C-p C-f" `(,(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
+	                    :wk "Open framework config")
+            "C-p C-u"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
+	                      :wk "Open user config")
             "M-g i" #'consult-imenu
             "M-g r" #'consult-ripgrep
             "M-g g" #'consult-grep
@@ -1050,6 +1054,8 @@ in `denote-link'."
 
 (defun shell-toggle ()
     (interactive)
+    (unless (buffer-live-p quake--existing-shell)
+        (setq quake--existing-shell nil))
     (let* ((existing-window (and quake--existing-shell (get-buffer-window quake--existing-shell))))
         (if existing-window
                 (delete-window existing-window)
