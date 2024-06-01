@@ -559,24 +559,57 @@ configuration"
     (use-package evil-god-state
         :after (god-mode)
         :config
-;;;;; General convenience keybindings
+;;;;; General Quake-recommended keybindings
         (general-emacs-define-key 'global-map
-            "C-p C-f" `(,(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
+            "C-c p"   `(:wk "Profile...")
+            "C-c p f" `(,(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
 	                    :wk "Open framework config")
-            "C-p C-u"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
+            "C-c p u"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
 	                      :wk "Open user config")
-            "M-g i" #'consult-imenu
-            "M-g r" #'consult-ripgrep
-            "M-g g" #'consult-grep
+;;;;;; Consult
+            "M-g i" #'consult-imenu ;; override regular imenu
+            "M-s r" #'consult-ripgrep
+            "M-s f" #'consult-grep
+;;;;;; Opening things
+            "C-c o"       `(:wk "Open...")
+            "C-c o a"   #'org-agenda
+            "C-c o ="   #'calc
+            "C-c o s"   `(,(lambda () (interactive)
+                               (let ((new-shell-frame (make-frame)))
+                                   (select-frame new-shell-frame)
+                                   (funcall quake-term-preferred-command 'new)))
+                          :wk "Open new shell")
+            "C-c o -"   #'dired
+            "C-c o t"   #'toggle-frame-tab-bar
+            "C-c o m"   #'gnus-other-frame
+            "C-c o d"   #'word-processing-mode
+;;;;;; Denote note-taking bindings
+            "C-c n"      `(:wk "Notes.." )
+            "C-c n s"     #'denote-silo
+            "C-c n c"     #'org-capture
+            "C-c n l"     #'org-store-link
+            "C-c n n"     #'consult-notes
+            "C-c n i"     #'denote-link-global
+            "C-c n S-I"   #'denote-link-after-creating
+            "C-c n r"     #'denote-rename-file
+            "C-c n k"     #'denote-keywords-add
+            "C-c n S-K"   #'denote-keywords-remove
+            "C-c n b"     #'denote-backlinks
+            "C-c n S-B"   #'denote-find-backlink
+            "C-c n S-R"   #'denote-region
+;;;;;; Top-level keybindings for convenience
             "C-~" #'shell-toggle
             "C-:" #'eval-expression
-            "C-;" #'project-find-file
-            "C-f C-f" #'find-file
-            "C-f C-r" #'consult-recent-file
             "C-SPC" #'execute-extended-command
             "C-r" #'restart-emacs
-            "C-x C-b" #'consult-buffer
-            "C-x C-S-b" #'ibuffer)
+;;;;;; File and directory manpulation
+            "C-x C-r"   #'consult-recent-file
+            "C-x C-x"   #'delete-file
+            "C-x C-S-x" #'delete-directory
+;;;;;; Buffer manipulation
+            "C-x S-K" #'kill-current-buffer
+            "C-x B" #'ibuffer
+            )
 ;;;;; Core keybindings that make all this work
         (define-key god-local-mode-map (kbd ".") #'repeat)
         (general-evil-define-key '(normal visual) global-map
@@ -860,6 +893,17 @@ in `denote-link'."
                 (insert (denote-format-link file description file-type id-only))
                 (unless (derived-mode-p 'org-mode)
 	                (make-button beg (point) 'type 'denote-link-button))))
+
+        ;; Integrate Denote with org-capture
+        (with-eval-after-load 'org-capture
+            (add-to-list 'org-capture-templates
+                         '("n" "New note (with Denote)" plain
+                           (file denote-last-path)
+                           #'denote-org-capture
+                           :no-save t
+                           :immediate-finish nil
+                           :kill-buffer t
+                           :jump-to-captured t)))
         
         ;; Declare directories with ".dir-locals.el" as a project so
         ;; we can use project.el to manage non-version controlled
