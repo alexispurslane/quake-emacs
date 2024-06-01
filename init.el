@@ -71,6 +71,7 @@
     (list
      #'core/usability-layer
      #'core/editor-layer
+     #'optional/god-layer ;; or #'optional/devil-layer
      #'task/coding-layer
      #'task/writing-layer
      #'task/notes-layer
@@ -291,7 +292,9 @@ passed in as an argument."
         :custom
         (which-key-idle-delay 0.1)
         (which-key-idle-secondary-delay nil)
-        (which-key-sort-order #'which-key-key-order-alpha))
+        (which-key-sort-order #'which-key-key-order-alpha)
+        :config
+        (which-key-enable-god-mode-support))
 ;;;; Better Emacs Lisp editing experience
     (use-package elisp-def
         :hook (emacs-lisp-mode . elisp-def-mode))
@@ -373,7 +376,8 @@ passed in as an argument."
         (add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map))))
 
 
-;;; ======Evil Mode Layer======
+;;; ======Non-Emacs Keybindings======
+;;;; Core largely unopinionated evil-mode layer
 (defun core/editor-layer ()
     "'Emacs is a great OS, if only it had a good editor.' With
   the powerful text-object based command language of Vim, and the
@@ -390,7 +394,7 @@ passed in as an argument."
   keybindings, so you can control Emacs from the comfort of your
   leader key"
 
-;;;; Evil mode itself (and associated integrations)
+;;;;; Evil mode itself (and associated integrations)
     (use-package evil
         :custom
         (evil-want-integration t)
@@ -423,7 +427,7 @@ passed in as an argument."
     (use-package evil-cleverparens
         :after (evil)
         :hook ((lisp-mode . evil-cleverparens-mode)))
-;;;; Custom evil mode key bindings
+;;;;; Custom evil mode key bindings
     (use-package general
         ;; PERF: Loading `general' early make Emacs very slow on startup.
         :after (evil evil-collection)
@@ -434,7 +438,7 @@ passed in as an argument."
         ;; aliases (like `nmap') for VIM mapping functions.
         (general-evil-setup t)
 
-	;;;;; CUA integration
+;;;;;; CUA integration
         ;; We want to be able to use ctrl-v and ctrl-c just for
         ;; convenience/user-friendliness, especially since ctrl-shift-v
         ;; doesn't work in evil, unlike (terminal) vim
@@ -445,7 +449,7 @@ passed in as an argument."
             "C-z"    #'undo
             "C-y"    #'undo-redo
             "M-RET"  #'outline-insert-heading)
-;;;;; Miscillanious useful keybindings for emacs capabilities
+;;;;;; Miscillanious useful keybindings for emacs capabilities
         (general-nvmap
             "ga"   #'embark-act
             "g RET" #'embark-dwim
@@ -474,265 +478,9 @@ passed in as an argument."
             "gc" #'comment-region
             "gC" #'uncomment-region
             ;; keybindings for outline mode
-            "TAB" #'evil-toggle-fold)
-;;;;; Create the mode-specific leader key mapping function
-        (general-create-definer +core--internal-local-map!
-            :states '(insert emacs visual normal)
-            :keymaps 'override              
-            :prefix "SPC m"      
-            :global-prefix "M-SPC m")
-;;;;; Add mode-specific keybindings
-        (add-hook 'emacs-lisp-mode-hook
-                  (lambda ()
-		              (+core--internal-local-map!
-                          "E" #'eval-print-last-sexp
-                          "e" #'eval-last-sexp
-                          "d" #'eval-defun
-                          "b" #'eval-buffer
-                          "r" #'eval-region)))
+            "TAB" #'evil-toggle-fold))
 
-        (add-hook 'pandoc-mode-hook
-	              (lambda ()
-		              (+core--internal-local-map!
-		                  "p" #'pandoc-main-hydra/body)))
-
-        (add-hook 'outline-minor-mode
-	              (lambda ()
-		              (+core--internal-local-map!
-		                  "j"  #'outline-move-subtree-down
-		                  "k"  #'outline-move-subtree-up
-		                  "h"  #'outline-promote
-		                  "l"  #'outline-demote)))
-
-        (add-hook 'org-mode-hook
-	              (lambda ()
-                      (local-set-key (kbd "RET") #'evil-org-return)
-		              (+core--internal-local-map!
-                          "L"     #'org-insert-link)))
-;;;;; Spacemacs/Doom-like evil mode leader key keybindings
-        ;; gobal keybindgs that are truly global
-        (general-create-definer tyrant-def
-            :states '(normal insert motion emacs)
-            :keymaps 'override
-            :prefix "SPC"
-            :non-normal-prefix "M-SPC")
-
-        ;; Define the built-in global keybindings — this is the heart of this editor!
-        (tyrant-def
-;;;;;; Top level functions
-            "SPC"  '(execute-extended-command :wk "M-x")
-            ":"    '(pp-eval-expression :wk "Eval expression")
-            ";"    #'project-find-file
-            "u"    '(universal-argument :wk "C-u")
-            "C"    #'universal-coding-system-argument
-            "O"    #'other-window-prefix
-            "r"    #'restart-emacs
-            "~"    #'shell-toggle
-
-;;;;;; Quit/Session
-            "q"    '(nil :wk "quit/session")
-            "qq"   #'save-buffers-kill-terminal
-            "qQ"   #'kill-emacs
-            "qS"   #'server-start
-            "qR"   #'recover-session
-            "qd"   #'desktop-read
-            "qs"   #'desktop-save
-            "qr"   #'restart-emacs
-
-;;;;;; Files 
-            "f"    '(nil :wk "file") "fS"   '(write-file :wk "Save as ...")
-            "fi"   #'auto-insert
-            "ff"   #'find-file
-            "fs"   #'save-buffer
-            "ft"   #'recover-this-file
-            "fT"   #'recover-file
-            "fr"   #'consult-recent-file
-            "fa"   #'outline-show-all
-            "fh"   (lambda () (interactive) (outline-hide-sublevels 1))
-            "ft"   #'tab-switch
-
-;;;;;; Personal Profile 
-            "P"    '(nil :wk "profile")
-            "Pf"   `(,(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
-	                 :wk "Open framework config")
-            "Pu"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
-	                 :wk "Open user config")
-
-;;;;;; Buffers 
-            "b"    '(nil :wk "buffer")
-            "bB"   #'switch-to-buffer-other-tab
-            "bb"   #'consult-buffer
-            "bI"   #'ibuffer
-            "bx"   #'bury-buffer
-            "bS"   #'save-some-buffers
-            "bM"   #'view-echo-area-messages
-            "bk"   `(,(lambda () (interactive) (kill-buffer (current-buffer)))
-	                 :wk "Kill this buffer")
-            "bK"   #'kill-buffer
-            "br"   '(revert-buffer :wk "Revert")
-            "bR"   '(rename-buffer :wk "Rename")
-            "bn"    '(switch-to-next-buffer :wk "Next buffer")
-            "bp"    '(switch-to-prev-buffer :wk "Previous buffer")
-;;;;;;; Lines
-            "bl"   '(nil :wk "line")
-            "blk"  #'keep-lines ;; Will be overwritten with `consult-keep-lines'
-;;;;;;; Bookmarks
-            "bm"   '(nil :wk "bookmark")
-            "bmm"  #'bookmark-set
-            "bmd"  #'bookmark-delete
-;;;;;;; Files / Local variables
-            "bv"   '(nil :wk "locals")
-            "bvv"  '(add-file-local-variable :wk "Add")
-            "bvV"  '(delete-file-local-variable :wk "Delete")
-            "bvp"  '(add-file-local-variable-prop-line :wk "Add in prop line")
-            "bvP"  '(delete-file-local-variable-prop-line :wk "Delete from prop line")
-            "bvd"  '(add-dir-local-variable :wk "Add to dir-locals")
-            "bvD"  '(delete-dir-local-variable :wk "Delete from dir-locals")
-
-;;;;;; Insert
-            "i"    '(nil :wk "insert")
-            "iu"   '(insert-char :wk "Unicode char")
-            "ip"   #'yank-pop ;; Will be overwritten with `consult-yank-pop'
-            "iei"  #'emoji-insert
-            "ie+"  #'emoji-zoom-increase
-            "ie-"  #'emoji-zoom-decrease
-            "ie0"  #'emoji-zoom-reset
-            "ied"  #'emoji-describe
-            "iel"  #'emoji-list
-            "ier"  #'emoji-recent
-            "iee"  #'emoji-search
-
-;;;;;; Window
-            "w"    '(nil :wk "window")
-            "wd"   #'delete-window
-            "wD"   #'delete-windows-on
-            "wo"   #'delete-other-windows
-            "wm"   #'maximize-window
-            "wu"   #'winner-undo
-            "wU"   #'winner-redo
-            "wj"   #'evil-window-down
-            "wk"   #'evil-window-up
-            "wh"   #'evil-window-left
-            "wl"   #'evil-window-right
-            "ws"   #'split-window-vertically
-            "wv"   #'split-window-horizontally
-            "ww"   #'other-window
-
-;;;;;; Applications (Open)
-            "o"    '(nil :wk "open")
-            "o-"   '(dired :wk "Dired") ;; Will be overwritten if dirvish is used
-            "ot"   #'treemacs
-            "oT"   #'toggle-frame-tab-bar
-            "od"   #'word-processing-mode
-            "og"   #'gnus-other-frame
-            "op"   #'pandoc-mode
-            "o="   #'calc
-            "ow"   #'scratch-window-toggle
-            "os" `(,(lambda () (interactive)
-                        (let ((new-shell-frame (make-frame)))
-                            (select-frame new-shell-frame)
-                            (funcall quake-term-preferred-command 'new)))
-                   :wk "Open new shell")
-            "oa"   #'org-agenda
-
-;;;;;; Search
-            "s"    '(nil :wk "search")
-            "si"    #'consult-imenu
-            "sr"    #'consult-ripgrep
-            "sf"    #'consult-find
-
-;;;;;; Mode specific a.k.a. "local leader" 
-            "m"    '(nil :wk "mode-specific")
-
-;;;;; Version Control
-            "g"    '(nil :wk "git/vc")
-            "gg"   #'magit
-
-;;;;;; Toggle
-            "t"    '(nil :wk "toggle")
-            "td"   #'toggle-debug-on-error
-            "tr"   #'read-only-mode
-            "tl"   #'follow-mode
-            "tv"   #'visible-mode
-            "tf"   #'flymake-mode
-
-;;;;;; Language Server
-            "l"    '(nil :wk "lsp and flymake")
-            "le"    #'eglot
-            "lr"    #'eglot-rename
-            "la"    #'eglot-code-actions
-            "lx"    #'eglot-code-action-extract
-            "lf"    #'eglot-code-action-quickfix
-            "l!"    #'consult-flymake
-            "ln"    #'flymake-goto-next-error
-            "lp"    #'flymake-goto-prev-error
-
-;;;;;; Debug
-            "d"    '(nil :wk "debug")
-            "dG"   #'gdb
-            "dd"   #'dape
-
-;;;;;; Notes
-            "n"    '(nil :wk "notes")
-            "ns"   #'denote-silo
-            "nc"   #'denote
-            "nn"   #'consult-notes
-            "ni"   #'denote-link-global
-            "nI"   #'denote-link-after-creating
-            "nr"   #'denote-rename-file
-            "nk"   #'denote-keywords-add
-            "nK"   #'denote-keywords-remove
-            "nb"   #'denote-backlinks
-            "nB"   #'denote-find-backlink
-            "nR"   #'denote-region
-
-;;;;;; Help
-            "h"    '(nil :wk "help")
-            "hi"   #'info
-            "hg"   #'general-describe-keybindings
-
-            "he"   '(nil :wk "elisp/emacs")
-            "hes"  #'elisp-index-search
-            "hem"  #'info-emacs-manual
-            "hei"  #'Info-search
-
-            "hv"  #'helpful-variable
-            "hk"  #'helpful-key
-            "hc"  #'helpful-command
-            "hf"  #'helpful-callable
-            "hm"  #'describe-keymap
-            "hb"  #'describe-bindings
-            "hs"  #'describe-symbol
-            "hp"  #'describe-package
-
-;;;;;; Project
-            "p"    '(nil :wk "project")
-            "pp"  #'project-switch-project
-            "pc"  #'project-compile
-            "pd"  #'project-find-dir
-            "pf"  #'project-find-file
-            "pk"  #'project-kill-buffers
-            "pb"  #'project-switch-to-buffer
-            "p-"  #'project-dired
-            "px"  #'project-execute-extended-command
-;;;;;;; Compile / Test
-            "pc" #'project-compile
-;;;;;;; Run
-            "pr"  '(nil :wk "run")
-            "prc" #'project-shell-command
-            "prC" #'project-async-shell-command
-;;;;;;; Forget
-            "pF"  '(nil :wk "forget/cleanup")
-            "pFp" #'project-forget-project
-            "pFu" #'project-forget-projects-under
-;;;;;;; Search / Replace
-            "ps"  '(nil :wk "search/replace")
-            "pss" #'project-search
-            "psn" '(fileloop-continue :wk "Next match")
-            "psr" #'project-query-replace-regexp
-            "psf" #'project-find-regexp))
-
-;;;; Evil mode text object support
+;;;;; Evil mode text object support
     (use-package evil-textobj-tree-sitter
         :after (evil evil-collection general)
         :config
@@ -798,7 +546,40 @@ a flat list of the `define-key' expressions to set the text objects up."
 
                                    finally (return exprs)))))
         (define-textobjs)))
+;;;; God-Mode based leader key layer
+(make-obsolete 'optional/devil-layer "an obsolete keybinding layer that required too much maintinence to be practical." "Jun 1st, 2024")
 
+(defun optional/god-layer ()
+    "This layer sets up and configures `god-mode' to act like a leader
+key, so that you can take advantage of all existing Emacs
+keybindings and documentation, while having something close to
+the ergonomics of a true leader key. This is the recommended
+configuration"
+    (use-package god-mode :after (evil general))
+    (use-package evil-god-state
+        :after (god-mode)
+        :config
+;;;;; General convenience keybindings
+        (general-emacs-define-key 'global-map
+            "M-g i" #'consult-imenu
+            "M-g r" #'consult-ripgrep
+            "M-g g" #'consult-grep
+            "C-~" #'shell-toggle
+            "C-:" #'eval-expression
+            "C-;" #'project-find-file
+            "C-f C-f" #'find-file
+            "C-f C-r" #'consult-recent-file
+            "C-SPC" #'execute-extended-command
+            "C-r" #'restart-emacs
+            "C-x C-b" #'consult-buffer
+            "C-x C-S-b" #'ibuffer)
+;;;;; Core keybindings that make all this work
+        (define-key god-local-mode-map (kbd ".") #'repeat)
+        (general-evil-define-key '(normal visual) global-map
+            "SPC" #'evil-execute-in-god-state)
+        (evil-define-key 'god global-map [escape] 'evil-god-state-bail)
+        (general-evil-define-key '(god) global-map
+            "C-w" #'evil-window-map)))
 ;;; ======Task Specific Layers======
 ;;;; Coding layer
 (defun task/coding-layer ()
@@ -827,6 +608,7 @@ a flat list of the `define-key' expressions to set the text objects up."
     (use-package magit
         :commands (magit-status magit-get-current-branch)
         :custom
+        (magit-define-global-keybindings 'recommended)
         (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
         :config
                                         ; Escape quits magit help mode like I expect
@@ -1156,6 +938,7 @@ in `denote-link'."
            (replace . ("Ⓡ" . font-lock-type-face))
            (motion . ("Ⓜ" . font-lock-constant-face))
            (operator . ("Ⓞ" . font-lock-function-name-face))
+           (god . ("Ⓖ" . font-lock-function-name-face))
            (emacs . ("Ⓔ" . font-lock-builtin-face))) )
         (mood-line-format
          (mood-line-defformat
