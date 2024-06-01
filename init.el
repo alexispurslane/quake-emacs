@@ -76,7 +76,6 @@
      #'task/notes-layer
      #'core/aesthetic-layer
      #'optional/bling-layer
-     ;; optional/blog-layer
      )
     "The function symbols for the layers that Quake Emacs
 should enable on startup.
@@ -314,6 +313,9 @@ passed in as an argument."
 ;;;; Better peformance using asynchronous processing with subordinate Emacs processes 
     (use-package async
         :commands (async-start async-start-process))
+;;;; Org-Mode improvements
+    (use-package toc-org
+        :hook (org-mode . toc-org-mode))
 ;;;; Embark
     (use-package embark
         :commands (embark-act embark-dwim)
@@ -381,6 +383,8 @@ passed in as an argument."
 
   - `evil', the Emacs editor of choice
   - `evil-collection', to integrate Evil mode with everything else
+  - `evil-cleverparens', to give you proper S-expr editing
+    capabilities, since you'll be doing a lot of that
   - `general', because I would otherwise have to invent my own
   keybinding system, and an extensive set of leader key
   keybindings, so you can control Emacs from the comfort of your
@@ -416,6 +420,9 @@ passed in as an argument."
         :after (evil)
         :config
         (evil-collection-init))
+    (use-package evil-cleverparens
+        :after (evil)
+        :hook ((lisp-mode . evil-cleverparens-mode)))
 ;;;; Custom evil mode key bindings
     (use-package general
         ;; PERF: Loading `general' early make Emacs very slow on startup.
@@ -442,6 +449,8 @@ passed in as an argument."
         (general-nvmap
             "ga"   #'embark-act
             "g RET" #'embark-dwim
+            ;; org mode
+            "gt"   #'org-toggle-checkbox
             ;; fill-region >> vim gqq
             "gq"   #'fill-region-as-paragraph
             ;; Support for visual fill column mode and visual line mode
@@ -497,9 +506,9 @@ passed in as an argument."
 
         (add-hook 'org-mode-hook
 	              (lambda ()
+                      (local-set-key (kbd "RET") #'evil-org-return)
 		              (+core--internal-local-map!
-		                  "p"     #'org-static-blog-publish-async
-		                  "L"     #'org-insert-link)))
+                          "L"     #'org-insert-link)))
 ;;;;; Spacemacs/Doom-like evil mode leader key keybindings
         ;; gobal keybindgs that are truly global
         (general-create-definer tyrant-def
@@ -848,10 +857,9 @@ a flat list of the `define-key' expressions to set the text objects up."
 
     (with-eval-after-load 'eglot
         (setq eglot-autoshutdown t
-	          eglot-events-buffer-size 0
 	          eglot-sync-connect nil)
-        (add-hook 'prog-mode-hook (lambda ()
-				                      (message "Tip: Press `SPC l e' to activate your LSP if you have one!"))))
+        (fset #'jsonrpc--log-event #'ignore)
+        (add-hook 'prog-mode-hook (lambda () (message "Tip: Press `SPC l e' to activate your LSP if you have one!"))))
 
 ;;;;; Eglot-compatible Debug Adapter Protocol client (for more IDE shit)
     (use-package dape
@@ -1253,43 +1261,6 @@ in `denote-link'."
 					                         "?=" "?." "??" ";;" "/*" "/=" "/>" "//" "__" "~~" "(*" "*)"
 					                         "\\\\" "://"))
         :hook (prog-mode . ligature-mode)))
-
-;;;; A simple, lightweight static site generator layer, with added asynchronicity
-(defun optional/blog-layer ()
-    "Blog writing is one of the most common writing tasks there
-is. With the existing `task/writing-layer' you should have all
-you need to write blog entries, but in case you want to fully
-generate and manage your entire blog from inside Emacs, then this
-layer is for you.
-
-Loads:
-- `org-static-blog': A beautifully simple SSG for org."
-    (use-package org-static-blog
-        :commands (org-static-blog-publish org-static-blog-publish-file org-static-blog-mode))
-    
-    (define-minor-mode org-static-blog-watch-mode
-        "Re-run `org-static-blog-publish-async' whenever the current file is saved."
-        :init-value nil
-        :lighter " Org-Static-Blog-Watch"
-        (add-hook 'after-save-hook #'org-static-blog-publish-async nil t))
-
-    (defun org-static-blog-publish-async ()
-        (interactive)
-        (async-start
-         `(lambda ()
-	          (let ((start-time (current-time)))
-	              (setq load-path ',load-path)
-	              (require 'org-static-blog)
-	              transfer variables without having to load this entire init.el file again
-	              ,@(cl-loop for x in (cl-remove 'custom-group (custom-group-members group nil)
-					                             :key #'cadr)
-		                     for variable = (car x)
-		                     for value = (symbol-value variable)
-		                     collect `(setq ,variable ,value))
-	              (org-static-blog-publish)
-	              (format "%.2f" (float-time (time-since start-time)))))
-         (lambda (publish-time)
-             (message (format "Finished publishing blog after %s seconds" publish-time))))))
 
 ;;; ======Appendix: Togglable Shell======
 (defvar quake--existing-shell nil)

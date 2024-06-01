@@ -26,12 +26,13 @@ then Quake Emacs is for you.
 
 Text editors are most often used for three core tasks: *code editing*, *writing*, and *note-taking*. Quake Emacs is a single-file Emacs distribution architected around those three fundamental tasks, aiming to provide a lean, fast, focused, and complete experience for all three right out of the box, while remaining as simple and vanilla as possible, so you can use it as a great foundation for bare-metal Emacs configuration.
 
-** Table of Contents                                               :TOC_2_gh:
-  - [[#how-to-install][How To Install]]
-  - [[#key-features][Key Features]]
-  - [[#showcase][Showcase]]
-  - [[#justification][Justification]]
-  - [[#inspiration-and-prior-art][Inspiration and Prior Art]]
+** Table of Contents                                               :TOC_2_org:
+  - [[How To Install][How To Install]]
+  - [[Key Features][Key Features]]
+  - [[Showcase][Showcase]]
+  - [[Personal Configuration and Extra Layers][Personal Configuration and Extra Layers]]
+  - [[Justification][Justification]]
+  - [[Inspiration and Prior Art][Inspiration and Prior Art]]
 
 ** How To Install
 1. First, you install Quake Emacs like usual:
@@ -129,6 +130,22 @@ I've also unlocked the power of having your code editor, word processor, and not
 Want to have several separate Zettelkasten for different projects? I've created a [[https://github.com/protesilaos/denote/issues/367][custom command]] that allows you to automatically create a new denote silo and add it to =project.el=, so you can manage your silos just like any other project without having to put them in version control.
 
 [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/denote-note-project.png]]
+
+** Personal Configuration and Extra Layers
+When writing custom configuration in your =user.el=, it is recommended that you separate out your configuration out into logical groups of packages, functions, and other configuration code, bundled up into a function, according to their general purpose. This is precisely what Quake Emacs does — we call these logical units "layers", after the fashion of Doom Emacs and Spacemacs, although they're just regular functions, no boilerplate necessary — and it has a few benefits. First, it means that your code is easier to fold and navigate with imenu without even needing to insert outline headlines, and easier to document in an accessible way, since you gain the ability to attach docstrings not just to individual functions, but to logical groups of things, so you can document what you're doing and why at a higher level, essentially reproducing much of the benefit of a literate config. Second, it just means your code is more logically and neatly organized, the better to avoid Emacs bankruptcy. And thirdly, it means that you can take advantage of Quake Emacs's existing logic for running layers, and slot your own code neatly anywhere you want in the Quake Emacs load order, in case you need to run before some things but after others, without having to modify the core =init.el= or do any other hacks.
+
+Out of the box, Quake Emacs contains only the layers that you will absolutely need for a good general-purpose writing, note taking, and code editing experience, as explained above. However, if you find yourself needing more functionality, in addition to writing your own layers, I have a few Gists containing some layers I've constructed for personal use, here:
+
+| Layer Name             | Layer Description                                                                                                                 |
+|------------------------+-----------------------------------------------------------------------------------------------------------------------------------|
+| [[https://gist.github.com/alexispurslane/73980e92173d5cb85f2b644734c265ba][org-static-blog-layer]]  | Use org-mode and Emacs to directly generate your blog, no external programs needed! Have your blog wherever you have your editor! |
+| [[https://gist.github.com/alexispurslane/93c35dcfc910088016e0603aec9b24e0][eshell-layer]]           | Modernize eshell, for those used to modern shells like Fish and Nushell, or heavily extended Zsh.                                 |
+| [[https://gist.github.com/alexispurslane/28be85797872fcc3fda80e2aa973903c][gnus-proton-mail-layer]] | Use GNUS to send (asynchronously!) and receive mail with Proton Mail.                                                             |
+| [[https://gist.github.com/alexispurslane/f60785a3895dd1d4487717e56f93349c][tramp-distrobox-layer]]  | Use TRAMP with Distrobox (for immutable distros mainly)                                                                           |
+
+#+begin_quote
+[!NOTE] If you write a layer you think might be generally  useful to others, as long as it is reasonably small and self-contained, you are more than encouraged to submit a PR on this readme so we can add it to the list!
+#+end_quote
 
 ** Justification
 With the introduction of various modern Emacs features in the last few years, and the emergence of a new generation of Emacs packages focused on integrating with vanilla Emacs, Emacs distributions as we have known them are less and less relevant.
