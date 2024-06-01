@@ -26,13 +26,13 @@ then Quake Emacs is for you.
 
 Text editors are most often used for three core tasks: *code editing*, *writing*, and *note-taking*. Quake Emacs is a single-file Emacs distribution architected around those three fundamental tasks, aiming to provide a lean, fast, focused, and complete experience for all three right out of the box, while remaining as simple and vanilla as possible, so you can use it as a great foundation for bare-metal Emacs configuration.
 
-** Table of Contents                                               :TOC_2_org:
-  - [[How To Install][How To Install]]
-  - [[Key Features][Key Features]]
-  - [[Showcase][Showcase]]
-  - [[Personal Configuration and Extra Layers][Personal Configuration and Extra Layers]]
-  - [[Justification][Justification]]
-  - [[Inspiration and Prior Art][Inspiration and Prior Art]]
+** Table of Contents                                               :TOC_2_gh:
+  - [[#how-to-install][How To Install]]
+  - [[#key-features][Key Features]]
+  - [[#showcase][Showcase]]
+  - [[#personal-configuration-and-extra-layers][Personal Configuration and Extra Layers]]
+  - [[#justification][Justification]]
+  - [[#inspiration-and-prior-art][Inspiration and Prior Art]]
 
 ** How To Install
 1. First, you install Quake Emacs like usual:
@@ -132,7 +132,11 @@ Want to have several separate Zettelkasten for different projects? I've created 
 [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/denote-note-project.png]]
 
 ** Personal Configuration and Extra Layers
-When writing custom configuration in your =user.el=, it is recommended that you separate out your configuration out into logical groups of packages, functions, and other configuration code, bundled up into a function, according to their general purpose. This is precisely what Quake Emacs does — we call these logical units "layers", after the fashion of Doom Emacs and Spacemacs, although they're just regular functions, no boilerplate necessary — and it has a few benefits. First, it means that your code is easier to fold and navigate with imenu without even needing to insert outline headlines, and easier to document in an accessible way, since you gain the ability to attach docstrings not just to individual functions, but to logical groups of things, so you can document what you're doing and why at a higher level, essentially reproducing much of the benefit of a literate config. Second, it just means your code is more logically and neatly organized, the better to avoid Emacs bankruptcy. And thirdly, it means that you can take advantage of Quake Emacs's existing logic for running layers, and slot your own code neatly anywhere you want in the Quake Emacs load order, in case you need to run before some things but after others, without having to modify the core =init.el= or do any other hacks.
+When writing custom configuration in your =user.el=, it is recommended that you separate your configuration out into logical groups of =use-package= declarations (which bundle up package installation and configuration neatly) each contained within functions, according to their general purpose. This is precisely what Quake Emacs does — we call these logical units "layers", after the fashion of Doom Emacs and Spacemacs, although they're just regular functions, no boilerplate necessary — and it has a few benefits:
+
+1. It means that your code is easier to fold and navigate with imenu without even needing to insert outline headlines, and easier to document in an accessible way, since you gain the ability to attach docstrings not just to individual functions, but to logical groups of things, so you can document what you're doing and why at a higher level, essentially reproducing much of the benefit of a literate config.
+2. It just means your code is more logically and neatly organized, the better to avoid Emacs bankruptcy.
+3. Finally, it means that you can take advantage of Quake Emacs's existing logic for running layers, and slot your own code neatly anywhere you want in the Quake Emacs load order, in case you need to run before some things but after others, without having to modify the core =init.el= or do any other hacks.
 
 Out of the box, Quake Emacs contains only the layers that you will absolutely need for a good general-purpose writing, note taking, and code editing experience, as explained above. However, if you find yourself needing more functionality, in addition to writing your own layers, I have a few Gists containing some layers I've constructed for personal use, here:
 
