@@ -145,7 +145,6 @@ passed in as an argument."
     (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
     (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))) ; show dashboard in new frames
 ;;;;; Disabling ugly and largely unhelpful UI features 
-    (set-frame-parameter nil 'undecorated t)
     (menu-bar-mode -1)
     (tool-bar-mode -1)
     (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
@@ -153,7 +152,6 @@ passed in as an argument."
     (setq pixel-scroll-precision-interpolate-mice t
 	      pixel-scroll-precision-interpolate-page t)
     (pixel-scroll-precision-mode 1)        ; smooth scrolling
-    (cua-mode t)                           ; Ctrl-C, Ctrl-V, etc
     (winner-mode 1)                        ; better window manipulation
     (savehist-mode 1)                      ; remember commands
     (column-number-mode)                   ; keep track of column number for the useful modeline readout
@@ -245,6 +243,7 @@ passed in as an argument."
   - `which-key' to show what keys can be pressed next at each stage of a
   key combination
   - `helpful' to give slower, but better, documentation for Emacs Lisp
+  - `general', a more generally useful set of keybinding macros for Emacs
   - `icomplete' with careful configuration (thanks to Prot!) to
     make it work just as nicely as Vertico
   - `marginalia', to add crucial metadata to icomplete completion
@@ -272,6 +271,10 @@ passed in as an argument."
 
     (use-package consult
         :commands (consult-grep consult-ripgrep consult-man)
+        :bind (("M-g i"   . #'consult-imenu) ;; override regular imenu
+               ("M-s r"   . #'consult-ripgrep)
+               ("M-s f"   . #'consult-grep)
+               ("C-x C-r" . #'consult-recent-file))
         :config
         ;; We also want to use this for in-buffer completion, which icomplete can't do alone
         (setq xref-show-xrefs-function #'consult-xref
@@ -312,13 +315,21 @@ passed in as an argument."
 	           (text-mode . outline-minor-mode))
         :config
         (add-hook 'outline-minor-mode-hook (lambda ()
-					                           (outline-show-all))))
+					                           (outline-show-all)))
+        (general-emacs-define-key 'global-map
+            "C-c C-o" `(,outline-mode-prefix-map :wk "Outline/Folding...")))
 ;;;; Better peformance using asynchronous processing with subordinate Emacs processes 
     (use-package async
         :commands (async-start async-start-process))
 ;;;; Org-Mode improvements
     (use-package toc-org
         :hook (org-mode . toc-org-mode))
+;;;; Better keybinding framework than even use-package, which supports evil mode
+    (use-package general
+        ;; PERF: Loading `general' early make Emacs very slow on startup.
+        :config
+        ;; Advise `define-key' to automatically unbind keys when necessary.
+        (general-auto-unbind-keys))
 ;;;; Embark
     (use-package embark
         :commands (embark-act embark-dwim)
@@ -396,6 +407,7 @@ passed in as an argument."
 
 ;;;;; Evil mode itself (and associated integrations)
     (use-package evil
+        :after (general)
         :custom
         (evil-want-integration t)
         (evil-want-keybinding nil)
@@ -404,8 +416,11 @@ passed in as an argument."
         (evil-undo-system 'undo-redo)
         (evil-kill-on-visual-paste nil) ;; oh thank god
         :config
-        (evil-mode 1)
-        
+        (evil-mode 1) 
+        ;; Set up some basic equivalents (like `general-nmap') with short named
+        ;; aliases (like `nmap') for VIM mapping functions.
+        (general-evil-setup t)
+;;;;; Custom evil mode key bindings
         ;; Make :q close the buffer and window, not quit the entire
         ;; Emacs application (we never leave Emacs!)
         (global-set-key [remap evil-quit] 'kill-buffer-and-window)
@@ -418,25 +433,7 @@ passed in as an argument."
         (evil-set-leader nil (kbd "C-SPC"))
 
         ;; set leader key in normal state
-        (evil-set-leader 'normal (kbd "SPC")))
-
-    (use-package evil-collection
-        :after (evil)
-        :config
-        (evil-collection-init))
-    (use-package evil-cleverparens
-        :after (evil)
-        :hook ((lisp-mode . evil-cleverparens-mode)))
-;;;;; Custom evil mode key bindings
-    (use-package general
-        ;; PERF: Loading `general' early make Emacs very slow on startup.
-        :after (evil evil-collection)
-        :config
-        ;; Advise `define-key' to automatically unbind keys when necessary.
-        (general-auto-unbind-keys)
-        ;; Set up some basic equivalents (like `general-nmap') with short named
-        ;; aliases (like `nmap') for VIM mapping functions.
-        (general-evil-setup t)
+        (evil-set-leader 'normal (kbd "SPC"))
 
 ;;;;;; CUA integration
         ;; We want to be able to use ctrl-v and ctrl-c just for
@@ -480,6 +477,14 @@ passed in as an argument."
             ;; keybindings for outline mode
             "TAB" #'evil-toggle-fold))
 
+    (use-package evil-collection
+        :after (evil)
+        :config
+        (evil-collection-init))
+
+    (use-package evil-cleverparens
+        :after (evil)
+        :hook ((lisp-mode . evil-cleverparens-mode))) 
 ;;;;; Evil mode text object support
     (use-package evil-textobj-tree-sitter
         :after (evil evil-collection general)
@@ -559,6 +564,14 @@ configuration"
     (use-package evil-god-state
         :after (god-mode)
         :config
+;;;;; Make which-key for the top level keybindings show up when you enter evil-god-state
+        (add-hook 'evil-god-state-entry-hook
+                  (lambda ()
+                      (which-key--create-buffer-and-show nil
+                                                         nil
+                                                         (lambda (x) (and (not (null (car x)))
+                                                                          (not (null (cdr x)))))
+                                                         "Top-level bindings")))
 ;;;;; General Quake-recommended keybindings
         (general-emacs-define-key 'global-map
             "C-c p"   `(:wk "Profile...")
@@ -566,12 +579,9 @@ configuration"
 	                    :wk "Open framework config")
             "C-c p u"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
 	                      :wk "Open user config")
-;;;;;; Consult
-            "M-g i" #'consult-imenu ;; override regular imenu
-            "M-s r" #'consult-ripgrep
-            "M-s f" #'consult-grep
+            
 ;;;;;; Opening things
-            "C-c o"       `(:wk "Open...")
+            "C-c o"     `(:wk "Open...")
             "C-c o a"   #'org-agenda
             "C-c o ="   #'calc
             "C-c o s"   `(,(lambda () (interactive)
@@ -583,27 +593,13 @@ configuration"
             "C-c o t"   #'toggle-frame-tab-bar
             "C-c o m"   #'gnus-other-frame
             "C-c o d"   #'word-processing-mode
-;;;;;; Denote note-taking bindings
-            "C-c n"      `(:wk "Notes.." )
-            "C-c n s"     #'denote-silo
-            "C-c n c"     #'org-capture
-            "C-c n l"     #'org-store-link
-            "C-c n n"     #'consult-notes
-            "C-c n i"     #'denote-link-global
-            "C-c n S-I"   #'denote-link-after-creating
-            "C-c n r"     #'denote-rename-file
-            "C-c n k"     #'denote-keywords-add
-            "C-c n S-K"   #'denote-keywords-remove
-            "C-c n b"     #'denote-backlinks
-            "C-c n S-B"   #'denote-find-backlink
-            "C-c n S-R"   #'denote-region
+            "C-c o w"   #'scratch-window-toggle
 ;;;;;; Top-level keybindings for convenience
             "C-~" #'shell-toggle
             "C-:" #'eval-expression
             "C-SPC" #'execute-extended-command
             "C-r" #'restart-emacs
 ;;;;;; File and directory manpulation
-            "C-x C-r"   #'consult-recent-file
             "C-x C-x"   #'delete-file
             "C-x C-S-x" #'delete-directory
 ;;;;;; Buffer manipulation
@@ -664,7 +660,6 @@ configuration"
         :after (treemacs evil)
         :ensure t)
 ;;;;; Treesit and Eglot (LSP) configuration
-
     (customize-set-variable 'treesit-font-lock-level 4)
 
     (use-package treesit-auto
@@ -674,11 +669,29 @@ configuration"
         (treesit-auto-add-to-auto-mode-alist 'all)
         (global-treesit-auto-mode))
 
-    (with-eval-after-load 'eglot
+    (use-package eglot
+        :commands (eglot eglot-ensure)
+        :preface
+        (add-hook 'prog-mode-hook (lambda ()
+                                      (interactive)
+                                      (unless (ignore-errors
+                                                  (command-execute #'eglot-ensure))
+                                          (message "Info: no LSP found for this file."))))
+        (general-emacs-define-key global-map
+            "C-c l"   `(:wk "LSP Server...")
+            "C-c l s" #'eglot)
+        :config
+        (general-emacs-define-key eglot-mode-map
+            "C-c l a" #'eglot-code-actions
+            "C-c l r" #'eglot-rename
+            "C-c l h" #'eldoc
+            "C-c l f" #'eglot-format
+            "C-c l F" #'eglot-format-buffer
+            "C-c l R" #'eglot-reconnect)
+        :config
         (setq eglot-autoshutdown t
-	          eglot-sync-connect nil)
-        (fset #'jsonrpc--log-event #'ignore)
-        (add-hook 'prog-mode-hook (lambda () (message "Tip: Press `SPC l e' to activate your LSP if you have one!"))))
+              eglot-sync-connect nil)
+        (fset #'jsonrpc--log-event #'ignore))
 
 ;;;;; Eglot-compatible Debug Adapter Protocol client (for more IDE shit)
     (use-package dape
@@ -749,7 +762,13 @@ configuration"
 ;;;;; Snippets
     (use-package yasnippet
         :hook (prog-mode . yas-minor-mode)
-        :config (yas-reload-all))
+        :config
+        (yas-reload-all)
+        (general-emacs-define-key 'global-map
+            "C-c &"    `(:wk "Code Snippets...")
+            "C-c & n"   #'yas-new-snippet
+            "C-c & s"   #'yas-insert-snippet
+            "C-c & v"   #'yas-visit-snippet-file))
 
     (use-package yasnippet-capf
         :after (corfu yasnippet)
@@ -863,8 +882,21 @@ faces, and the flymake `proselint' backend is enabled."
         (denote-prompts-with-history-as-completion t)
         (denote-prompts '(title keywords))
         (denote-backlinks-show-context t)
-        :config
-        (add-hook 'find-file-hook #'denote-link-buttonize-buffer)
+        :preface
+        (general-emacs-define-key 'global-map
+            "C-c n"       `(:wk "Notes...")
+            "C-c n s"     #'denote-silo
+            "C-c n c"     #'org-capture
+            "C-c n l"     #'org-store-link
+            "C-c n n"     #'consult-notes
+            "C-c n i"     #'denote-link-global
+            "C-c n S-I"   #'denote-link-after-creating
+            "C-c n r"     #'denote-rename-file
+            "C-c n k"     #'denote-keywords-add
+            "C-c n S-K"   #'denote-keywords-remove
+            "C-c n b"     #'denote-backlinks
+            "C-c n S-B"   #'denote-find-backlink
+            "C-c n S-R"   #'denote-region)
         ;; NOTE: I initially had a much simpler implementation, but
         ;; Prot suggested this was safer, since I'm defining my own
         ;; link function instead of just fucking with core denote
@@ -922,7 +954,9 @@ in `denote-link'."
 			                         "((nil . ((denote-directory . \"%s\"))))")
 			                        (expand-file-name dir)))))
             (add-to-list 'project--list `(,(expand-file-name dir)))
-            (project--write-project-list)))
+            (project--write-project-list))
+        :config
+        (add-hook 'find-file-hook #'denote-link-buttonize-buffer))
 
     (use-package consult-notes
         :after (denote)
@@ -948,8 +982,7 @@ in `denote-link'."
                             :height 120
                             :box `(:line-width 5 :color ,mode-bg :style nil))
         (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line
-                            :box `(:line-width 5 :color ,(face-background 'mode-line-inactive) :style nil)))
-    (set-frame-parameter frame 'undecorated t))
+                            :box `(:line-width 5 :color ,(face-background 'mode-line-inactive) :style nil))))
 
 (defun core/aesthetic-layer ()
     "If you're going to be staring at your editor all day, it might as well look nice.
