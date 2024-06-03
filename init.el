@@ -287,7 +287,13 @@ passed in as an argument."
                          args))))
 ;;;; Better help messages and popups
     (use-package helpful
-        :commands (helpful-key helpful-callable helpful-command helpful-variable))
+        :commands (helpful-key helpful-callable helpful-command helpful-variable)
+        :preface
+        (general-emacs-define-key 'global-map
+            "C-h v" #'helpful-variable
+            "C-h f" #'helpful-callable
+            "C-h k" #'helpful-key
+            "C-h x" #'helpful-command))
 
     (use-package which-key
         :init (which-key-mode)
@@ -415,6 +421,7 @@ passed in as an argument."
         (evil-want-C-i-jump nil)
         (evil-undo-system 'undo-redo)
         (evil-kill-on-visual-paste nil) ;; oh thank god
+        (evil-move-beyond-eol t) ;; so that it's easier to evaluate sexprs in normal mode
         :config
         (evil-mode 1) 
         ;; Set up some basic equivalents (like `general-nmap') with short named
@@ -428,12 +435,6 @@ passed in as an argument."
         ;; Override evil mode's exceptions to defaulting to normal-mode
         (evil-set-initial-state 'messages-buffer-mode 'normal)
         (evil-set-initial-state 'dashboard-mode 'normal)
-
-        ;; set leader key in all states
-        (evil-set-leader nil (kbd "C-SPC"))
-
-        ;; set leader key in normal state
-        (evil-set-leader 'normal (kbd "SPC"))
 
 ;;;;;; CUA integration
         ;; We want to be able to use ctrl-v and ctrl-c just for
@@ -450,6 +451,8 @@ passed in as an argument."
         (general-nvmap
             "ga"   #'embark-act
             "g RET" #'embark-dwim
+            ;; buffers
+            "gb"   #'evil-switch-to-windows-last-buffer
             ;; org mode
             "gt"   #'org-toggle-checkbox
             ;; fill-region >> vim gqq
@@ -463,7 +466,7 @@ passed in as an argument."
             "gj"   #'outline-forward-same-level
             "gk"   #'outline-backward-same-level
             "gl"   #'outline-next-visible-heading
-            "gu"   #'outline-previous-visible-heading)
+            "gu"   #'outline-previous-visible-heading) 
 
         (general-nmap
             ;; tab bar mode
@@ -579,7 +582,9 @@ configuration"
 	                    :wk "Open framework config")
             "C-c p u"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
 	                      :wk "Open user config")
-            
+            "C-c p r" #'restart-emacs
+            "C-c p l" `(,(lambda () (interactive) (load-file "~/.emacs.d/init.el"))
+                        :wk "Reload user config")
 ;;;;;; Opening things
             "C-c o"     `(:wk "Open...")
             "C-c o a"   #'org-agenda
@@ -597,8 +602,7 @@ configuration"
 ;;;;;; Top-level keybindings for convenience
             "C-~" #'shell-toggle
             "C-:" #'eval-expression
-            "C-SPC" #'execute-extended-command
-            "C-r" #'restart-emacs
+            "C-;" #'execute-extended-command
 ;;;;;; File and directory manpulation
             "C-x C-x"   #'delete-file
             "C-x C-S-x" #'delete-directory
@@ -608,8 +612,11 @@ configuration"
             )
 ;;;;; Core keybindings that make all this work
         (define-key god-local-mode-map (kbd ".") #'repeat)
-        (general-evil-define-key '(normal visual) global-map
-            "SPC" #'evil-execute-in-god-state)
+        (general-create-definer tyrant-def
+            :states '(normal motion)
+            :keymaps 'override)
+        (tyrant-def "" nil)
+        (tyrant-def "SPC" #'evil-execute-in-god-state)
         (evil-define-key 'god global-map [escape] 'evil-god-state-bail)
         (general-evil-define-key '(god) global-map
             "C-w" #'evil-window-map)))
