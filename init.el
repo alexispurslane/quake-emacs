@@ -287,13 +287,7 @@ passed in as an argument."
                          args))))
 ;;;; Better help messages and popups
     (use-package helpful
-        :commands (helpful-key helpful-callable helpful-command helpful-variable)
-        :preface
-        (general-emacs-define-key 'global-map
-            "C-h v" #'helpful-variable
-            "C-h f" #'helpful-callable
-            "C-h k" #'helpful-key
-            "C-h x" #'helpful-command))
+        :commands (helpful-key helpful-callable helpful-command helpful-variable))
 
     (use-package which-key
         :init (which-key-mode)
@@ -321,9 +315,7 @@ passed in as an argument."
 	           (text-mode . outline-minor-mode))
         :config
         (add-hook 'outline-minor-mode-hook (lambda ()
-					                           (outline-show-all)))
-        (general-emacs-define-key 'global-map
-            "C-c C-o" `(,outline-mode-prefix-map :wk "Outline/Folding...")))
+					                           (outline-show-all))))
 ;;;; Better peformance using asynchronous processing with subordinate Emacs processes 
     (use-package async
         :commands (async-start async-start-process))
@@ -575,6 +567,30 @@ configuration"
                                                          (lambda (x) (and (not (null (car x)))
                                                                           (not (null (cdr x)))))
                                                          "Top-level bindings")))
+;;;;; Notes
+        (general-emacs-define-key 'global-map
+            "C-c n"       `(:wk "Notes...")
+            "C-c n s"     #'denote-silo
+            "C-c n c"     #'org-capture
+            "C-c n l"     #'org-store-link
+            "C-c n n"     #'consult-notes
+            "C-c n i"     #'denote-link-global
+            "C-c n S-I"   #'denote-link-after-creating
+            "C-c n r"     #'denote-rename-file
+            "C-c n k"     #'denote-keywords-add
+            "C-c n S-K"   #'denote-keywords-remove
+            "C-c n b"     #'denote-backlinks
+            "C-c n S-B"   #'denote-find-backlink
+            "C-c n S-R"   #'denote-region)
+;;;;; Yasnippet
+        (general-emacs-define-key 'global-map
+            "C-c &"    `(:wk "Code Snippets...")
+            "C-c & n"   #'yas-new-snippet
+            "C-c & s"   #'yas-insert-snippet
+            "C-c & v"   #'yas-visit-snippet-file)
+;;;;; Outline
+        (general-emacs-define-key 'global-map
+            "C-c C-o" `(,outline-mode-prefix-map :wk "Outline/Folding..."))
 ;;;;; General Quake-recommended keybindings
         (general-emacs-define-key 'global-map
             "C-c p"   `(:wk "Profile...")
@@ -610,6 +626,23 @@ configuration"
             "C-x S-K" #'kill-current-buffer
             "C-x B" #'ibuffer
             )
+;;;;; Eglot
+        (general-emacs-define-key global-map
+            "C-c l"   `(:wk "LSP Server...")
+            "C-c l s" #'eglot)
+        (general-emacs-define-key eglot-mode-map
+            "C-c l a" #'eglot-code-actions
+            "C-c l r" #'eglot-rename
+            "C-c l h" #'eldoc
+            "C-c l f" #'eglot-format
+            "C-c l F" #'eglot-format-buffer
+            "C-c l R" #'eglot-reconnect)
+;;;;; Helpful
+        (general-emacs-define-key 'global-map
+            "C-h v" #'helpful-variable
+            "C-h f" #'helpful-callable
+            "C-h k" #'helpful-key
+            "C-h x" #'helpful-command)
 ;;;;; Core keybindings that make all this work
         (define-key god-local-mode-map (kbd ".") #'repeat)
         (general-create-definer tyrant-def
@@ -683,18 +716,7 @@ configuration"
                                       (interactive)
                                       (unless (ignore-errors
                                                   (command-execute #'eglot-ensure))
-                                          (message "Info: no LSP found for this file."))))
-        (general-emacs-define-key global-map
-            "C-c l"   `(:wk "LSP Server...")
-            "C-c l s" #'eglot)
-        :config
-        (general-emacs-define-key eglot-mode-map
-            "C-c l a" #'eglot-code-actions
-            "C-c l r" #'eglot-rename
-            "C-c l h" #'eldoc
-            "C-c l f" #'eglot-format
-            "C-c l F" #'eglot-format-buffer
-            "C-c l R" #'eglot-reconnect)
+                                          (message "Info: no LSP found for this file.")))) 
         :config
         (setq eglot-autoshutdown t
               eglot-sync-connect nil)
@@ -770,12 +792,7 @@ configuration"
     (use-package yasnippet
         :hook (prog-mode . yas-minor-mode)
         :config
-        (yas-reload-all)
-        (general-emacs-define-key 'global-map
-            "C-c &"    `(:wk "Code Snippets...")
-            "C-c & n"   #'yas-new-snippet
-            "C-c & s"   #'yas-insert-snippet
-            "C-c & v"   #'yas-visit-snippet-file))
+        (yas-reload-all))
 
     (use-package yasnippet-capf
         :after (corfu yasnippet)
@@ -890,20 +907,6 @@ faces, and the flymake `proselint' backend is enabled."
         (denote-prompts '(title keywords))
         (denote-backlinks-show-context t)
         :preface
-        (general-emacs-define-key 'global-map
-            "C-c n"       `(:wk "Notes...")
-            "C-c n s"     #'denote-silo
-            "C-c n c"     #'org-capture
-            "C-c n l"     #'org-store-link
-            "C-c n n"     #'consult-notes
-            "C-c n i"     #'denote-link-global
-            "C-c n S-I"   #'denote-link-after-creating
-            "C-c n r"     #'denote-rename-file
-            "C-c n k"     #'denote-keywords-add
-            "C-c n S-K"   #'denote-keywords-remove
-            "C-c n b"     #'denote-backlinks
-            "C-c n S-B"   #'denote-find-backlink
-            "C-c n S-R"   #'denote-region)
         ;; NOTE: I initially had a much simpler implementation, but
         ;; Prot suggested this was safer, since I'm defining my own
         ;; link function instead of just fucking with core denote
