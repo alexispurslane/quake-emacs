@@ -6,5 +6,5 @@
 !.gitignore
 !.tokignore
 !.github/
-!.github/*
+!.github/**/*
 !banner-quake.png

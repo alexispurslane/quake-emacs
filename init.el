@@ -53,7 +53,6 @@
                         (setq gc-cons-threshold gc-cons-threshold-original)
                         (message "Restored GC cons threshold")))
 ;;; ======Prelude======
-(setq start-time (current-time))
 (require 'cl-lib)
 (require 'rx)
 (require 'package)
@@ -63,8 +62,6 @@
       package-enable-at-startup nil
       use-package-compute-statistics t)
 
-(message "Finished prelude in %.2f seconds" (float-time (time-since start-time)))
-(setq start-time (current-time))
 (defgroup quake nil
     "A customization group for the Quake Emacs distribution."
     :prefix "quake")
@@ -74,12 +71,12 @@
     (list
      #'core/usability-layer
      #'core/editor-layer
+     #'optional/god-layer ;; or #'optional/devil-layer
      #'task/coding-layer
      #'task/writing-layer
      #'task/notes-layer
      #'core/aesthetic-layer
      #'optional/bling-layer
-     ;; optional/blog-layer
      )
     "The function symbols for the layers that Quake Emacs
 should enable on startup.
@@ -124,8 +121,6 @@ passed in as an argument."
 (when (file-exists-p "~/.quake.d/user.el")
     (load "~/.quake.d/user.el"))
 
-(message "Finished user-config loading in %.2f seconds" (float-time (time-since start-time)))
-(setq start-time (current-time))
 ;;; ======Vanilla Emacs======
 (use-package emacs
     :init
@@ -150,7 +145,6 @@ passed in as an argument."
     (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
     (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))) ; show dashboard in new frames
 ;;;;; Disabling ugly and largely unhelpful UI features 
-    (set-frame-parameter nil 'undecorated t)
     (menu-bar-mode -1)
     (tool-bar-mode -1)
     (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
@@ -158,7 +152,6 @@ passed in as an argument."
     (setq pixel-scroll-precision-interpolate-mice t
 	      pixel-scroll-precision-interpolate-page t)
     (pixel-scroll-precision-mode 1)        ; smooth scrolling
-    (cua-mode t)                           ; Ctrl-C, Ctrl-V, etc
     (winner-mode 1)                        ; better window manipulation
     (savehist-mode 1)                      ; remember commands
     (column-number-mode)                   ; keep track of column number for the useful modeline readout
@@ -170,13 +163,6 @@ passed in as an argument."
 			                      (setq display-line-numbers 'relative)
 			                      (hl-line-mode t)
 			                      (electric-pair-mode)))
-;;;;; Customizing the built-in tab-bar to look nice
-    (setq tab-bar-auto-width nil)
-    (setq tab-bar-new-tab-choice "*dashboard*")
-    (setq tab-bar-button-relief 0)
-    (setq tab-bar-show nil)
-    (defun core/current-tab-name ()
-        (alist-get 'name (tab-bar--current-tab)))
 ;;;;; Performance tuning
     (setq gc-cons-percentage 0.2)
 ;;;;;; Optimize font-locking for greater responsiveness
@@ -201,8 +187,23 @@ passed in as an argument."
      'selective-display
      (let ((face-offset (* (face-id 'shadow) (lsh 1 22))))
          (vconcat (mapcar (lambda (c) (+ face-offset c)) " ")))))
-(message "Finished configuring vanilla emacs in %.2f seconds" (float-time (time-since start-time)))
-(setq start-time (current-time))
+;;;; Customizing the built in tab-bar
+(use-package tab-bar
+    :commands (tab-bar-new-tab tab-bar-mode)
+    :init
+    (setq tab-bar-button-relief 0)
+    :config
+    (add-hook 'tab-bar-mode-hook
+              (lambda ()
+                  (set-face-attribute 'tab-bar nil :inherit 'variable-pitch)
+                  (set-face-attribute 'tab-bar-tab nil :box `(:line-width 5 :color ,(face-background 'tab-bar-tab) :style nil))
+                  (set-face-attribute 'tab-bar-tab-inactive nil
+                                      :box `(:line-width 5 :color ,(face-background 'tab-bar-tab-inactive) :style nil))))
+    (setq tab-bar-auto-width t
+          tab-bar-auto-width-max '(200 20)
+          tab-bar-auto-width-min '(200 20))
+    (setq tab-bar-new-tab-choice "*dashboard*")
+    (setq tab-bar-show t))
 ;;;; Vertico-style IComplete
 (use-package icomplete
     :demand t
@@ -233,12 +234,6 @@ passed in as an argument."
     (recentf-auto-cleanup 'never)
     :config
     (recentf-mode))
-(message "Finished configuring vanilla emacs packages in %.2f seconds" (float-time (time-since start-time)))
-(use-package tab-bar
-    :commands (tab-bar-new-tab)
-    ;;:config (tab-bar-mode 1)
-    )
-(setq start-time (current-time))
 ;;; ======Basic Packages======
 (defun core/usability-layer ()
     "Loads the core packages needed to make Emacs more usable in the
@@ -248,6 +243,7 @@ passed in as an argument."
   - `which-key' to show what keys can be pressed next at each stage of a
   key combination
   - `helpful' to give slower, but better, documentation for Emacs Lisp
+  - `general', a more generally useful set of keybinding macros for Emacs
   - `icomplete' with careful configuration (thanks to Prot!) to
     make it work just as nicely as Vertico
   - `marginalia', to add crucial metadata to icomplete completion
@@ -275,6 +271,10 @@ passed in as an argument."
 
     (use-package consult
         :commands (consult-grep consult-ripgrep consult-man)
+        :bind (("M-g i"   . #'consult-imenu) ;; override regular imenu
+               ("M-s r"   . #'consult-ripgrep)
+               ("M-s f"   . #'consult-grep)
+               ("C-x C-r" . #'consult-recent-file))
         :config
         ;; We also want to use this for in-buffer completion, which icomplete can't do alone
         (setq xref-show-xrefs-function #'consult-xref
@@ -287,7 +287,13 @@ passed in as an argument."
                          args))))
 ;;;; Better help messages and popups
     (use-package helpful
-        :commands (helpful-key helpful-callable helpful-command helpful-variable))
+        :commands (helpful-key helpful-callable helpful-command helpful-variable)
+        :preface
+        (general-emacs-define-key 'global-map
+            "C-h v" #'helpful-variable
+            "C-h f" #'helpful-callable
+            "C-h k" #'helpful-key
+            "C-h x" #'helpful-command))
 
     (use-package which-key
         :init (which-key-mode)
@@ -295,7 +301,9 @@ passed in as an argument."
         :custom
         (which-key-idle-delay 0.1)
         (which-key-idle-secondary-delay nil)
-        (which-key-sort-order #'which-key-key-order-alpha))
+        (which-key-sort-order #'which-key-key-order-alpha)
+        :config
+        (which-key-enable-god-mode-support))
 ;;;; Better Emacs Lisp editing experience
     (use-package elisp-def
         :hook (emacs-lisp-mode . elisp-def-mode))
@@ -313,10 +321,21 @@ passed in as an argument."
 	           (text-mode . outline-minor-mode))
         :config
         (add-hook 'outline-minor-mode-hook (lambda ()
-					                           (outline-show-all))))
+					                           (outline-show-all)))
+        (general-emacs-define-key 'global-map
+            "C-c C-o" `(,outline-mode-prefix-map :wk "Outline/Folding...")))
 ;;;; Better peformance using asynchronous processing with subordinate Emacs processes 
     (use-package async
         :commands (async-start async-start-process))
+;;;; Org-Mode improvements
+    (use-package toc-org
+        :hook (org-mode . toc-org-mode))
+;;;; Better keybinding framework than even use-package, which supports evil mode
+    (use-package general
+        ;; PERF: Loading `general' early make Emacs very slow on startup.
+        :config
+        ;; Advise `define-key' to automatically unbind keys when necessary.
+        (general-auto-unbind-keys))
 ;;;; Embark
     (use-package embark
         :commands (embark-act embark-dwim)
@@ -374,7 +393,8 @@ passed in as an argument."
         (add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map))))
 
 
-;;; ======Evil Mode Layer======
+;;; ======Non-Emacs Keybindings======
+;;;; Core largely unopinionated evil-mode layer
 (defun core/editor-layer ()
     "'Emacs is a great OS, if only it had a good editor.' With
   the powerful text-object based command language of Vim, and the
@@ -384,13 +404,16 @@ passed in as an argument."
 
   - `evil', the Emacs editor of choice
   - `evil-collection', to integrate Evil mode with everything else
+  - `evil-cleverparens', to give you proper S-expr editing
+    capabilities, since you'll be doing a lot of that
   - `general', because I would otherwise have to invent my own
   keybinding system, and an extensive set of leader key
   keybindings, so you can control Emacs from the comfort of your
   leader key"
 
-;;;; Evil mode itself (and associated integrations)
+;;;;; Evil mode itself (and associated integrations)
     (use-package evil
+        :after (general)
         :custom
         (evil-want-integration t)
         (evil-want-keybinding nil)
@@ -398,9 +421,13 @@ passed in as an argument."
         (evil-want-C-i-jump nil)
         (evil-undo-system 'undo-redo)
         (evil-kill-on-visual-paste nil) ;; oh thank god
+        (evil-move-beyond-eol t) ;; so that it's easier to evaluate sexprs in normal mode
         :config
-        (evil-mode 1)
-        
+        (evil-mode 1) 
+        ;; Set up some basic equivalents (like `general-nmap') with short named
+        ;; aliases (like `nmap') for VIM mapping functions.
+        (general-evil-setup t)
+;;;;; Custom evil mode key bindings
         ;; Make :q close the buffer and window, not quit the entire
         ;; Emacs application (we never leave Emacs!)
         (global-set-key [remap evil-quit] 'kill-buffer-and-window)
@@ -409,28 +436,7 @@ passed in as an argument."
         (evil-set-initial-state 'messages-buffer-mode 'normal)
         (evil-set-initial-state 'dashboard-mode 'normal)
 
-        ;; set leader key in all states
-        (evil-set-leader nil (kbd "C-SPC"))
-
-        ;; set leader key in normal state
-        (evil-set-leader 'normal (kbd "SPC")))
-
-    (use-package evil-collection
-        :after (evil)
-        :config
-        (evil-collection-init))
-;;;; Custom evil mode key bindings
-    (use-package general
-        ;; PERF: Loading `general' early make Emacs very slow on startup.
-        :after (evil evil-collection)
-        :config
-        ;; Advise `define-key' to automatically unbind keys when necessary.
-        (general-auto-unbind-keys)
-        ;; Set up some basic equivalents (like `general-nmap') with short named
-        ;; aliases (like `nmap') for VIM mapping functions.
-        (general-evil-setup t)
-
-	;;;;; CUA integration
+;;;;;; CUA integration
         ;; We want to be able to use ctrl-v and ctrl-c just for
         ;; convenience/user-friendliness, especially since ctrl-shift-v
         ;; doesn't work in evil, unlike (terminal) vim
@@ -441,10 +447,14 @@ passed in as an argument."
             "C-z"    #'undo
             "C-y"    #'undo-redo
             "M-RET"  #'outline-insert-heading)
-;;;;; Miscillanious useful keybindings for emacs capabilities
+;;;;;; Miscillanious useful keybindings for emacs capabilities
         (general-nvmap
             "ga"   #'embark-act
             "g RET" #'embark-dwim
+            ;; buffers
+            "gb"   #'evil-switch-to-windows-last-buffer
+            ;; org mode
+            "gt"   #'org-toggle-checkbox
             ;; fill-region >> vim gqq
             "gq"   #'fill-region-as-paragraph
             ;; Support for visual fill column mode and visual line mode
@@ -456,7 +466,7 @@ passed in as an argument."
             "gj"   #'outline-forward-same-level
             "gk"   #'outline-backward-same-level
             "gl"   #'outline-next-visible-heading
-            "gu"   #'outline-previous-visible-heading)
+            "gu"   #'outline-previous-visible-heading) 
 
         (general-nmap
             ;; tab bar mode
@@ -468,265 +478,17 @@ passed in as an argument."
             "gc" #'comment-region
             "gC" #'uncomment-region
             ;; keybindings for outline mode
-            "TAB" #'evil-toggle-fold)
-;;;;; Create the mode-specific leader key mapping function
-        (general-create-definer +core--internal-local-map!
-            :states '(insert emacs visual normal)
-            :keymaps 'override              
-            :prefix "SPC m"      
-            :global-prefix "M-SPC m")
-;;;;; Add mode-specific keybindings
-        (add-hook 'emacs-lisp-mode-hook
-                  (lambda ()
-		              (+core--internal-local-map!
-                          "E" #'eval-print-last-sexp
-                          "e" #'eval-last-sexp
-                          "d" #'eval-defun
-                          "b" #'eval-buffer
-                          "r" #'eval-region)))
+            "TAB" #'evil-toggle-fold))
 
-        (add-hook 'pandoc-mode-hook
-	              (lambda ()
-		              (+core--internal-local-map!
-		                  "p" #'pandoc-main-hydra/body)))
+    (use-package evil-collection
+        :after (evil)
+        :config
+        (evil-collection-init))
 
-        (add-hook 'outline-minor-mode
-	              (lambda ()
-		              (+core--internal-local-map!
-		                  "j"  #'outline-move-subtree-down
-		                  "k"  #'outline-move-subtree-up
-		                  "h"  #'outline-promote
-		                  "l"  #'outline-demote)))
-
-        (add-hook 'org-mode-hook
-	              (lambda ()
-		              (+core--internal-local-map!
-		                  "p"     #'org-static-blog-publish-async
-		                  "L"     #'org-insert-link)))
-;;;;; Spacemacs/Doom-like evil mode leader key keybindings
-        ;; gobal keybindgs that are truly global
-        (general-create-definer tyrant-def
-            :states '(normal insert motion emacs)
-            :keymaps 'override
-            :prefix "SPC"
-            :non-normal-prefix "M-SPC")
-
-        ;; Define the built-in global keybindings — this is the heart of this editor!
-        (tyrant-def
-;;;;;; Top level functions
-            "SPC"  '(execute-extended-command :wk "M-x")
-            ":"    '(pp-eval-expression :wk "Eval expression")
-            ";"    #'project-find-file
-            "u"    '(universal-argument :wk "C-u")
-            "C"    #'universal-coding-system-argument
-            "O"    #'other-window-prefix
-            "r"    #'restart-emacs
-            "~"    #'shell-toggle
-
-;;;;;; Quit/Session
-            "q"    '(nil :wk "quit/session")
-            "qq"   #'save-buffers-kill-terminal
-            "qQ"   #'kill-emacs
-            "qS"   #'server-start
-            "qR"   #'recover-session
-            "qd"   #'desktop-read
-            "qs"   #'desktop-save
-            "qr"   #'restart-emacs
-
-;;;;;; Files 
-            "f"    '(nil :wk "file") "fS"   '(write-file :wk "Save as ...")
-            "fi"   #'auto-insert
-            "ff"   #'find-file
-            "fs"   #'save-buffer
-            "ft"   #'recover-this-file
-            "fT"   #'recover-file
-            "fr"   #'consult-recent-file
-            "fa"   #'outline-show-all
-            "fh"   (lambda () (interactive) (outline-hide-sublevels 1))
-            "ft"   #'tab-switch
-
-;;;;;; Personal Profile 
-            "P"    '(nil :wk "profile")
-            "Pf"   `(,(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
-	                 :wk "Open framework config")
-            "Pu"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
-	                 :wk "Open user config")
-
-;;;;;; Buffers 
-            "b"    '(nil :wk "buffer")
-            "bB"   #'switch-to-buffer-other-tab
-            "bb"   #'consult-buffer
-            "bI"   #'ibuffer
-            "bx"   #'bury-buffer
-            "bS"   #'save-some-buffers
-            "bM"   #'view-echo-area-messages
-            "bk"   `(,(lambda () (interactive) (kill-buffer (current-buffer)))
-	                 :wk "Kill this buffer")
-            "bK"   #'kill-buffer
-            "br"   '(revert-buffer :wk "Revert")
-            "bR"   '(rename-buffer :wk "Rename")
-            "bn"    '(switch-to-next-buffer :wk "Next buffer")
-            "bp"    '(switch-to-prev-buffer :wk "Previous buffer")
-;;;;;;; Lines
-            "bl"   '(nil :wk "line")
-            "blk"  #'keep-lines ;; Will be overwritten with `consult-keep-lines'
-;;;;;;; Bookmarks
-            "bm"   '(nil :wk "bookmark")
-            "bmm"  #'bookmark-set
-            "bmd"  #'bookmark-delete
-;;;;;;; Files / Local variables
-            "bv"   '(nil :wk "locals")
-            "bvv"  '(add-file-local-variable :wk "Add")
-            "bvV"  '(delete-file-local-variable :wk "Delete")
-            "bvp"  '(add-file-local-variable-prop-line :wk "Add in prop line")
-            "bvP"  '(delete-file-local-variable-prop-line :wk "Delete from prop line")
-            "bvd"  '(add-dir-local-variable :wk "Add to dir-locals")
-            "bvD"  '(delete-dir-local-variable :wk "Delete from dir-locals")
-
-;;;;;; Insert
-            "i"    '(nil :wk "insert")
-            "iu"   '(insert-char :wk "Unicode char")
-            "ip"   #'yank-pop ;; Will be overwritten with `consult-yank-pop'
-            "iei"  #'emoji-insert
-            "ie+"  #'emoji-zoom-increase
-            "ie-"  #'emoji-zoom-decrease
-            "ie0"  #'emoji-zoom-reset
-            "ied"  #'emoji-describe
-            "iel"  #'emoji-list
-            "ier"  #'emoji-recent
-            "iee"  #'emoji-search
-
-;;;;;; Window
-            "w"    '(nil :wk "window")
-            "wd"   #'delete-window
-            "wD"   #'delete-windows-on
-            "wo"   #'delete-other-windows
-            "wm"   #'maximize-window
-            "wu"   #'winner-undo
-            "wU"   #'winner-redo
-            "wj"   #'evil-window-down
-            "wk"   #'evil-window-up
-            "wh"   #'evil-window-left
-            "wl"   #'evil-window-right
-            "ws"   #'split-window-vertically
-            "wv"   #'split-window-horizontally
-            "ww"   #'other-window
-
-;;;;;; Applications (Open)
-            "o"    '(nil :wk "open")
-            "o-"   '(dired :wk "Dired") ;; Will be overwritten if dirvish is used
-            "ot"   #'treemacs
-            "oT"   #'toggle-frame-tab-bar
-            "od"   #'word-processing-mode
-            "og"   #'gnus-other-frame
-            "op"   #'pandoc-mode
-            "o="   #'calc
-            "ow"   #'scratch-window-toggle
-            "os" `(,(lambda () (interactive)
-                        (let ((new-shell-frame (make-frame)))
-                            (select-frame new-shell-frame)
-                            (funcall quake-term-preferred-command 'new)))
-                   :wk "Open new shell")
-            "oa"   #'org-agenda
-
-;;;;;; Search
-            "s"    '(nil :wk "search")
-            "si"    #'consult-imenu
-            "sr"    #'consult-ripgrep
-            "sf"    #'consult-find
-
-;;;;;; Mode specific a.k.a. "local leader" 
-            "m"    '(nil :wk "mode-specific")
-
-;;;;; Version Control
-            "g"    '(nil :wk "git/vc")
-            "gg"   #'magit
-
-;;;;;; Toggle
-            "t"    '(nil :wk "toggle")
-            "td"   #'toggle-debug-on-error
-            "tr"   #'read-only-mode
-            "tl"   #'follow-mode
-            "tv"   #'visible-mode
-            "tf"   #'flymake-mode
-
-;;;;;; Language Server
-            "l"    '(nil :wk "lsp and flymake")
-            "le"    #'eglot
-            "lr"    #'eglot-rename
-            "la"    #'eglot-code-actions
-            "lx"    #'eglot-code-action-extract
-            "lf"    #'eglot-code-action-quickfix
-            "l!"    #'consult-flymake
-            "ln"    #'flymake-goto-next-error
-            "lp"    #'flymake-goto-prev-error
-
-;;;;;; Debug
-            "d"    '(nil :wk "debug")
-            "dG"   #'gdb
-            "dd"   #'dape
-
-;;;;;; Notes
-            "n"    '(nil :wk "notes")
-            "ns"   #'denote-silo
-            "nc"   #'denote
-            "nn"   #'consult-notes
-            "ni"   #'denote-link-global
-            "nI"   #'denote-link-after-creating
-            "nr"   #'denote-rename-file
-            "nk"   #'denote-keywords-add
-            "nK"   #'denote-keywords-remove
-            "nb"   #'denote-backlinks
-            "nB"   #'denote-find-backlink
-            "nR"   #'denote-region
-
-;;;;;; Help
-            "h"    '(nil :wk "help")
-            "hi"   #'info
-            "hg"   #'general-describe-keybindings
-
-            "he"   '(nil :wk "elisp/emacs")
-            "hes"  #'elisp-index-search
-            "hem"  #'info-emacs-manual
-            "hei"  #'Info-search
-
-            "hv"  #'helpful-variable
-            "hk"  #'helpful-key
-            "hc"  #'helpful-command
-            "hf"  #'helpful-callable
-            "hm"  #'describe-keymap
-            "hb"  #'describe-bindings
-            "hs"  #'describe-symbol
-            "hp"  #'describe-package
-
-;;;;;; Project
-            "p"    '(nil :wk "project")
-            "pp"  #'project-switch-project
-            "pc"  #'project-compile
-            "pd"  #'project-find-dir
-            "pf"  #'project-find-file
-            "pk"  #'project-kill-buffers
-            "pb"  #'project-switch-to-buffer
-            "p-"  #'project-dired
-            "px"  #'project-execute-extended-command
-;;;;;;; Compile / Test
-            "pc" #'project-compile
-;;;;;;; Run
-            "pr"  '(nil :wk "run")
-            "prc" #'project-shell-command
-            "prC" #'project-async-shell-command
-;;;;;;; Forget
-            "pF"  '(nil :wk "forget/cleanup")
-            "pFp" #'project-forget-project
-            "pFu" #'project-forget-projects-under
-;;;;;;; Search / Replace
-            "ps"  '(nil :wk "search/replace")
-            "pss" #'project-search
-            "psn" '(fileloop-continue :wk "Next match")
-            "psr" #'project-query-replace-regexp
-            "psf" #'project-find-regexp))
-
-;;;; Evil mode text object support
+    (use-package evil-cleverparens
+        :after (evil)
+        :hook ((lisp-mode . evil-cleverparens-mode))) 
+;;;;; Evil mode text object support
     (use-package evil-textobj-tree-sitter
         :after (evil evil-collection general)
         :config
@@ -792,7 +554,72 @@ a flat list of the `define-key' expressions to set the text objects up."
 
                                    finally (return exprs)))))
         (define-textobjs)))
+;;;; God-Mode based leader key layer
+(make-obsolete 'optional/devil-layer "an obsolete keybinding layer that required too much maintinence to be practical." "Jun 1st, 2024")
 
+(defun optional/god-layer ()
+    "This layer sets up and configures `god-mode' to act like a leader
+key, so that you can take advantage of all existing Emacs
+keybindings and documentation, while having something close to
+the ergonomics of a true leader key. This is the recommended
+configuration"
+    (use-package god-mode :after (evil general))
+    (use-package evil-god-state
+        :after (god-mode)
+        :config
+;;;;; Make which-key for the top level keybindings show up when you enter evil-god-state
+        (add-hook 'evil-god-state-entry-hook
+                  (lambda ()
+                      (which-key--create-buffer-and-show nil
+                                                         nil
+                                                         (lambda (x) (and (not (null (car x)))
+                                                                          (not (null (cdr x)))))
+                                                         "Top-level bindings")))
+;;;;; General Quake-recommended keybindings
+        (general-emacs-define-key 'global-map
+            "C-c p"   `(:wk "Profile...")
+            "C-c p f" `(,(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
+	                    :wk "Open framework config")
+            "C-c p u"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
+	                      :wk "Open user config")
+            "C-c p r" #'restart-emacs
+            "C-c p l" `(,(lambda () (interactive) (load-file "~/.emacs.d/init.el"))
+                        :wk "Reload user config")
+;;;;;; Opening things
+            "C-c o"     `(:wk "Open...")
+            "C-c o a"   #'org-agenda
+            "C-c o ="   #'calc
+            "C-c o s"   `(,(lambda () (interactive)
+                               (let ((new-shell-frame (make-frame)))
+                                   (select-frame new-shell-frame)
+                                   (funcall quake-term-preferred-command 'new)))
+                          :wk "Open new shell")
+            "C-c o -"   #'dired
+            "C-c o t"   #'toggle-frame-tab-bar
+            "C-c o m"   #'gnus-other-frame
+            "C-c o d"   #'word-processing-mode
+            "C-c o w"   #'scratch-window-toggle
+;;;;;; Top-level keybindings for convenience
+            "C-~" #'shell-toggle
+            "C-:" #'eval-expression
+            "C-;" #'execute-extended-command
+;;;;;; File and directory manpulation
+            "C-x C-x"   #'delete-file
+            "C-x C-S-x" #'delete-directory
+;;;;;; Buffer manipulation
+            "C-x S-K" #'kill-current-buffer
+            "C-x B" #'ibuffer
+            )
+;;;;; Core keybindings that make all this work
+        (define-key god-local-mode-map (kbd ".") #'repeat)
+        (general-create-definer tyrant-def
+            :states '(normal motion)
+            :keymaps 'override)
+        (tyrant-def "" nil)
+        (tyrant-def "SPC" #'evil-execute-in-god-state)
+        (evil-define-key 'god global-map [escape] 'evil-god-state-bail)
+        (general-evil-define-key '(god) global-map
+            "C-w" #'evil-window-map)))
 ;;; ======Task Specific Layers======
 ;;;; Coding layer
 (defun task/coding-layer ()
@@ -821,6 +648,7 @@ a flat list of the `define-key' expressions to set the text objects up."
     (use-package magit
         :commands (magit-status magit-get-current-branch)
         :custom
+        (magit-define-global-keybindings 'recommended)
         (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
         :config
                                         ; Escape quits magit help mode like I expect
@@ -839,7 +667,6 @@ a flat list of the `define-key' expressions to set the text objects up."
         :after (treemacs evil)
         :ensure t)
 ;;;;; Treesit and Eglot (LSP) configuration
-
     (customize-set-variable 'treesit-font-lock-level 4)
 
     (use-package treesit-auto
@@ -849,12 +676,29 @@ a flat list of the `define-key' expressions to set the text objects up."
         (treesit-auto-add-to-auto-mode-alist 'all)
         (global-treesit-auto-mode))
 
-    (with-eval-after-load 'eglot
-        (setq eglot-autoshutdown t
-	          eglot-events-buffer-size 0
-	          eglot-sync-connect nil)
+    (use-package eglot
+        :commands (eglot eglot-ensure)
+        :preface
         (add-hook 'prog-mode-hook (lambda ()
-				                      (message "Tip: Press `SPC l e' to activate your LSP if you have one!"))))
+                                      (interactive)
+                                      (unless (ignore-errors
+                                                  (command-execute #'eglot-ensure))
+                                          (message "Info: no LSP found for this file."))))
+        (general-emacs-define-key global-map
+            "C-c l"   `(:wk "LSP Server...")
+            "C-c l s" #'eglot)
+        :config
+        (general-emacs-define-key eglot-mode-map
+            "C-c l a" #'eglot-code-actions
+            "C-c l r" #'eglot-rename
+            "C-c l h" #'eldoc
+            "C-c l f" #'eglot-format
+            "C-c l F" #'eglot-format-buffer
+            "C-c l R" #'eglot-reconnect)
+        :config
+        (setq eglot-autoshutdown t
+              eglot-sync-connect nil)
+        (fset #'jsonrpc--log-event #'ignore))
 
 ;;;;; Eglot-compatible Debug Adapter Protocol client (for more IDE shit)
     (use-package dape
@@ -925,7 +769,13 @@ a flat list of the `define-key' expressions to set the text objects up."
 ;;;;; Snippets
     (use-package yasnippet
         :hook (prog-mode . yas-minor-mode)
-        :config (yas-reload-all))
+        :config
+        (yas-reload-all)
+        (general-emacs-define-key 'global-map
+            "C-c &"    `(:wk "Code Snippets...")
+            "C-c & n"   #'yas-new-snippet
+            "C-c & s"   #'yas-insert-snippet
+            "C-c & v"   #'yas-visit-snippet-file))
 
     (use-package yasnippet-capf
         :after (corfu yasnippet)
@@ -1039,8 +889,21 @@ faces, and the flymake `proselint' backend is enabled."
         (denote-prompts-with-history-as-completion t)
         (denote-prompts '(title keywords))
         (denote-backlinks-show-context t)
-        :config
-        (add-hook 'find-file-hook #'denote-link-buttonize-buffer)
+        :preface
+        (general-emacs-define-key 'global-map
+            "C-c n"       `(:wk "Notes...")
+            "C-c n s"     #'denote-silo
+            "C-c n c"     #'org-capture
+            "C-c n l"     #'org-store-link
+            "C-c n n"     #'consult-notes
+            "C-c n i"     #'denote-link-global
+            "C-c n S-I"   #'denote-link-after-creating
+            "C-c n r"     #'denote-rename-file
+            "C-c n k"     #'denote-keywords-add
+            "C-c n S-K"   #'denote-keywords-remove
+            "C-c n b"     #'denote-backlinks
+            "C-c n S-B"   #'denote-find-backlink
+            "C-c n S-R"   #'denote-region)
         ;; NOTE: I initially had a much simpler implementation, but
         ;; Prot suggested this was safer, since I'm defining my own
         ;; link function instead of just fucking with core denote
@@ -1069,6 +932,17 @@ in `denote-link'."
                 (insert (denote-format-link file description file-type id-only))
                 (unless (derived-mode-p 'org-mode)
 	                (make-button beg (point) 'type 'denote-link-button))))
+
+        ;; Integrate Denote with org-capture
+        (with-eval-after-load 'org-capture
+            (add-to-list 'org-capture-templates
+                         '("n" "New note (with Denote)" plain
+                           (file denote-last-path)
+                           #'denote-org-capture
+                           :no-save t
+                           :immediate-finish nil
+                           :kill-buffer t
+                           :jump-to-captured t)))
         
         ;; Declare directories with ".dir-locals.el" as a project so
         ;; we can use project.el to manage non-version controlled
@@ -1087,7 +961,9 @@ in `denote-link'."
 			                         "((nil . ((denote-directory . \"%s\"))))")
 			                        (expand-file-name dir)))))
             (add-to-list 'project--list `(,(expand-file-name dir)))
-            (project--write-project-list)))
+            (project--write-project-list))
+        :config
+        (add-hook 'find-file-hook #'denote-link-buttonize-buffer))
 
     (use-package consult-notes
         :after (denote)
@@ -1099,6 +975,22 @@ in `denote-link'."
 
 ;;; ======Aesthetic Packages======
 ;;;; Core Aesthetic Packages
+(defun quake/set-aesthetics (frame)
+    (let ((mode-bg (face-background 'mode-line))
+          (main-bg (face-background 'default)))
+        (when (not (frame-parent frame))
+            (set-face-attribute 'internal-border frame :background main-bg)
+            (modify-frame-parameters frame `((internal-border-width . 12))))
+        (set-face-background 'line-number main-bg frame)
+        (set-face-foreground 'vertical-border mode-bg frame)
+        (setq window-divider-default-right-width 1)
+        (window-divider-mode 1)
+        (set-face-attribute 'mode-line frame :inherit 'variable-pitch
+                            :height 120
+                            :box `(:line-width 5 :color ,mode-bg :style nil))
+        (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line
+                            :box `(:line-width 5 :color ,(face-background 'mode-line-inactive) :style nil))))
+
 (defun core/aesthetic-layer ()
     "If you're going to be staring at your editor all day, it might as well look nice.
 
@@ -1120,23 +1012,7 @@ in `denote-link'."
 	          doom-themes-enable-italic t))
 
     (load-theme quake-color-theme t)
-    (defun quake/set-aesthetics (frame)
-        (let ((mode-bg (face-background 'mode-line))
-              (main-bg (face-background 'default)))
-            (when (not (frame-parent frame))
-                (set-face-attribute 'internal-border frame :background main-bg)
-                (modify-frame-parameters frame `((internal-border-width . 12))))
-            (set-face-background 'line-number main-bg frame)
-            (set-face-foreground 'vertical-border mode-bg frame)
-            (setq window-divider-default-right-width 1)
-            (window-divider-mode 1)
-            (set-face-attribute 'mode-line frame
-                                :inherit 'variable-pitch
-                                :height 120
-                                :box `(:line-width 5 :color ,mode-bg :style nil))
-            (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line)))
     (add-hook 'after-make-frame-functions #'quake/set-aesthetics)
-    (quake/set-aesthetics nil)
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
@@ -1150,6 +1026,7 @@ in `denote-link'."
            (replace . ("Ⓡ" . font-lock-type-face))
            (motion . ("Ⓜ" . font-lock-constant-face))
            (operator . ("Ⓞ" . font-lock-function-name-face))
+           (god . ("Ⓖ" . font-lock-function-name-face))
            (emacs . ("Ⓔ" . font-lock-builtin-face))) )
         (mood-line-format
          (mood-line-defformat
@@ -1162,8 +1039,7 @@ in `denote-link'."
           :right
           (((mood-line-segment-vc) . "\t")
            ((mood-line-segment-major-mode) . "\t")
-           ((mood-line-segment-checker) . "\t")
-           (core/current-tab-name))))
+           ((mood-line-segment-checker) . "\t"))))
         :config
         (mood-line-mode))
 
@@ -1257,65 +1133,26 @@ in `denote-link'."
 					                         "\\\\" "://"))
         :hook (prog-mode . ligature-mode)))
 
-;;;; A simple, lightweight static site generator layer, with added asynchronicity
-(defun optional/blog-layer ()
-    "Blog writing is one of the most common writing tasks there
-is. With the existing `task/writing-layer' you should have all
-you need to write blog entries, but in case you want to fully
-generate and manage your entire blog from inside Emacs, then this
-layer is for you.
-
-Loads:
-- `org-static-blog': A beautifully simple SSG for org. No
-external programs, no templating languages, nothing to fiddle
-with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
-    (use-package org-static-blog
-        :commands (org-static-blog-publish org-static-blog-publish-file org-static-blog-mode))
-    
-    (define-minor-mode org-static-blog-watch-mode
-        "Re-run `org-static-blog-publish-async' whenever the current file is saved."
-        :init-value nil
-        :lighter " Org-Static-Blog-Watch"
-        (add-hook 'after-save-hook #'org-static-blog-publish-async nil t))
-
-    (defun org-static-blog-publish-async ()
-        (interactive)
-        (async-start
-         `(lambda ()
-	          (let ((start-time (current-time)))
-	              (setq load-path ',load-path)
-	              (require 'org-static-blog)
-	              transfer variables without having to load this entire init.el file again
-	              ,@(cl-loop for x in (cl-remove 'custom-group (custom-group-members group nil)
-					                             :key #'cadr)
-		                     for variable = (car x)
-		                     for value = (symbol-value variable)
-		                     collect `(setq ,variable ,value))
-	              (org-static-blog-publish)
-	              (format "%.2f" (float-time (time-since start-time)))))
-         (lambda (publish-time)
-             (message (format "Finished publishing blog after %s seconds" publish-time))))))
-
-(message "Finished defining layers in %.2f seconds" (float-time (time-since start-time)))
-(setq start-time (current-time))
 ;;; ======Appendix: Togglable Shell======
-(defvar existing-shell nil)
+(defvar quake--existing-shell nil)
 
 (defun shell-toggle ()
     (interactive)
-    (let* ((existing-window (and existing-shell (get-buffer-window existing-shell))))
+    (unless (buffer-live-p quake--existing-shell)
+        (setq quake--existing-shell nil))
+    (let* ((existing-window (and quake--existing-shell (get-buffer-window quake--existing-shell))))
         (if existing-window
                 (delete-window existing-window)
             (let ((display-buffer-alist `((,(rx "\*" (or "terminal" "shell" "eshell" "vterm") "\*")
                                            (display-buffer-in-side-window)
                                            (side . top)
                                            (window-height . 10)))))
-                (unless existing-shell
-                    (setq existing-shell (funcall quake-term-preferred-command
-					                              (when (eq quake-term-preferred-command 'term)
-					                                  (getenv "SHELL")))))
-                (display-buffer existing-shell)
-                (select-window (get-buffer-window existing-shell))))))
+                (unless quake--existing-shell
+                    (setq quake--existing-shell (funcall quake-term-preferred-command
+					                                     (when (eq quake-term-preferred-command 'term)
+					                                         (getenv "SHELL")))))
+                (display-buffer quake--existing-shell)
+                (select-window (get-buffer-window quake--existing-shell))))))
 
 (defun scratch-window-toggle ()
     (interactive)
@@ -1331,10 +1168,9 @@ with to procrastinate, just org-mode, Emacs, and Emacs Lisp."
 ;; no garbage collection during startup — we can amortize it later
 ;; Enable layers
 (dolist (layer quake-enabled-layers)
+    (setq start-time (current-time))
     (funcall layer)
-    (message "Finished enabling layers %s in %.2f seconds" layer (float-time (time-since start-time)))
-    (setq start-time (current-time)))
+    (message "Finished enabling layers %s in %.2f seconds" layer (float-time (time-since start-time))))
 
-;; Set some final settings that should always take precidence
-
-(add-hook 'after-make-frame-functions (lambda (frame) (set-frame-parameter frame 'undecorated t)))
+;; Fix the aesthetics
+(quake/set-aesthetics nil)
