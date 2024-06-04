@@ -650,7 +650,7 @@ configuration"
         (general-create-definer tyrant-def
             :states '(normal motion)
             :keymaps 'override)
-        (tyrant-def "" nil)
+        (tyrant-def "SPC" nil)
         (tyrant-def "SPC" #'evil-execute-in-god-state)
         (evil-define-key 'god global-map [escape] 'evil-god-state-bail)
         (general-evil-define-key '(god) global-map
@@ -691,7 +691,10 @@ configuration"
          :keymaps 'transient-base-map
          "<escape>" 'transient-quit-one))
 
-    (use-package diff-hl :hook (prog-mode . diff-hl-mode))
+    (use-package diff-hl
+        :hook ((prog-mode . diff-hl-mode)
+               (dired-mode . diff-hl-dired-mode)))
+
     (use-package treemacs
         :commands (treemacs)
         :config
@@ -756,9 +759,11 @@ configuration"
     (use-package corfu
         :after (orderless)
         :hook ((prog-mode . corfu-mode)
-	           (shell-mode . corfu-mode)
+	           (comint-mode . corfu-mode)
                (eshell-mode . corfu-mode)
                (latex-mode . corfu-mode)
+               (org-mode . corfu-mode)
+               (markdown-mode . corfu-mode)
 	           (minibuffer-setup . corfu-enable-in-minibuffer))
         ;; Optional customizations
         :custom
