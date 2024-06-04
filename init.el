@@ -432,16 +432,8 @@ passed in as an argument."
         (evil-set-initial-state 'dashboard-mode 'normal)
 
 ;;;;;; CUA integration
-        ;; We want to be able to use ctrl-v and ctrl-c just for
-        ;; convenience/user-friendliness, especially since ctrl-shift-v
-        ;; doesn't work in evil, unlike (terminal) vim
-        (general-imap
-            "C-c"    #'cua-copy-region
-            "C-v"    #'cua-paste
-            "C-x"    #'cua-cut-region
-            "C-z"    #'undo
-            "C-y"    #'undo-redo
-            "M-RET"  #'outline-insert-heading)
+        (add-hook 'evil-insert-state-entry-hook (lambda () (cua-mode 1)))
+        (add-hook 'evil-insert-state-exit-hook (lambda () (cua-mode -1)))
 ;;;;;; Miscillanious useful keybindings for emacs capabilities
         (general-nvmap
             "ga"   #'embark-act
