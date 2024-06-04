@@ -311,9 +311,12 @@ passed in as an argument."
         :hook (emacs-lisp-mode . highlight-defined-mode))
 
     (use-package outline
+        :after (general)
         :hook ((prog-mode . outline-minor-mode)
 	           (text-mode . outline-minor-mode))
         :config
+        (general-emacs-define-key 'global-map
+            "C-c C-o" `(,outline-mode-prefix-map :wk "Outline/Folding..."))
         (add-hook 'outline-minor-mode-hook (lambda ()
 					                           (outline-show-all))))
 ;;;; Better peformance using asynchronous processing with subordinate Emacs processes 
@@ -588,9 +591,6 @@ configuration"
             "C-c & n"   #'yas-new-snippet
             "C-c & s"   #'yas-insert-snippet
             "C-c & v"   #'yas-visit-snippet-file)
-;;;;; Outline
-        (general-emacs-define-key 'global-map
-            "C-c C-o" `(,outline-mode-prefix-map :wk "Outline/Folding..."))
 ;;;;; General Quake-recommended keybindings
         (general-emacs-define-key 'global-map
             "C-c p"   `(:wk "Profile...")
