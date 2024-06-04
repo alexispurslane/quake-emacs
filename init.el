@@ -67,6 +67,13 @@
     :prefix "quake")
 
 ;;; ======User-Modifiable Variables======
+(defcustom quake-org-home-directory
+    "~/org"
+    "The directory that your org capture templates, Denote notes, and
+org-agenda files will be placed in by default."
+    :type 'string
+    :group 'quake)
+
 (defcustom quake-enabled-layers
     (list
      #'core/usability-layer
@@ -411,6 +418,7 @@ passed in as an argument."
         :after (general)
         :custom
         (evil-want-integration t)
+        (evil-want-minibuffer t)
         (evil-want-keybinding nil)
         (evil-want-C-u-scroll t)
         (evil-want-C-i-jump nil)
@@ -426,6 +434,8 @@ passed in as an argument."
         ;; Make :q close the buffer and window, not quit the entire
         ;; Emacs application (we never leave Emacs!)
         (global-set-key [remap evil-quit] 'kill-buffer-and-window)
+        (general-evil-define-key '(normal visual motion) minibuffer-mode-map
+            [escape] #'keyboard-escape-quit)
 
         ;; Override evil mode's exceptions to defaulting to normal-mode
         (evil-set-initial-state 'messages-buffer-mode 'normal)
@@ -807,6 +817,8 @@ configuration"
     (use-package org
         :commands (org-mode)
         :config
+        (add-to-list 'org-agenda-files quake-org-home-directory)
+
         (set-face-attribute 'org-level-1 nil :height 2.0)
         (set-face-attribute 'org-level-2 nil :height 1.7)
         (set-face-attribute 'org-level-3 nil :height 1.4)
@@ -821,7 +833,13 @@ configuration"
 	          org-agenda-block-separator ""
 	          org-fontify-whole-heading-line t     ; don't fontify the whole like, so tags don't look weird
 	          org-fontify-done-headline t
-	          org-fontify-quote-and-verse-blocks t))
+	          org-fontify-quote-and-verse-blocks t)
+
+        (setq org-capture-templates
+              '(("t" "Todo" entry (file+headline (file-name-concat quake-org-home-directory "todo.org") "Tasks")
+                 "* TODO %?\n  %i\n  %a")
+                ("j" "Journal" entry (file+datetree (file-name-concat quake-org-home-directory "journal.org"))
+                 "* %?\nEntered on %U\n  %i\n  %a"))))
 
     (use-package evil-org
         :after org
@@ -899,6 +917,8 @@ faces, and the flymake `proselint' backend is enabled."
         (denote-prompts '(title keywords))
         (denote-backlinks-show-context t)
         :preface
+        (setq denote-directory quake-org-home-directory)
+
         ;; NOTE: I initially had a much simpler implementation, but
         ;; Prot suggested this was safer, since I'm defining my own
         ;; link function instead of just fucking with core denote
