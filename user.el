@@ -16,10 +16,11 @@
       (list
        #'core/usability-layer
        #'core/editor-layer
+       #'optional/god-layer ;; or #'optional/devil-layer
        #'task/coding-layer
        #'task/writing-layer
        #'task/notes-layer
        #'core/aesthetic-layer
        #'optional/bling-layer
-       ;; optional/blog-layer
        ))
+
