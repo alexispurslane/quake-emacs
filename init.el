@@ -146,11 +146,11 @@ passed in as an argument."
           read-buffer-completion-ignore-case t    ; ignore case when completing buffer names
           completion-ignore-case t)               ; fucking ignore case in general!
     (setopt use-short-answers t)                  ; so you don't have to type out "yes" or "no" and hit enter
+    (setopt initial-buffer-choice #'enlight)
     (global-set-key (kbd "<escape>") 'keyboard-escape-quit) ; people are used to ESC quitting things
     (setq eldoc-idle-delay 1.0)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
     (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
     (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
-    (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))) ; show dashboard in new frames
 ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode 1)
     (tool-bar-mode -1)
@@ -209,7 +209,7 @@ passed in as an argument."
     (setq tab-bar-auto-width t
           tab-bar-auto-width-max '(200 20)
           tab-bar-auto-width-min '(200 20))
-    (setq tab-bar-new-tab-choice "*dashboard*")
+    (setq tab-bar-new-tab-choice "*enlight*")
     (setq tab-bar-show t))
 ;;;; Vertico-style IComplete
 (use-package icomplete
@@ -277,7 +277,7 @@ passed in as an argument."
 	          completion-category-overrides '((file (styles partial-completion)))))
 
     (use-package consult
-        :commands (consult-grep consult-ripgrep consult-man)
+        :commands (consult-grep consult-ripgrep consult-man consult-theme)
         :bind (("M-g i"   . #'consult-imenu) ;; override regular imenu
                ("M-s r"   . #'consult-ripgrep)
                ("M-s f"   . #'consult-grep)
@@ -430,16 +430,17 @@ passed in as an argument."
         ;; Set up some basic equivalents (like `general-nmap') with short named
         ;; aliases (like `nmap') for VIM mapping functions.
         (general-evil-setup t)
+        (general-evil-define-key '(normal visual motion) global-map
+            [escape] #'keyboard-escape-quit)
+
 ;;;;; Custom evil mode key bindings
         ;; Make :q close the buffer and window, not quit the entire
         ;; Emacs application (we never leave Emacs!)
         (global-set-key [remap evil-quit] 'kill-buffer-and-window)
-        (general-evil-define-key '(normal visual motion) minibuffer-mode-map
-            [escape] #'keyboard-escape-quit)
 
         ;; Override evil mode's exceptions to defaulting to normal-mode
-        (evil-set-initial-state 'messages-buffer-mode 'normal)
-        (evil-set-initial-state 'dashboard-mode 'normal)
+        (evil-set-initial-state 'enlight-mode 'motion)
+        (evil-set-initial-state 'minibuffer-mode 'insert)
 
 ;;;;;; CUA integration
         (add-hook 'evil-insert-state-entry-hook (lambda () (cua-mode 1)))
@@ -465,7 +466,7 @@ passed in as an argument."
             "gl"   #'outline-next-visible-heading
             "gu"   #'outline-previous-visible-heading) 
 
-        (general-nmap
+        (general-evil-define-key '(normal motion) global-map
             ;; tab bar mode
             "gR" #'tab-rename
             "gn" #'tab-bar-new-tab
@@ -597,6 +598,7 @@ configuration"
 ;;;;; General Quake-recommended keybindings
         (general-emacs-define-key 'global-map
             "C-c p"   `(:wk "Profile...")
+            "C-c p t" #'consult-theme
             "C-c p f" `(,(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
 	                    :wk "Open framework config")
             "C-c p u"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
@@ -649,11 +651,13 @@ configuration"
 ;;;;; Core keybindings that make all this work
         (define-key god-local-mode-map (kbd ".") #'repeat)
         (general-create-definer tyrant-def
-            :states '(normal motion)
+            :states '(normal motion visual)
             :keymaps 'override)
         (tyrant-def "SPC" nil)
         (tyrant-def "SPC" #'evil-execute-in-god-state)
         (evil-define-key 'god global-map [escape] 'evil-god-state-bail)
+        (general-emacs-define-key evil-window-map
+            "C-u" #'winner-undo)
         (general-evil-define-key '(god) global-map
             "C-w" #'evil-window-map)))
 ;;; ======Task Specific Layers======
@@ -823,6 +827,12 @@ configuration"
     (use-package org
         :commands (org-mode)
         :config
+        (add-to-list 'org-agenda-custom-commands
+                     '("m" "month-span" ((agenda ""))
+                       ((org-agenda-overriding-header "My Month")
+                        (org-agenda-start-on-weekday nil)
+                        (org-agenda-span 30))) t)
+
         (add-to-list 'org-agenda-files quake-org-home-directory)
 
         (set-face-attribute 'org-level-1 nil :height 2.0)
@@ -1020,7 +1030,7 @@ in `denote-link'."
   themes, so you never have to go searching for a theme again
   - `mood-line', for an incredibly fast and lightweight emacs modeline
   that offers just the features you need for a great experience
-  - `dashboard', because a launchpad is always welcome
+  - `enlight', because a launchpad is always welcome
   - `eldoc-box', because documentation needs to look nice and appear
   next to your cursor so you don't have to move your eyes
   - `breadcrumb', so you don't get lost"
@@ -1064,21 +1074,39 @@ in `denote-link'."
         :config
         (mood-line-mode))
 
-    (use-package dashboard
+    (use-package enlight
         :custom
-        (dashboard-banner-logo-title "Lean, fast, focused, based on the latest tech. Welcome to Quake Emacs")
-        (dashboard-startup-banner "~/.emacs.d/banner-quake.png")
-        (dashboard-center-content t)
-        (dashboard-vertically-center-content t)
-        (dashboard-items '((recents   . 5)
-                           (projects  . 5)))
-        (dashboard-item-shortcuts '((recents   . "r")
-        			                (projects  . "p")))
-        (dashboard-icon-type 'nerd-icons) ;use `nerd-icons' package
-        (dashboard-set-heading-icons t)
-        (dashboard-set-file-icons t)
-        :config
-        (dashboard-setup-startup-hook))
+        (enlight-content
+         (concat
+          (propertize  "        .,o'         `o,.
+      ,o8'             `8o.
+     o8 '                8o
+    o8:                   ;8o
+   .88                     88.
+   :88.                   ,88:
+   `888                   888'
+    888o     `88888'     o888
+    `888o,.   `888'   .,o888'
+       `88888888888888888'
+         `8888888888888'
+            `::888;:'
+               888
+               888
+               `8'
+                `
+" 'face '(:foreground "#926254"))
+          (propertize  (format "Started in %s\n" (emacs-init-time)) 'face '(:inherit 'font-lock-comment-face))
+          (enlight-menu
+           '(("Org Mode"
+	          ("Org-Agenda (current day)" (org-agenda nil "a") "a")
+	          ("Org-Agenda (TODOs)" (org-agenda nil "t") "o")
+              ("" (consult-notes) "n"))
+             ("Files"
+              ("Recent Files" (consult-recent-file) "r")
+              ("Writing" (read-file-name "Writing: " "~/Sync/Private/") "c")
+              ("Documents" (read-file-name "Document: " "~/Documents/") "d"))
+             ("Other"
+	          ("Projects" project-switch-project "p")))))))
 
     (use-package eldoc-box
         :config
