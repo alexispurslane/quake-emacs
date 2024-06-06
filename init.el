@@ -147,12 +147,12 @@ passed in as an argument."
           completion-ignore-case t)               ; fucking ignore case in general!
     (setopt use-short-answers t)                  ; so you don't have to type out "yes" or "no" and hit enter
     (global-set-key (kbd "<escape>") 'keyboard-escape-quit) ; people are used to ESC quitting things
-    (setq eldoc-idle-delay 0.8)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
+    (setq eldoc-idle-delay 1.0)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
     (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
     (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
     (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))) ; show dashboard in new frames
 ;;;;; Disabling ugly and largely unhelpful UI features 
-    (menu-bar-mode -1)
+    (menu-bar-mode 1)
     (tool-bar-mode -1)
     (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
 ;;;;; Enable some modes that give nicer, more modern behavior
@@ -484,7 +484,8 @@ passed in as an argument."
 
     (use-package evil-cleverparens
         :after (evil)
-        :hook ((lisp-mode . evil-cleverparens-mode))) 
+        :hook ((lisp-mode . evil-cleverparens-mode)
+               (emacs-lisp-mode . evil-cleverparens-mode))) 
 ;;;;; Evil mode text object support
     (use-package evil-textobj-tree-sitter
         :after (evil evil-collection general)
