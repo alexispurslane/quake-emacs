@@ -827,12 +827,6 @@ configuration"
     (use-package org
         :commands (org-mode)
         :config
-        (add-to-list 'org-agenda-custom-commands
-                     '("m" "month-span" ((agenda ""))
-                       ((org-agenda-overriding-header "My Month")
-                        (org-agenda-start-on-weekday nil)
-                        (org-agenda-span 30))) t)
-
         (add-to-list 'org-agenda-files quake-org-home-directory)
 
         (set-face-attribute 'org-level-1 nil :height 2.0)
