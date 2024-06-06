@@ -67,6 +67,13 @@
     :prefix "quake")
 
 ;;; ======User-Modifiable Variables======
+(defcustom quake-org-home-directory
+    "~/org"
+    "The directory that your org capture templates, Denote notes, and
+org-agenda files will be placed in by default."
+    :type 'string
+    :group 'quake)
+
 (defcustom quake-enabled-layers
     (list
      #'core/usability-layer
@@ -140,12 +147,12 @@ passed in as an argument."
           completion-ignore-case t)               ; fucking ignore case in general!
     (setopt use-short-answers t)                  ; so you don't have to type out "yes" or "no" and hit enter
     (global-set-key (kbd "<escape>") 'keyboard-escape-quit) ; people are used to ESC quitting things
-    (setq eldoc-idle-delay 0.8)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
+    (setq eldoc-idle-delay 1.0)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
     (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
     (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
     (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))) ; show dashboard in new frames
 ;;;;; Disabling ugly and largely unhelpful UI features 
-    (menu-bar-mode -1)
+    (menu-bar-mode 1)
     (tool-bar-mode -1)
     (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
 ;;;;; Enable some modes that give nicer, more modern behavior
@@ -411,6 +418,7 @@ passed in as an argument."
         :after (general)
         :custom
         (evil-want-integration t)
+        (evil-want-minibuffer t)
         (evil-want-keybinding nil)
         (evil-want-C-u-scroll t)
         (evil-want-C-i-jump nil)
@@ -426,22 +434,16 @@ passed in as an argument."
         ;; Make :q close the buffer and window, not quit the entire
         ;; Emacs application (we never leave Emacs!)
         (global-set-key [remap evil-quit] 'kill-buffer-and-window)
+        (general-evil-define-key '(normal visual motion) minibuffer-mode-map
+            [escape] #'keyboard-escape-quit)
 
         ;; Override evil mode's exceptions to defaulting to normal-mode
         (evil-set-initial-state 'messages-buffer-mode 'normal)
         (evil-set-initial-state 'dashboard-mode 'normal)
 
 ;;;;;; CUA integration
-        ;; We want to be able to use ctrl-v and ctrl-c just for
-        ;; convenience/user-friendliness, especially since ctrl-shift-v
-        ;; doesn't work in evil, unlike (terminal) vim
-        (general-imap
-            "C-c"    #'cua-copy-region
-            "C-v"    #'cua-paste
-            "C-x"    #'cua-cut-region
-            "C-z"    #'undo
-            "C-y"    #'undo-redo
-            "M-RET"  #'outline-insert-heading)
+        (add-hook 'evil-insert-state-entry-hook (lambda () (cua-mode 1)))
+        (add-hook 'evil-insert-state-exit-hook (lambda () (cua-mode -1)))
 ;;;;;; Miscillanious useful keybindings for emacs capabilities
         (general-nvmap
             "ga"   #'embark-act
@@ -482,7 +484,8 @@ passed in as an argument."
 
     (use-package evil-cleverparens
         :after (evil)
-        :hook ((lisp-mode . evil-cleverparens-mode))) 
+        :hook ((lisp-mode . evil-cleverparens-mode)
+               (emacs-lisp-mode . evil-cleverparens-mode))) 
 ;;;;; Evil mode text object support
     (use-package evil-textobj-tree-sitter
         :after (evil evil-collection general)
@@ -648,7 +651,7 @@ configuration"
         (general-create-definer tyrant-def
             :states '(normal motion)
             :keymaps 'override)
-        (tyrant-def "" nil)
+        (tyrant-def "SPC" nil)
         (tyrant-def "SPC" #'evil-execute-in-god-state)
         (evil-define-key 'god global-map [escape] 'evil-god-state-bail)
         (general-evil-define-key '(god) global-map
@@ -689,7 +692,10 @@ configuration"
          :keymaps 'transient-base-map
          "<escape>" 'transient-quit-one))
 
-    (use-package diff-hl :hook (prog-mode . diff-hl-mode))
+    (use-package diff-hl
+        :hook ((prog-mode . diff-hl-mode)
+               (dired-mode . diff-hl-dired-mode)))
+
     (use-package treemacs
         :commands (treemacs)
         :config
@@ -754,9 +760,11 @@ configuration"
     (use-package corfu
         :after (orderless)
         :hook ((prog-mode . corfu-mode)
-	           (shell-mode . corfu-mode)
+	           (comint-mode . corfu-mode)
                (eshell-mode . corfu-mode)
                (latex-mode . corfu-mode)
+               (org-mode . corfu-mode)
+               (markdown-mode . corfu-mode)
 	           (minibuffer-setup . corfu-enable-in-minibuffer))
         ;; Optional customizations
         :custom
@@ -815,6 +823,8 @@ configuration"
     (use-package org
         :commands (org-mode)
         :config
+        (add-to-list 'org-agenda-files quake-org-home-directory)
+
         (set-face-attribute 'org-level-1 nil :height 2.0)
         (set-face-attribute 'org-level-2 nil :height 1.7)
         (set-face-attribute 'org-level-3 nil :height 1.4)
@@ -829,7 +839,13 @@ configuration"
 	          org-agenda-block-separator ""
 	          org-fontify-whole-heading-line t     ; don't fontify the whole like, so tags don't look weird
 	          org-fontify-done-headline t
-	          org-fontify-quote-and-verse-blocks t))
+	          org-fontify-quote-and-verse-blocks t)
+
+        (setq org-capture-templates
+              '(("t" "Todo" entry (file+headline (file-name-concat quake-org-home-directory "todo.org") "Tasks")
+                 "* TODO %?\n  %i\n  %a")
+                ("j" "Journal" entry (file+datetree (file-name-concat quake-org-home-directory "journal.org"))
+                 "* %?\nEntered on %U\n  %i\n  %a"))))
 
     (use-package evil-org
         :after org
@@ -907,6 +923,8 @@ faces, and the flymake `proselint' backend is enabled."
         (denote-prompts '(title keywords))
         (denote-backlinks-show-context t)
         :preface
+        (setq denote-directory quake-org-home-directory)
+
         ;; NOTE: I initially had a much simpler implementation, but
         ;; Prot suggested this was safer, since I'm defining my own
         ;; link function instead of just fucking with core denote
