@@ -100,7 +100,7 @@ YOURSELF, IT MAY BREAK UPDATES."
 
 (defcustom quake-evil-text-objects
     '(("f" . "function")
-      ("s" . ("conditional" "loop" "assignment" "call" "block" "statement"))
+      ("s" . ("list" "conditional" "loop" "assignment" "call" "block" "statement"))
       ("t" . "class")
       ("c" . "comment")
       ("a" . "parameter")
@@ -219,7 +219,7 @@ passed in as an argument."
 	            ("M-RET"  . icomplete-fido-exit)
 	            ("TAB"    . icomplete-force-complete)
 	            ("DEL"    . icomplete-fido-backward-updir)
-	            ("C-RET"  . embark-act)
+	            ("M-."    . embark-act) ; mostly useful in case you don't have evil mode enabled (if you do, just do {ESC g .})
 	            ("<down>" . icomplete-forward-completions)
 	            ("<up>"   . icomplete-backward-completions))
     :config
@@ -306,6 +306,7 @@ passed in as an argument."
         :config
         (which-key-enable-god-mode-support))
 ;;;; Better Emacs Lisp editing experience
+
     (use-package elisp-def
         :hook (emacs-lisp-mode . elisp-def-mode))
 
@@ -447,7 +448,7 @@ passed in as an argument."
         (add-hook 'evil-insert-state-exit-hook (lambda () (cua-mode -1)))
 ;;;;;; Miscillanious useful keybindings for emacs capabilities
         (general-nvmap
-            "ga"   #'embark-act
+            "g ."   #'embark-act
             "g RET" #'embark-dwim
             ;; buffers
             "gb"   #'evil-switch-to-windows-last-buffer
@@ -487,7 +488,18 @@ passed in as an argument."
         :after (evil)
         :hook ((lisp-mode . evil-cleverparens-mode)
                (emacs-lisp-mode . evil-cleverparens-mode))) 
+
 ;;;;; Evil mode text object support
+
+    ;; NOTE: Eventually replace this *entire* boondoggle with
+    ;; [[https://github.com/dvzubarev/evil-ts-obj/tree/master]],
+    ;; which provides an even better set of text objects, and a
+    ;; far more complete set of operations on them, instead of me
+    ;; manually having to implement them. This would mean *all*
+    ;; tree-sitter langauges get slurp/barf/convolute/etc,
+    ;; meaning that we could eliminate evil-cleverparents and
+    ;; just have a generalized structural editing system on our
+    ;; hands. Currently however, it depends on Emacs 30.0.50.
     (use-package evil-textobj-tree-sitter
         :after (evil evil-collection general)
         :config
@@ -567,6 +579,9 @@ configuration"
         :after (god-mode)
         :config
 ;;;;; Make which-key for the top level keybindings show up when you enter evil-god-state
+        (add-hook 'evil-god-state-exit-hook
+                  (lambda ()
+                      (which-key--hide-popup)))
         (add-hook 'evil-god-state-entry-hook
                   (lambda ()
                       (which-key--create-buffer-and-show nil
@@ -608,6 +623,7 @@ configuration"
                         :wk "Reload user config")
 ;;;;;; Opening things
             "C-c o"     `(:wk "Open...")
+            "C-c o w"   #'eww
             "C-c o a"   #'org-agenda
             "C-c o ="   #'calc
             "C-c o s"   `(,(lambda () (interactive)
@@ -619,7 +635,7 @@ configuration"
             "C-c o t"   #'toggle-frame-tab-bar
             "C-c o m"   #'gnus-other-frame
             "C-c o d"   #'word-processing-mode
-            "C-c o w"   #'scratch-window-toggle
+            "C-c o S"   #'scratch-window-toggle
 ;;;;;; Top-level keybindings for convenience
             "C-~" #'shell-toggle
             "C-:" #'eval-expression
@@ -716,6 +732,33 @@ configuration"
         :custom
         (treesit-auto-install 'prompt)
         :config
+        ;; TODO: If we could get tree-sitter support for
+        ;; emacs-lisp working out of the box (automatically
+        ;; installed), then we could do away with
+        ;; `evil-cleverparens' entirely, and just have a
+        ;; consistent, generalized way of manipulating the AST of
+        ;; basically every langauge. The only other thing needed
+        ;; would be to implement generalized slurp/barf for tree
+        ;; sitter text objects. See [[file://~/.emacs.d/init.el::493]]
+        ;; 
+        ;; (define-derived-mode elisp-ts-mode emacs-lisp-mode "ELisp[ts]"
+        ;;     "Tree-sitter major mode for editing Emacs Lisp."
+        ;;     :group 'rust
+        ;;     (when (treesit-ready-p 'elisp)
+        ;;         (treesit-parser-create 'elisp)
+        ;;         (treesit-major-mode-setup)))
+        ;; (setq elisp-tsauto-config
+        ;;       (make-treesit-auto-recipe
+        ;;        :lang 'elisp
+        ;;        :ts-mode 'elisp-ts-mode
+        ;;        :remap '(emacs-lisp-mode)
+        ;;        :url "https://github.com/Wilfred/tree-sitter-elisp"
+        ;;        :revision "main"
+        ;;        :source-dir "src"
+        ;;        :ext "\\.el\\'"))
+
+        ;; (add-to-list 'treesit-auto-recipe-list elisp-tsauto-config)
+        ;; (add-to-list 'treesit-auto-langs 'elisp)
         (treesit-auto-add-to-auto-mode-alist 'all)
         (global-treesit-auto-mode))
 
@@ -729,8 +772,7 @@ configuration"
                                           (message "Info: no LSP found for this file.")))) 
         :config
         (setq eglot-autoshutdown t
-              eglot-sync-connect nil)
-        (fset #'jsonrpc--log-event #'ignore))
+              eglot-sync-connect nil))
 
 ;;;;; Eglot-compatible Debug Adapter Protocol client (for more IDE shit)
     (use-package dape
@@ -1072,23 +1114,10 @@ in `denote-link'."
         :custom
         (enlight-content
          (concat
-          (propertize  "        .,o'         `o,.
-      ,o8'             `8o.
-     o8 '                8o
-    o8:                   ;8o
-   .88                     88.
-   :88.                   ,88:
-   `888                   888'
-    888o     `88888'     o888
-    `888o,.   `888'   .,o888'
-       `88888888888888888'
-         `8888888888888'
-            `::888;:'
-               888
-               888
-               `8'
-                `
-" 'face '(:foreground "#926254"))
+          "    "
+          (propertize "QUAKE EMACS" 'display (create-image "~/.emacs.d/banner-quake.png"))
+          "\n"
+          "\n"
           (propertize  (format "Started in %s\n" (emacs-init-time)) 'face '(:inherit 'font-lock-comment-face))
           (enlight-menu
            '(("Org Mode"
@@ -1217,3 +1246,4 @@ in `denote-link'."
 
 ;; Fix the aesthetics
 (quake/set-aesthetics nil)
+(put 'erase-buffer 'disabled nil)
