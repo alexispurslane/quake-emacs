@@ -52,6 +52,7 @@
 (run-with-timer 5 0 (lambda ()
                         (setq gc-cons-threshold gc-cons-threshold-original)
                         (message "Restored GC cons threshold")))
+(profiler-start 'cpu)
 ;;; ======Prelude======
 (require 'cl-lib)
 (require 'rx)
@@ -271,8 +272,9 @@ passed in as an argument."
     (use-package orderless
         :after icomplete
         :init
-        (setq completion-styles '(orderless basic)
+        (setq completion-styles '(orderless flex substring)
 	          orderless-component-separator "-"
+              orderless-matching-styles '(orderless-literal orderless-regexp)
 	          completion-category-defaults nil
 	          completion-category-overrides '((file (styles partial-completion)))))
 
@@ -1078,8 +1080,9 @@ in `denote-link'."
         (setq doom-themes-enable-bold t
 	          doom-themes-enable-italic t))
 
-    (load-theme quake-color-theme t)
+    (advice-add 'load-theme :after (lambda (&rest args) (quake/set-aesthetics nil)))
     (add-hook 'after-make-frame-functions #'quake/set-aesthetics)
+    (load-theme quake-color-theme t)
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
@@ -1247,3 +1250,4 @@ in `denote-link'."
 ;; Fix the aesthetics
 (quake/set-aesthetics nil)
 (put 'erase-buffer 'disabled nil)
+(profiler-stop)
