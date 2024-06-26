@@ -1,4 +1,4 @@
-;;; init.el --- implements the Quake Emacs distribution of Emacs -*- lexical-binding: t -*-
+;; init.el --- implements the Quake Emacs distribution of Emacs -*- lexical-binding: t -*-
 ;; eval: (outline-hide-sublevels 4)
 
 ;; Author: Alexis Purslane <alexispurlsane@pm.me>
@@ -52,6 +52,7 @@
 (run-with-timer 5 0 (lambda ()
                         (setq gc-cons-threshold gc-cons-threshold-original)
                         (message "Restored GC cons threshold")))
+(profiler-start 'cpu)
 ;;; ======Prelude======
 (require 'cl-lib)
 (require 'rx)
@@ -100,7 +101,7 @@ YOURSELF, IT MAY BREAK UPDATES."
 
 (defcustom quake-evil-text-objects
     '(("f" . "function")
-      ("s" . ("conditional" "loop" "assignment" "call" "block" "statement"))
+      ("s" . ("list" "conditional" "loop" "assignment" "call" "block" "statement"))
       ("t" . "class")
       ("c" . "comment")
       ("a" . "parameter")
@@ -146,11 +147,10 @@ passed in as an argument."
           read-buffer-completion-ignore-case t    ; ignore case when completing buffer names
           completion-ignore-case t)               ; fucking ignore case in general!
     (setopt use-short-answers t)                  ; so you don't have to type out "yes" or "no" and hit enter
-    (global-set-key (kbd "<escape>") 'keyboard-escape-quit) ; people are used to ESC quitting things
+    (setopt initial-buffer-choice #'enlight)
     (setq eldoc-idle-delay 1.0)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
     (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
     (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
-    (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))) ; show dashboard in new frames
 ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode 1)
     (tool-bar-mode -1)
@@ -209,7 +209,7 @@ passed in as an argument."
     (setq tab-bar-auto-width t
           tab-bar-auto-width-max '(200 20)
           tab-bar-auto-width-min '(200 20))
-    (setq tab-bar-new-tab-choice "*dashboard*")
+    (setq tab-bar-new-tab-choice "*enlight*")
     (setq tab-bar-show t))
 ;;;; Vertico-style IComplete
 (use-package icomplete
@@ -219,7 +219,7 @@ passed in as an argument."
 	            ("M-RET"  . icomplete-fido-exit)
 	            ("TAB"    . icomplete-force-complete)
 	            ("DEL"    . icomplete-fido-backward-updir)
-	            ("C-RET"  . embark-act)
+	            ("M-."    . embark-act) ; mostly useful in case you don't have evil mode enabled (if you do, just do {ESC g .})
 	            ("<down>" . icomplete-forward-completions)
 	            ("<up>"   . icomplete-backward-completions))
     :config
@@ -250,7 +250,6 @@ passed in as an argument."
   - `which-key' to show what keys can be pressed next at each stage of a
   key combination
   - `helpful' to give slower, but better, documentation for Emacs Lisp
-  - `general', a more generally useful set of keybinding macros for Emacs
   - `icomplete' with careful configuration (thanks to Prot!) to
     make it work just as nicely as Vertico
   - `marginalia', to add crucial metadata to icomplete completion
@@ -271,13 +270,14 @@ passed in as an argument."
     (use-package orderless
         :after icomplete
         :init
-        (setq completion-styles '(orderless basic)
+        (setq completion-styles '(orderless flex substring)
 	          orderless-component-separator "-"
+              orderless-matching-styles '(orderless-literal orderless-regexp)
 	          completion-category-defaults nil
 	          completion-category-overrides '((file (styles partial-completion)))))
 
     (use-package consult
-        :commands (consult-grep consult-ripgrep consult-man)
+        :commands (consult-grep consult-ripgrep consult-man consult-theme)
         :bind (("M-g i"   . #'consult-imenu) ;; override regular imenu
                ("M-s r"   . #'consult-ripgrep)
                ("M-s f"   . #'consult-grep)
@@ -306,6 +306,7 @@ passed in as an argument."
         :config
         (which-key-enable-god-mode-support))
 ;;;; Better Emacs Lisp editing experience
+
     (use-package elisp-def
         :hook (emacs-lisp-mode . elisp-def-mode))
 
@@ -318,26 +319,21 @@ passed in as an argument."
         :hook (emacs-lisp-mode . highlight-defined-mode))
 
     (use-package outline
-        :after (general)
         :hook ((prog-mode . outline-minor-mode)
 	           (text-mode . outline-minor-mode))
         :config
-        (general-emacs-define-key 'global-map
-            "C-c C-o" `(,outline-mode-prefix-map :wk "Outline/Folding..."))
+        (quake-emacs-define-key global-map
+            "C-c C-o" (cons "Outline/Folding..." outline-mode-prefix-map))
         (add-hook 'outline-minor-mode-hook (lambda ()
 					                           (outline-show-all))))
 ;;;; Better peformance using asynchronous processing with subordinate Emacs processes 
     (use-package async
         :commands (async-start async-start-process))
 ;;;; Org-Mode improvements
+    (use-package htmlize
+        :after (org-mode))
     (use-package toc-org
         :hook (org-mode . toc-org-mode))
-;;;; Better keybinding framework than even use-package, which supports evil mode
-    (use-package general
-        ;; PERF: Loading `general' early make Emacs very slow on startup.
-        :config
-        ;; Advise `define-key' to automatically unbind keys when necessary.
-        (general-auto-unbind-keys))
 ;;;; Embark
     (use-package embark
         :commands (embark-act embark-dwim)
@@ -396,6 +392,55 @@ passed in as an argument."
 
 
 ;;; ======Non-Emacs Keybindings======
+;;;; Custom keybinding macros, to replace `general'
+(defmacro quake-emacs-define-key (keymaps &rest args)
+    "Define the given keys in ARGS for the given KEYMAPS.
+ARGS is a plist of the form (KEY DEF  KEY DEF). It must have an
+even number of elements. If DEF is a symbol or function value,
+that is what will be called when the key is pressed if the keymap
+is active. If DEF is a `cons' cell, the car is the label that
+will be shown in which-key, and the cadr is either a symbol or a
+function."
+    (declare (indent defun))
+    (if (cl-evenp (length args))
+            `(progn
+                 ,@(cl-loop for (key def) on args by #'cddr
+                            append (cl-loop 
+                                    for keymap in (if (symbolp keymaps) (list keymaps) keymaps)
+                                    collect `(define-key ,keymap (kbd ,key) ,def))))
+        (error "Expected even number of arguments in ARGS so every key chord has a corresponding definition.")))
+(defmacro quake-evil-define-key (states keymaps &rest args)
+    "Define the given keys in ARGS in STATES for the given KEYMAPS.
+ARGS is a plist of the form (KEY DEF  KEY DEF). It must have an
+even number of elements. If DEF is a symbol or function value,
+that is what will be called when the key is pressed if the keymap
+is active. If DEF is a `cons' cell, the car is the label that
+will be shown in which-key, and the cadr is either a symbol or a
+function."
+    (declare (indent defun))
+    (if (cl-evenp (length args))
+            `(progn
+                 ,@(cl-loop for (key def) on args by #'cddr
+                            append (cl-loop 
+                                    for keymap in (if (symbolp keymaps) (list keymaps) keymaps)
+                                    collect `(evil-define-key* ',states ,keymap (kbd ,key) ,def))))
+        (error "Expected even number of arguments in ARGS so every key chord has a corresponding definition.")))
+(defmacro quake-emacs-create-keymap (&rest args)
+    "Create a new keymap with the given key definitions and return it.
+Uses the same syntax and semantics as `quake-emacs-define-key'."
+    (declare (indent defun))
+    (cl-with-gensyms (keymap)
+        `(let ((,keymap (make-keymap)))
+             (quake-emacs-define-key ,keymap ,@args)
+             ,keymap)))
+(defmacro quake-evil-create-keymap (states &rest args)
+    "Create a new keymap with the given key definitions and return it.
+Uses the same syntax and semantics as `quake-emacs-define-key'."
+    (declare (indent defun))
+    (cl-with-gensyms (keymap)
+        `(let ((,keymap (make-keymap)))
+             (quake-evil-define-key ,states ,keymap ,@args)
+             ,keymap)))
 ;;;; Core largely unopinionated evil-mode layer
 (defun core/editor-layer ()
     "'Emacs is a great OS, if only it had a good editor.' With
@@ -407,15 +452,10 @@ passed in as an argument."
   - `evil', the Emacs editor of choice
   - `evil-collection', to integrate Evil mode with everything else
   - `evil-cleverparens', to give you proper S-expr editing
-    capabilities, since you'll be doing a lot of that
-  - `general', because I would otherwise have to invent my own
-  keybinding system, and an extensive set of leader key
-  keybindings, so you can control Emacs from the comfort of your
-  leader key"
+    capabilities, since you'll be doing a lot of that"
 
 ;;;;; Evil mode itself (and associated integrations)
     (use-package evil
-        :after (general)
         :custom
         (evil-want-integration t)
         (evil-want-minibuffer t)
@@ -427,55 +467,51 @@ passed in as an argument."
         (evil-move-beyond-eol t) ;; so that it's easier to evaluate sexprs in normal mode
         :config
         (evil-mode 1) 
-        ;; Set up some basic equivalents (like `general-nmap') with short named
-        ;; aliases (like `nmap') for VIM mapping functions.
-        (general-evil-setup t)
+        
 ;;;;; Custom evil mode key bindings
         ;; Make :q close the buffer and window, not quit the entire
         ;; Emacs application (we never leave Emacs!)
         (global-set-key [remap evil-quit] 'kill-buffer-and-window)
-        (general-evil-define-key '(normal visual motion) minibuffer-mode-map
-            [escape] #'keyboard-escape-quit)
 
         ;; Override evil mode's exceptions to defaulting to normal-mode
-        (evil-set-initial-state 'messages-buffer-mode 'normal)
-        (evil-set-initial-state 'dashboard-mode 'normal)
+        (evil-set-initial-state 'enlight-mode 'motion)
+        (evil-set-initial-state 'minibuffer-mode 'insert)
 
 ;;;;;; CUA integration
         (add-hook 'evil-insert-state-entry-hook (lambda () (cua-mode 1)))
-        (add-hook 'evil-insert-state-exit-hook (lambda () (cua-mode -1)))
+        (add-hook 'evil-normal-state-entry-hook (lambda () (cua-mode -1)))
 ;;;;;; Miscillanious useful keybindings for emacs capabilities
-        (general-nvmap
-            "ga"   #'embark-act
-            "g RET" #'embark-dwim
+        (quake-evil-define-key (normal visual) global-map
+            "g ."   'embark-act
+            "g RET" 'embark-dwim
             ;; buffers
-            "gb"   #'evil-switch-to-windows-last-buffer
+            "gb"   'evil-switch-to-windows-last-buffer
             ;; org mode
-            "gt"   #'org-toggle-checkbox
+            "gt"   'org-toggle-checkbox
             ;; fill-region >> vim gqq
-            "gq"   #'fill-region-as-paragraph
+            "gq"   'fill-region-as-paragraph
             ;; Support for visual fill column mode and visual line mode
             ;; Make evil-mode up/down operate in screen lines instead of logical lines
-            "j"    #'evil-next-visual-line
-            "k"    #'evil-previous-visual-line
+            "j"    'evil-next-visual-line
+            "k"    'evil-previous-visual-line
             ;; outline keybindings
-            "gh"   #'outline-up-heading
-            "gj"   #'outline-forward-same-level
-            "gk"   #'outline-backward-same-level
-            "gl"   #'outline-next-visible-heading
-            "gu"   #'outline-previous-visible-heading) 
+            "gh"   'outline-up-heading
+            "gj"   'outline-forward-same-level
+            "gk"   'outline-backward-same-level
+            "gl"   'outline-next-visible-heading
+            "gu"   'outline-previous-visible-heading) 
 
-        (general-nmap
+        (quake-evil-define-key (normal motion) global-map
             ;; tab bar mode
-            "gR" #'tab-rename
-            "gn" #'tab-bar-new-tab
-            "gx" #'tab-bar-close-tab
-            "gX" #'tab-bar-close-other-tabs
+            "gR" 'tab-rename
+            "gn" 'tab-bar-new-tab
+            "gx" 'tab-bar-close-tab
+            "gX" 'tab-bar-close-other-tabs
             ;; Nice commenting
-            "gc" #'comment-region
-            "gC" #'uncomment-region
+            "gc" 'comment-region
+            "gC" 'uncomment-region
             ;; keybindings for outline mode
-            "TAB" #'evil-toggle-fold))
+            "TAB" 'evil-toggle-fold))
 
     (use-package evil-collection
         :after (evil)
@@ -486,9 +522,20 @@ passed in as an argument."
         :after (evil)
         :hook ((lisp-mode . evil-cleverparens-mode)
                (emacs-lisp-mode . evil-cleverparens-mode))) 
+
 ;;;;; Evil mode text object support
+
+    ;; NOTE: Eventually replace this *entire* boondoggle with
+    ;; [[https://github.com/dvzubarev/evil-ts-obj/tree/master]],
+    ;; which provides an even better set of text objects, and a
+    ;; far more complete set of operations on them, instead of me
+    ;; manually having to implement them. This would mean *all*
+    ;; tree-sitter langauges get slurp/barf/convolute/etc,
+    ;; meaning that we could eliminate evil-cleverparents and
+    ;; just have a generalized structural editing system on our
+    ;; hands. Currently however, it depends on Emacs 30.0.50.
     (use-package evil-textobj-tree-sitter
-        :after (evil evil-collection general)
+        :after (evil evil-collection)
         :config
         ;; Thanks to foxfriday/evil-ts for this one
         (defun evil-ts-expand-region ()
@@ -537,17 +584,19 @@ a flat list of the `define-key' expressions to set the text objects up."
                                                  (evil-textobj-tree-sitter-get-textobj ,outer-query))
 			                         (define-key evil-inner-text-objects-map ,key
                                                  (evil-textobj-tree-sitter-get-textobj ,inner-query))
-			                         (general-nvmap
+			                         (quake-evil-define-key (normal visual) global-map
                                          ;; go to next start
-                                         ,(concat "[" key) '((lambda ()
-                                                                 (interactive)
-                                                                 (evil-textobj-tree-sitter-goto-textobj ,(car outer-query) t nil))
-						                                     :which-key ,(concat "goto-textobj-" (car query) "-start"))
+                                         ,(concat "[" key) (cons
+                                                            ,(concat "goto-textobj-" (car query) "-start")
+                                                            (lambda ()
+                                                                (interactive)
+                                                                (evil-textobj-tree-sitter-goto-textobj ,(car outer-query) t nil)))
                                          ;; go to next end
-                                         ,(concat "]" key) '((lambda ()
-                                                                 (interactive)
-                                                                 (evil-textobj-tree-sitter-goto-textobj ,(car outer-query) nil t))
-						                                     :which-key ,(concat "goto-textobj-" (car query) "-end"))))
+                                         ,(concat "]" key) (cons
+                                                            ,(concat "goto-textobj-" (car query) "-end")
+                                                            (lambda ()
+                                                                (interactive)
+                                                                (evil-textobj-tree-sitter-goto-textobj ,(car outer-query) nil t)))))
                                    into exprs
 
                                    finally (return exprs)))))
@@ -561,11 +610,14 @@ key, so that you can take advantage of all existing Emacs
 keybindings and documentation, while having something close to
 the ergonomics of a true leader key. This is the recommended
 configuration"
-    (use-package god-mode :after (evil general))
+    (use-package god-mode :after (evil))
     (use-package evil-god-state
         :after (god-mode)
         :config
 ;;;;; Make which-key for the top level keybindings show up when you enter evil-god-state
+        (add-hook 'evil-god-state-exit-hook
+                  (lambda ()
+                      (which-key--hide-popup)))
         (add-hook 'evil-god-state-entry-hook
                   (lambda ()
                       (which-key--create-buffer-and-show nil
@@ -574,88 +626,98 @@ configuration"
                                                                           (not (null (cdr x)))))
                                                          "Top-level bindings")))
 ;;;;; Notes
-        (general-emacs-define-key 'global-map
-            "C-c n"       `(:wk "Notes...")
-            "C-c n s"     #'denote-silo
-            "C-c n c"     #'org-capture
-            "C-c n l"     #'org-store-link
-            "C-c n n"     #'consult-notes
-            "C-c n i"     #'denote-link-global
-            "C-c n S-I"   #'denote-link-after-creating
-            "C-c n r"     #'denote-rename-file
-            "C-c n k"     #'denote-keywords-add
-            "C-c n S-K"   #'denote-keywords-remove
-            "C-c n b"     #'denote-backlinks
-            "C-c n S-B"   #'denote-find-backlink
-            "C-c n S-R"   #'denote-region)
+        (quake-emacs-define-key global-map
+            "C-c n" (cons "Notes"
+                          (quake-emacs-create-keymap
+                              "s"     'denote-silo
+                              "c"     'org-capture
+                              "l"     'org-store-link
+                              "n"     'consult-notes
+                              "i"     'denote-link-global
+                              "S-I"   'denote-link-after-creating
+                              "r"     'denote-rename-file
+                              "k"     'denote-keywords-add
+                              "S-K"   'denote-keywords-remove
+                              "b"     'denote-backlinks
+                              "S-B"   'denote-find-backlink
+                              "S-R"   'denote-region)))
 ;;;;; Yasnippet
-        (general-emacs-define-key 'global-map
-            "C-c &"    `(:wk "Code Snippets...")
-            "C-c & n"   #'yas-new-snippet
-            "C-c & s"   #'yas-insert-snippet
-            "C-c & v"   #'yas-visit-snippet-file)
+        (quake-emacs-define-key global-map
+            "C-c &"    (cons "Code Snippets..."
+                             (quake-emacs-create-keymap
+                                 "n"   'yas-new-snippet
+                                 "s"   'yas-insert-snippet
+                                 "v"   'yas-visit-snippet-file)))
 ;;;;; General Quake-recommended keybindings
-        (general-emacs-define-key 'global-map
-            "C-c p"   `(:wk "Profile...")
-            "C-c p f" `(,(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
-	                    :wk "Open framework config")
-            "C-c p u"   `(,(lambda () (interactive) (find-file "~/.quake.d/user.el"))
-	                      :wk "Open user config")
-            "C-c p r" #'restart-emacs
-            "C-c p l" `(,(lambda () (interactive) (load-file "~/.emacs.d/init.el"))
-                        :wk "Reload user config")
+        (quake-emacs-define-key global-map
+            "C-c p"   (cons "Profile..."
+                            (quake-emacs-create-keymap
+                                "t" 'consult-theme
+                                "f" (cons "Open framework config"
+                                          (lambda () (interactive) (find-file "~/.emacs.d/init.el")))
+                                "u" (cons "Open user config"
+                                          (lambda () (interactive) (find-file "~/.quake.d/user.el")))
+                                "r" 'restart-emacs
+                                "l" (cons "Reload user config"
+                                          (lambda () (interactive) (load-file "~/.emacs.d/init.el")))))
 ;;;;;; Opening things
-            "C-c o"     `(:wk "Open...")
-            "C-c o a"   #'org-agenda
-            "C-c o ="   #'calc
-            "C-c o s"   `(,(lambda () (interactive)
-                               (let ((new-shell-frame (make-frame)))
-                                   (select-frame new-shell-frame)
-                                   (funcall quake-term-preferred-command 'new)))
-                          :wk "Open new shell")
-            "C-c o -"   #'dired
-            "C-c o t"   #'toggle-frame-tab-bar
-            "C-c o m"   #'gnus-other-frame
-            "C-c o d"   #'word-processing-mode
-            "C-c o w"   #'scratch-window-toggle
+            "C-c o"     (cons "Open..."
+                              (quake-emacs-create-keymap
+                                  "w"   'eww
+                                  "a"   'org-agenda
+                                  "="   'calc
+                                  "s"   (cons "Open new shell"
+                                              (lambda () (interactive)
+                                                  (let ((new-shell-frame (make-frame)))
+                                                      (select-frame new-shell-frame)
+                                                      (funcall quake-term-preferred-command 'new))))
+                                  "-"   'dired
+                                  "t"   'toggle-frame-tab-bar
+                                  "m"   'gnus-other-frame
+                                  "d"   'word-processing-mode
+                                  "S"   'scratch-window-toggle))
 ;;;;;; Top-level keybindings for convenience
-            "C-~" #'shell-toggle
-            "C-:" #'eval-expression
-            "C-;" #'execute-extended-command
+            "C-~" 'shell-toggle
+            "C-:" 'pp-eval-expression
+            "C-;" 'execute-extended-command
 ;;;;;; File and directory manpulation
-            "C-x C-x"   #'delete-file
-            "C-x C-S-x" #'delete-directory
+            "C-x C-x"   'delete-file
+            "C-x C-S-x" 'delete-directory
 ;;;;;; Buffer manipulation
-            "C-x S-K" #'kill-current-buffer
-            "C-x B" #'ibuffer
+            "C-x S-K" 'kill-current-buffer
+            "C-x B"   'ibuffer
+;;;;;; Eglot
+            "C-c l"   (cons "LSP Server..."
+                            (quake-emacs-create-keymap
+                                "s" 'eglot
+                                "a" 'eglot-code-actions
+                                "r" 'eglot-rename
+                                "h" 'eldoc
+                                "f" 'eglot-format
+                                "F" 'eglot-format-buffer
+                                "R" 'eglot-reconnect))
+
+;;;;;; Helpful
+            "C-h v" 'helpful-variable
+            "C-h f" 'helpful-callable
+            "C-h k" 'helpful-key
+            "C-h x" 'helpful-command
             )
-;;;;; Eglot
-        (general-emacs-define-key global-map
-            "C-c l"   `(:wk "LSP Server...")
-            "C-c l s" #'eglot)
-        (general-emacs-define-key eglot-mode-map
-            "C-c l a" #'eglot-code-actions
-            "C-c l r" #'eglot-rename
-            "C-c l h" #'eldoc
-            "C-c l f" #'eglot-format
-            "C-c l F" #'eglot-format-buffer
-            "C-c l R" #'eglot-reconnect)
-;;;;; Helpful
-        (general-emacs-define-key 'global-map
-            "C-h v" #'helpful-variable
-            "C-h f" #'helpful-callable
-            "C-h k" #'helpful-key
-            "C-h x" #'helpful-command)
 ;;;;; Core keybindings that make all this work
-        (define-key god-local-mode-map (kbd ".") #'repeat)
-        (general-create-definer tyrant-def
-            :states '(normal motion)
-            :keymaps 'override)
-        (tyrant-def "SPC" nil)
-        (tyrant-def "SPC" #'evil-execute-in-god-state)
-        (evil-define-key 'god global-map [escape] 'evil-god-state-bail)
-        (general-evil-define-key '(god) global-map
-            "C-w" #'evil-window-map)))
+        (defun escape-dwim ()
+            "Kill, exit, escape, stop, everything, now, and put me back in the
+current buffer in Normal Mode."
+            (interactive)
+            (evil-god-state-bail)
+            (evil-normal-state)
+            (keyboard-escape-quit))
+        (global-set-key (kbd "<escape>") 'escape-dwim)
+        (quake-evil-define-key (god) global-map
+            "C-w"      evil-window-map
+            "C-w C-u"  'winner-undo)
+        (quake-evil-define-key (motion normal visual) override-global-map
+            "<escape>" 'escape-dwim
+            "SPC"      'evil-execute-in-god-state)))
 ;;; ======Task Specific Layers======
 ;;;; Coding layer
 (defun task/coding-layer ()
@@ -688,9 +750,8 @@ configuration"
         (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1)
         :config
                                         ; Escape quits magit help mode like I expect
-        (general-define-key
-         :keymaps 'transient-base-map
-         "<escape>" 'transient-quit-one))
+        (quake-emacs-define-key transient-base-map
+            "<escape>" #'transient-quit-one))
 
     (use-package diff-hl
         :hook ((prog-mode . diff-hl-mode)
@@ -712,6 +773,33 @@ configuration"
         :custom
         (treesit-auto-install 'prompt)
         :config
+        ;; TODO: If we could get tree-sitter support for
+        ;; emacs-lisp working out of the box (automatically
+        ;; installed), then we could do away with
+        ;; `evil-cleverparens' entirely, and just have a
+        ;; consistent, generalized way of manipulating the AST of
+        ;; basically every langauge. The only other thing needed
+        ;; would be to implement generalized slurp/barf for tree
+        ;; sitter text objects. See [[file://~/.emacs.d/init.el::493]]
+        ;; 
+        ;; (define-derived-mode elisp-ts-mode emacs-lisp-mode "ELisp[ts]"
+        ;;     "Tree-sitter major mode for editing Emacs Lisp."
+        ;;     :group 'rust
+        ;;     (when (treesit-ready-p 'elisp)
+        ;;         (treesit-parser-create 'elisp)
+        ;;         (treesit-major-mode-setup)))
+        ;; (setq elisp-tsauto-config
+        ;;       (make-treesit-auto-recipe
+        ;;        :lang 'elisp
+        ;;        :ts-mode 'elisp-ts-mode
+        ;;        :remap '(emacs-lisp-mode)
+        ;;        :url "https://github.com/Wilfred/tree-sitter-elisp"
+        ;;        :revision "main"
+        ;;        :source-dir "src"
+        ;;        :ext "\\.el\\'"))
+
+        ;; (add-to-list 'treesit-auto-recipe-list elisp-tsauto-config)
+        ;; (add-to-list 'treesit-auto-langs 'elisp)
         (treesit-auto-add-to-auto-mode-alist 'all)
         (global-treesit-auto-mode))
 
@@ -725,8 +813,7 @@ configuration"
                                           (message "Info: no LSP found for this file.")))) 
         :config
         (setq eglot-autoshutdown t
-              eglot-sync-connect nil)
-        (fset #'jsonrpc--log-event #'ignore))
+              eglot-sync-connect nil))
 
 ;;;;; Eglot-compatible Debug Adapter Protocol client (for more IDE shit)
     (use-package dape
@@ -1001,7 +1088,7 @@ in `denote-link'."
           (main-bg (face-background 'default)))
         (when (not (frame-parent frame))
             (set-face-attribute 'internal-border frame :background main-bg)
-            (modify-frame-parameters frame `((internal-border-width . 12))))
+            (modify-frame-parameters frame `((internal-border-width . 20))))
         (set-face-background 'line-number main-bg frame)
         (set-face-foreground 'vertical-border mode-bg frame)
         (setq window-divider-default-right-width 1)
@@ -1020,7 +1107,7 @@ in `denote-link'."
   themes, so you never have to go searching for a theme again
   - `mood-line', for an incredibly fast and lightweight emacs modeline
   that offers just the features you need for a great experience
-  - `dashboard', because a launchpad is always welcome
+  - `enlight', because a launchpad is always welcome
   - `eldoc-box', because documentation needs to look nice and appear
   next to your cursor so you don't have to move your eyes
   - `breadcrumb', so you don't get lost"
@@ -1032,8 +1119,9 @@ in `denote-link'."
         (setq doom-themes-enable-bold t
 	          doom-themes-enable-italic t))
 
-    (load-theme quake-color-theme t)
+    (advice-add 'load-theme :after (lambda (&rest args) (quake/set-aesthetics nil)))
     (add-hook 'after-make-frame-functions #'quake/set-aesthetics)
+    (load-theme quake-color-theme t)
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
@@ -1064,21 +1152,26 @@ in `denote-link'."
         :config
         (mood-line-mode))
 
-    (use-package dashboard
+    (use-package enlight
         :custom
-        (dashboard-banner-logo-title "Lean, fast, focused, based on the latest tech. Welcome to Quake Emacs")
-        (dashboard-startup-banner "~/.emacs.d/banner-quake.png")
-        (dashboard-center-content t)
-        (dashboard-vertically-center-content t)
-        (dashboard-items '((recents   . 5)
-                           (projects  . 5)))
-        (dashboard-item-shortcuts '((recents   . "r")
-        			                (projects  . "p")))
-        (dashboard-icon-type 'nerd-icons) ;use `nerd-icons' package
-        (dashboard-set-heading-icons t)
-        (dashboard-set-file-icons t)
-        :config
-        (dashboard-setup-startup-hook))
+        (enlight-content
+         (concat
+          "    "
+          (propertize "QUAKE EMACS" 'display (create-image "~/.emacs.d/banner-quake.png"))
+          "\n"
+          "\n"
+          (propertize  (format "Started in %s\n" (emacs-init-time)) 'face '(:inherit 'font-lock-comment-face))
+          (enlight-menu
+           '(("Org Mode"
+	          ("Org-Agenda (current day)" (org-agenda nil "a") "a")
+	          ("Org-Agenda (TODOs)" (org-agenda nil "t") "o")
+              ("" (consult-notes) "n"))
+             ("Files"
+              ("Recent Files" (consult-recent-file) "r")
+              ("Writing" (read-file-name "Writing: " "~/Sync/Private/") "c")
+              ("Documents" (read-file-name "Document: " "~/Documents/") "d"))
+             ("Other"
+	          ("Projects" project-switch-project "p")))))))
 
     (use-package eldoc-box
         :config
@@ -1195,3 +1288,5 @@ in `denote-link'."
 
 ;; Fix the aesthetics
 (quake/set-aesthetics nil)
+(put 'erase-buffer 'disabled nil)
+(profiler-stop)
