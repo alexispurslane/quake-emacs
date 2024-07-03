@@ -91,7 +91,7 @@ We also have a vertical fuzzy searching UI for popups, with live narrowing, like
 
 [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fuzzy-searching-everywhere.gif]]
 
-Quake Emacs also features [[https://github.com/abo-abo/hydra?tab=readme-ov-file][which-key]] for more discoverable keybindings, and a meticulous set of [[https://github.com/emacs-evil/evil][evil-mode]] keybindings, made with [[https://github.com/noctuid/general.el][general]]).
+Quake Emacs also features [[https://github.com/abo-abo/hydra?tab=readme-ov-file][which-key]] for more discoverable keybindings, and a meticulous set of [[https://github.com/emacs-evil/evil][evil-mode]] keybindings.
 
 [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/which-key-leader-key.gif]]
 

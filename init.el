@@ -388,7 +388,14 @@ passed in as an argument."
             "RET" #'embark-kmacro-run
             "n" #'embark-kmacro-name)
 
-        (add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map))))
+        (add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map)))
+;;;;; Embark-Consult integration package
+    (use-package embark-consult
+        :hook (embark-collect-mode . consult-preview-at-point-mode))
+    (use-package wgrep
+        :custom
+        (wgrep-auto-save-buffer t)
+        (wgrep-enable-key "i")))
 
 
 ;;; ======Non-Emacs Keybindings======
