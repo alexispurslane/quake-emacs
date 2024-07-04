@@ -581,7 +581,7 @@ Uses the same syntax and semantics as `quake-emacs-define-key'."
             "gc" 'comment-region
             "gC" 'uncomment-region)
 
-        (quake-evil-define-key (normal motion) (prog-mode org-mode outline-mode diff-mode)
+        (quake-evil-define-key (normal motion) (outline-minor-mode-map org-mode-map outline-mode-map diff-mode-map)
             "TAB" 'evil-toggle-fold))
 
     (use-package evil-collection
