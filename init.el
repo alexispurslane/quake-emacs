@@ -69,9 +69,9 @@
 
 ;;; ======User-Modifiable Variables======
 (defcustom quake-org-home-directory
-    "~/org"
+    "~/org/"
     "The directory that your org capture templates, Denote notes, and
-org-agenda files will be placed in by default."
+org-agenda files will be placed in by default. Always ends in a slash."
     :type 'string
     :group 'quake)
 
@@ -582,7 +582,9 @@ Uses the same syntax and semantics as `quake-emacs-define-key'."
             "gC" 'uncomment-region)
 
         (quake-evil-define-key (normal motion) (outline-minor-mode-map org-mode-map outline-mode-map diff-mode-map)
-            "TAB" 'evil-toggle-fold))
+            "TAB" 'evil-toggle-fold)
+        (quake-evil-define-key (normal motion) (org-mode-map)
+            "RET" 'evil-org-return))
 
     (use-package evil-collection
         :after (evil)
@@ -757,9 +759,13 @@ configuration"
 ;;;;;; Buffer manipulation
             "C-x S-K" 'kill-current-buffer
             "C-x B"   'ibuffer
+;;;;;; Project.el
+            "C-x p E" 'flymake-show-project-diagnostics
 ;;;;;; Eglot
             "C-c l"   (cons "LSP Server..."
                             (quake-emacs-create-keymap
+                                "E" 'flymake-show-buffer-diagnostics
+                                "e" 'consult-flymake
                                 "s" 'eglot
                                 "a" 'eglot-code-actions
                                 "r" 'eglot-rename
@@ -883,6 +889,8 @@ current buffer in Normal Mode."
                                                   (command-execute #'eglot-ensure))
                                           (message "Info: no LSP found for this file.")))) 
         :config
+        (add-hook 'eglot-managed-mode-hook
+                  (lambda () (add-hook 'before-save-hook 'eglot-format-buffer nil t)))
         (setq eglot-autoshutdown t
               eglot-sync-connect nil))
 
@@ -968,6 +976,8 @@ current buffer in Normal Mode."
     (use-package org
         :commands (org-mode)
         :config
+        (setq org-directory quake-org-home-directory)
+        (setq org-default-notes-file (concat quake-org-home-directory "notes.org"))
         (add-to-list 'org-agenda-files quake-org-home-directory)
 
         (set-face-attribute 'org-level-1 nil :height 2.0)
@@ -985,9 +995,9 @@ current buffer in Normal Mode."
 	          org-fontify-quote-and-verse-blocks t)
 
         (setq org-capture-templates
-              '(("t" "Todo" entry (file+headline (file-name-concat quake-org-home-directory "todo.org") "Tasks")
+              `(("t" "Todo" entry (file+headline ,(file-name-concat quake-org-home-directory "todo.org") "Tasks")
                  "* TODO %?\n  %i\n  %a")
-                ("j" "Journal" entry (file+datetree (file-name-concat quake-org-home-directory "journal.org"))
+                ("j" "Journal" entry (file+datetree ,(file-name-concat quake-org-home-directory "journal.org"))
                  "* %?\nEntered on %U\n  %i\n  %a"))))
 
     (use-package evil-org
