@@ -47,6 +47,7 @@
 ;; PLEASE DO SO INSTEAD OF USING THIS FILE DIRECTLY
 
 ;; For more information, see the README in the online repository.
+(setq debug-on-error t)
 (setq gc-cons-threshold-original gc-cons-threshold)
 (setq gc-cons-threshold most-positive-fixnum)
 (run-with-timer 5 0 (lambda ()
@@ -62,6 +63,24 @@
 (setq use-package-always-ensure t
       package-enable-at-startup nil
       use-package-compute-statistics t)
+
+;; Print a little message to the user that we're loading packages if this is a fresh install
+(when (length< package-selected-packages 2)
+    (with-current-buffer "*scratch*"
+        (insert (propertize "Installing Quake Emacs..." 'face '(:height 400)))
+        (insert "
+Please wait patiently.
+
+It is okay to close Emacs if you need to — installation
+operations are idempotent. This process will take several
+minutes (depending on the speed of your processor and internet
+connection). You can watch the echo area for updates.
+
+")
+        (insert (propertize "Note: If Quake Emacs runs into any errors, restarting usually
+fixes the problem." 'face 'bold))
+        (goto-char 0))
+    (redraw-display))
 
 (defgroup quake nil
     "A customization group for the Quake Emacs distribution."
@@ -121,11 +140,30 @@ If you pass in term, your environment shell will be
 passed in as an argument."
     :group 'quake)
 
+;;; ======Utility Functions======
+
+(defun quake/set-aesthetics (frame)
+    (let ((mode-bg (face-background 'mode-line))
+          (main-bg (face-background 'default)))
+        (when (not (frame-parent frame))
+            (set-face-attribute 'internal-border frame :background main-bg)
+            (modify-frame-parameters frame `((internal-border-width . 20))))
+        (set-face-background 'line-number main-bg frame)
+        (set-face-foreground 'vertical-border mode-bg frame)
+        (setq window-divider-default-right-width 1)
+        (window-divider-mode 1)
+        (set-face-attribute 'mode-line frame :inherit 'variable-pitch
+                            :height 120
+                            :box `(:line-width 5 :color ,mode-bg :style nil))
+        (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line
+                            :box `(:line-width 5 :color ,(face-background 'mode-line-inactive) :style nil))))
+
 ;;; ======Load User Script======
 ;; we load the user script at the beginning so that some of their
 ;; config can run *before* layer initialization happens, and
 ;; their custom layers can run during and after, thus producing a
 ;; nice clean
+
 (when (file-exists-p "~/.quake.d/user.el")
     (load "~/.quake.d/user.el"))
 
@@ -135,10 +173,10 @@ passed in as an argument."
 ;;;; Setting up Emacs to behave in a more familiar and pleasing way
     (setq inhibit-startup-message t               ; we're going to have our own dashboard
 	      visible-bell t                          ; nobody likes being beeped at
-          backup-by-copying t                     ; backing up a file by moving it is insane
-          backup-directory-alist `((".*" . ,temporary-file-directory))
-          auto-save-file-name-transforms `((".*" ,temporary-file-directory t)) ; don't litter dammit
-          delete-old-versions t                   ; delete excess backup files
+        backup-by-copying t                     ; backing up a file by moving it is insane
+        backup-directory-alist `((".*" . ,temporary-file-directory))
+        auto-save-file-name-transforms `((".*" ,temporary-file-directory t)) ; don't litter dammit
+        delete-old-versions t                   ; delete excess backup files
 	      lisp-body-indent 4                      ; four space tabs
 	      vc-follow-symlinks t                    ; we'll always want to follow symlinks
 	      warning-minimum-level :emergency        ; don't completely shit the bed on errors
@@ -147,13 +185,13 @@ passed in as an argument."
     (setq-default fill-column 65)                 ; this will be used in reading modes, so set it to something nice
     (setq tab-always-indent 'complete)            ; more modern completion behavior
     (setq read-file-name-completion-ignore-case t ; ignore case when completing file names
-          read-buffer-completion-ignore-case t    ; ignore case when completing buffer names
-          completion-ignore-case t)               ; fucking ignore case in general!
-    (setopt use-short-answers t)                  ; so you don't have to type out "yes" or "no" and hit enter
+          read-buffer-completion-ignore-case t ; ignore case when completing buffer names
+          completion-ignore-case t) ; fucking ignore case in general!
+    (setopt use-short-answers t) ; so you don't have to type out "yes" or "no" and hit enter
     (setopt initial-buffer-choice #'enlight)
-    (setq eldoc-idle-delay 1.0)                   ; w/ eldoc-box/an LSP, idle delay is by default too distracting
-    (setq display-line-numbers-width-start t)     ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
-    (setq-default indent-tabs-mode nil)           ; prefer spaces instead of tabs
+    (setq eldoc-idle-delay 1.0) ; w/ eldoc-box/an LSP, idle delay is by default too distracting
+    (setq display-line-numbers-width-start t) ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
+    (setq-default indent-tabs-mode nil) ; prefer spaces instead of tabs
 ;;;;; Disabling ugly and largely unhelpful UI features 
     (menu-bar-mode 1)
     (tool-bar-mode -1)
@@ -161,11 +199,11 @@ passed in as an argument."
 ;;;;; Enable some modes that give nicer, more modern behavior
     (setq pixel-scroll-precision-interpolate-mice t
 	      pixel-scroll-precision-interpolate-page t)
-    (pixel-scroll-precision-mode 1)        ; smooth scrolling
-    (winner-mode 1)                        ; better window manipulation
-    (savehist-mode 1)                      ; remember commands
-    (column-number-mode)                   ; keep track of column number for the useful modeline readout
-    (global-visual-line-mode)              ; wrap lines at end of window
+    (pixel-scroll-precision-mode 1)   ; smooth scrolling
+    (winner-mode 1)                ; better window manipulation
+    (savehist-mode 1)              ; remember commands
+    (column-number-mode) ; keep track of column number for the useful modeline readout
+    (global-visual-line-mode)     ; wrap lines at end of window
 ;;;;; A basic programmming mode to build off of that adds some expected things
     (add-hook 'prog-mode-hook (lambda ()
 			                      (prettify-symbols-mode 1)
@@ -182,15 +220,15 @@ passed in as an argument."
           jit-lock-stealth-load 200)
 ;;;;;; Optimize for long lines. 
     (setq-default bidi-paragraph-direction 'left-to-right ; assume we're using LtR text unless explicitly told otherwise
-                  bidi-inhibit-bpa t)                     ; turn off bidirectional paren display algorithm, it is expensive
+                  bidi-inhibit-bpa t) ; turn off bidirectional paren display algorithm, it is expensive
 ;;;;;; Faster minibuffer
     (defun setup-fast-minibuffer ()
         (setq gc-cons-threshold most-positive-fixnum))
     (defun close-fast-minibuffer ()
         (setq gc-cons-threshold (* 8 1024 1024)))
 
-    (add-hook 'minibuffer-setup-hook #'setup-fast-minibuffer)
-    (add-hook 'minibuffer-exit-hook #'close-fast-minibuffer)
+    (add-hook 'minibuffer-setup-hook 'setup-fast-minibuffer)
+    (add-hook 'minibuffer-exit-hook 'close-fast-minibuffer)
 ;;;; Fonts
     (set-display-table-slot
      standard-display-table
@@ -930,13 +968,13 @@ current buffer in Normal Mode."
         (corfu-popupinfo-delay 0.3)
         (corfu-popupinfo-direction 'right)
         :config
-        ;;;; Turn off return accepting completions!!
+;;;; Turn off return accepting completions!!
         (define-key corfu-map (kbd "RET") nil)
         (defun corfu-popupinfo-start ()
             (require 'corfu-popupinfo)
             (set-face-attribute 'corfu-popupinfo nil :inherit 'variable-pitch)
             (corfu-popupinfo-mode))
-        (add-hook 'corfu-mode-hook #'corfu-popupinfo-start)) 
+        (add-hook 'corfu-mode-hook 'corfu-popupinfo-start)) 
 
 ;;;;; Project- and language-aware autoformatting
     ;; Global autoformatting
@@ -989,7 +1027,7 @@ current buffer in Normal Mode."
         (setq org-ellipsis "  " ;; folding symbol
 	          org-startup-indented t
 	          org-image-actual-width (list 300)      ; no one wants gigantic images inline
-              org-pretty-entities t                  ; part of the benefit of lightweight markup is seeing these 
+            org-pretty-entities t                  ; part of the benefit of lightweight markup is seeing these 
 	          org-agenda-block-separator ""
 	          org-fontify-done-headline t
 	          org-fontify-quote-and-verse-blocks t)
@@ -1127,9 +1165,7 @@ in `denote-link'."
 			                         "((nil . ((denote-directory . \"%s\"))))")
 			                        (expand-file-name dir)))))
             (add-to-list 'project--list `(,(expand-file-name dir)))
-            (project--write-project-list))
-        :config
-        (add-hook 'find-file-hook #'denote-link-buttonize-buffer))
+            (project--write-project-list)))
 
     (use-package consult-notes
         :after (denote)
@@ -1141,22 +1177,6 @@ in `denote-link'."
 
 ;;; ======Aesthetic Packages======
 ;;;; Core Aesthetic Packages
-(defun quake/set-aesthetics (frame)
-    (let ((mode-bg (face-background 'mode-line))
-          (main-bg (face-background 'default)))
-        (when (not (frame-parent frame))
-            (set-face-attribute 'internal-border frame :background main-bg)
-            (modify-frame-parameters frame `((internal-border-width . 20))))
-        (set-face-background 'line-number main-bg frame)
-        (set-face-foreground 'vertical-border mode-bg frame)
-        (setq window-divider-default-right-width 1)
-        (window-divider-mode 1)
-        (set-face-attribute 'mode-line frame :inherit 'variable-pitch
-                            :height 120
-                            :box `(:line-width 5 :color ,mode-bg :style nil))
-        (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line
-                            :box `(:line-width 5 :color ,(face-background 'mode-line-inactive) :style nil))))
-
 (defun core/aesthetic-layer ()
     "If you're going to be staring at your editor all day, it might as well look nice.
 
@@ -1178,7 +1198,7 @@ in `denote-link'."
 	          doom-themes-enable-italic t))
 
     (advice-add 'load-theme :after (lambda (&rest args) (quake/set-aesthetics nil)))
-    (add-hook 'after-make-frame-functions #'quake/set-aesthetics)
+    (add-hook 'after-make-frame-functions 'quake/set-aesthetics)
     (load-theme quake-color-theme t)
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least

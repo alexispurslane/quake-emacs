@@ -44,7 +44,7 @@ Text editors are most often used for three core tasks: *code editing*, *writing*
 2. Then copy the example =user.el= provided with Quake to your Quake Emacs configuration directory at =~/.quake.d/user.el=:
 
 #+begin_src sh
-mkdir -p ~/.quake.d/ && cp user.el ~/.quake.d/
+mkdir -p ~/.quake.d/ && cp ~/.emacs.d/user.el ~/.quake.d/
 #+end_src
 
 To update, just =git pull= to the latest tag. I recommend you check the release notes for the tag for any tips, known issues to avoid, etc.
