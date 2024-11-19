@@ -64,6 +64,7 @@
       use-package-compute-statistics t)
 
 ;; Print a little message to the user that we're loading packages if this is a fresh install
+
 (when (let ((place (file-name-concat user-emacs-directory "elpa/")))
           (or (directory-empty-p place) (not (file-directory-p place))))
     (with-current-buffer "*scratch*"
@@ -783,6 +784,7 @@ configuration"
                                                       (select-frame new-shell-frame)
                                                       (funcall quake-term-preferred-command 'new))))
                                   "-"   'dired
+                                  "T"   'treemacs
                                   "t"   'toggle-frame-tab-bar
                                   "m"   'gnus-other-frame
                                   "d"   'word-processing-mode
