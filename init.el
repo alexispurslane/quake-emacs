@@ -88,9 +88,9 @@ fixes the problem." 'face 'bold))
 
 ;;; ======User-Modifiable Variables======
 (defcustom quake-org-home-directory
-    "~/org"
+    "~/org/"
     "The directory that your org capture templates, Denote notes, and
-org-agenda files will be placed in by default."
+org-agenda files will be placed in by default. Always ends in a slash."
     :type 'string
     :group 'quake)
 
@@ -171,16 +171,19 @@ passed in as an argument."
 (use-package emacs
     :init
 ;;;; Setting up Emacs to behave in a more familiar and pleasing way
-    (setq inhibit-startup-message t ; we're going to have our own dashboard
-	      visible-bell t         ; nobody likes being beeped at
-	      make-backup-files nil ; don't litter all over the place
-	      lisp-body-indent 4    ; four space tabs
-	      vc-follow-symlinks t ; we'll always want to follow symlinks
-	      warning-minimum-level :emergency ; don't completely shit the bed on errors
-	      display-line-numbers 'relative ; whether you use evil or not, these are useful
-	      custom-file "~/.emacs.d/custom.el") ; dump all the shit from custom somewhere else
-    (setq-default fill-column 65) ; this will be used in reading modes, so set it to something nice
-    (setq tab-always-indent 'complete) ; more modern completion behavior
+    (setq inhibit-startup-message t               ; we're going to have our own dashboard
+	      visible-bell t                          ; nobody likes being beeped at
+        backup-by-copying t                     ; backing up a file by moving it is insane
+        backup-directory-alist `((".*" . ,temporary-file-directory))
+        auto-save-file-name-transforms `((".*" ,temporary-file-directory t)) ; don't litter dammit
+        delete-old-versions t                   ; delete excess backup files
+	      lisp-body-indent 4                      ; four space tabs
+	      vc-follow-symlinks t                    ; we'll always want to follow symlinks
+	      warning-minimum-level :emergency        ; don't completely shit the bed on errors
+	      display-line-numbers 'relative          ; whether you use evil or not, these are useful
+	      custom-file "~/.emacs.d/custom.el")     ; dump all the shit from custom somewhere else
+    (setq-default fill-column 65)                 ; this will be used in reading modes, so set it to something nice
+    (setq tab-always-indent 'complete)            ; more modern completion behavior
     (setq read-file-name-completion-ignore-case t ; ignore case when completing file names
           read-buffer-completion-ignore-case t ; ignore case when completing buffer names
           completion-ignore-case t) ; fucking ignore case in general!
@@ -274,8 +277,6 @@ passed in as an argument."
 ;;;; Recentf
 (use-package recentf
     :custom
-    (recentf-max-menu-items 25)
-    (recentf-max-saved-items 25)
     (recentf-auto-cleanup 'never)
     :config
     (recentf-mode))
@@ -285,6 +286,8 @@ passed in as an argument."
   modern day.
 
   Loads:
+  - `theme-anchor' for buffer-local themes, which are nice if
+  you're going to be using emacs a lot
   - `which-key' to show what keys can be pressed next at each stage of a
   key combination
   - `helpful' to give slower, but better, documentation for Emacs Lisp
@@ -334,6 +337,10 @@ passed in as an argument."
     (use-package helpful
         :commands (helpful-key helpful-callable helpful-command helpful-variable))
 
+    (use-package theme-anchor
+        :defer t
+        :commands (theme-anchor-buffer-local))
+
     (use-package which-key
         :init (which-key-mode)
         :diminish which-key-mode
@@ -379,6 +386,61 @@ passed in as an argument."
 		            ("G" . embark-internet-search)
 		            ("O" . embark-default-action-in-other-window))
         :config
+;;;;; Use `which-key' to display possible actions instead of a separate buffer
+        ;; This is a good idea because:
+        ;;
+        ;; 1. Interface consistency. Now every prompt for what
+        ;; further actions can be taken is laid out basically the
+        ;; same, using which-key or hydras.
+        ;;
+        ;; 2. Compactness. There are usually so many embark
+        ;; actions that they go right off the screen when
+        ;; displayed one per line with their docstrings next to
+        ;; them, which is extremely annoying to deal with
+        ;;
+        ;; 3. Eliminating redundancy. We don't need the
+        ;; docstrings as a first approximation anyway because of
+        ;; embark's help feature (which displays the same
+        ;; information as its default action buffer but better
+        ;; anyway because it's fuzzy-searchable) and because most
+        ;; command names are reasonably self-explanatory.
+        (defun embark-which-key-indicator ()
+            "An embark indicator that displays keymaps using which-key.
+The which-key help message will show the type and value of the
+current target followed by an ellipsis if there are further
+targets."
+            (lambda (&optional keymap targets prefix)
+                (if (null keymap)
+                        (which-key--hide-popup-ignore-command)
+                    (which-key--show-keymap
+                     (if (eq (plist-get (car targets) :type) 'embark-become)
+                             "Become"
+                         (format "Act on %s '%s'%s"
+                                 (plist-get (car targets) :type)
+                                 (embark--truncate-target (plist-get (car targets) :target))
+                                 (if (cdr targets) "…" "")))
+                     (if prefix
+                             (pcase (lookup-key keymap prefix 'accept-default)
+                                 ((and (pred keymapp) km) km)
+                                 (_ (key-binding prefix 'accept-default)))
+                         keymap)
+                     nil nil t (lambda (binding)
+                                   (not (string-suffix-p "-argument" (cdr binding))))))))
+
+        (setq embark-indicators
+              '(embark-which-key-indicator
+                embark-highlight-indicator
+                embark-isearch-highlight-indicator))
+
+        (defun embark-hide-which-key-indicator (fn &rest args)
+            "Hide the which-key indicator immediately when using the completing-read prompter."
+            (which-key--hide-popup-ignore-command)
+            (let ((embark-indicators
+                   (remq #'embark-which-key-indicator embark-indicators)))
+                (apply fn args)))
+
+        (advice-add #'embark-completing-read-prompter
+                    :around #'embark-hide-which-key-indicator)
 ;;;;; Add useful Hyperbole-style actions to Embark
 ;;;;;; Search DuckDuckGo for the given term
         (defun embark-internet-search (term)
@@ -426,7 +488,15 @@ passed in as an argument."
             "RET" #'embark-kmacro-run
             "n" #'embark-kmacro-name)
 
-        (add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map))))
+        (add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map)))
+;;;;; Embark-Consult integration package
+    (use-package embark-consult
+        :hook (embark-collect-mode . consult-preview-at-point-mode))
+    (use-package wgrep
+        :defer t
+        :custom
+        (wgrep-auto-save-buffer t)
+        (wgrep-enable-key "i")))
 
 
 ;;; ======Non-Emacs Keybindings======
@@ -547,9 +617,12 @@ Uses the same syntax and semantics as `quake-emacs-define-key'."
             "gX" 'tab-bar-close-other-tabs
             ;; Nice commenting
             "gc" 'comment-region
-            "gC" 'uncomment-region
-            ;; keybindings for outline mode
-            "TAB" 'evil-toggle-fold))
+            "gC" 'uncomment-region)
+
+        (quake-evil-define-key (normal motion) (outline-minor-mode-map org-mode-map outline-mode-map diff-mode-map)
+            "TAB" 'evil-toggle-fold)
+        (quake-evil-define-key (normal motion) (org-mode-map)
+            "RET" 'evil-org-return))
 
     (use-package evil-collection
         :after (evil)
@@ -724,9 +797,13 @@ configuration"
 ;;;;;; Buffer manipulation
             "C-x S-K" 'kill-current-buffer
             "C-x B"   'ibuffer
+;;;;;; Project.el
+            "C-x p E" 'flymake-show-project-diagnostics
 ;;;;;; Eglot
             "C-c l"   (cons "LSP Server..."
                             (quake-emacs-create-keymap
+                                "E" 'flymake-show-buffer-diagnostics
+                                "e" 'consult-flymake
                                 "s" 'eglot
                                 "a" 'eglot-code-actions
                                 "r" 'eglot-rename
@@ -850,6 +927,8 @@ current buffer in Normal Mode."
                                                   (command-execute #'eglot-ensure))
                                           (message "Info: no LSP found for this file.")))) 
         :config
+        (add-hook 'eglot-managed-mode-hook
+                  (lambda () (add-hook 'before-save-hook 'eglot-format-buffer nil t)))
         (setq eglot-autoshutdown t
               eglot-sync-connect nil))
 
@@ -859,22 +938,10 @@ current buffer in Normal Mode."
         :preface
         (setq dape-key-prefix nil)
         :init
-        ;; To use window configuration like gud (gdb-mi)
         (setq dape-buffer-window-arrangement 'right)
         :config
-        ;; To not display info and/or buffers on startup
-        (remove-hook 'dape-on-start-hooks 'dape-info)
-        (remove-hook 'dape-on-start-hooks 'dape-repl)
-
-        ;; To display info and/or repl buffers on stopped
-        (add-hook 'dape-on-stopped-hooks 'dape-info)
-        (add-hook 'dape-on-stopped-hooks 'dape-repl)
-
         ;; Kill compile buffer on build success
-        (add-hook 'dape-compile-compile-hooks 'kill-buffer)
-
-        ;; Save buffers on startup, useful for interpreted languages
-        (add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t))))
+        (add-hook 'dape-compile-compile-hooks 'kill-buffer))
 ;;;;; An actually good completion-at-point UI for completion inside buffers
     (defun corfu-enable-in-minibuffer ()
         "Enable Corfu in the minibuffer."
@@ -893,9 +960,8 @@ current buffer in Normal Mode."
 	           (minibuffer-setup . corfu-enable-in-minibuffer))
         ;; Optional customizations
         :custom
-        (corfu-cycle t) ;; Enable cycling for `corfu-next/previous'
-        (corfu-auto t)  ;; Enable auto completion
-        (corfu-separator ?\s) ;; Orderless field separator
+        (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
+        (corfu-auto t)                 ;; Enable auto completion
         (corfu-quit-no-match 'separator)
         (corfu-auto-delay 0.15)
         (corfu-auto-prefix 2)
@@ -948,6 +1014,8 @@ current buffer in Normal Mode."
     (use-package org
         :commands (org-mode)
         :config
+        (setq org-directory quake-org-home-directory)
+        (setq org-default-notes-file (concat quake-org-home-directory "notes.org"))
         (add-to-list 'org-agenda-files quake-org-home-directory)
 
         (set-face-attribute 'org-level-1 nil :height 2.0)
@@ -958,18 +1026,16 @@ current buffer in Normal Mode."
 
         (setq org-ellipsis "  " ;; folding symbol
 	          org-startup-indented t
-	          org-image-actual-width (list 300) ; no one wants gigantic images inline
-	          org-hide-emphasis-markers t         
-              org-pretty-entities nil ; part of the benefit of lightweight markup is seeing these 
+	          org-image-actual-width (list 300)      ; no one wants gigantic images inline
+            org-pretty-entities t                  ; part of the benefit of lightweight markup is seeing these 
 	          org-agenda-block-separator ""
-	          org-fontify-whole-heading-line t ; don't fontify the whole like, so tags don't look weird
 	          org-fontify-done-headline t
 	          org-fontify-quote-and-verse-blocks t)
 
         (setq org-capture-templates
-              '(("t" "Todo" entry (file+headline (file-name-concat quake-org-home-directory "todo.org") "Tasks")
+              `(("t" "Todo" entry (file+headline ,(file-name-concat quake-org-home-directory "todo.org") "Tasks")
                  "* TODO %?\n  %i\n  %a")
-                ("j" "Journal" entry (file+datetree (file-name-concat quake-org-home-directory "journal.org"))
+                ("j" "Journal" entry (file+datetree ,(file-name-concat quake-org-home-directory "journal.org"))
                  "* %?\nEntered on %U\n  %i\n  %a"))))
 
     (use-package evil-org
@@ -1013,18 +1079,10 @@ faces, and the flymake `proselint' backend is enabled."
         ;; Less distracting UI
         (setq left-fringe-width 0)
         (setq right-fringe-width 0)
-        (if (and (boundp 'darkroom-mode) darkroom-mode)
-	            (progn
-	                (darkroom-mode -1)
-	                (buffer-face-mode -1))
-            (progn
-	            (darkroom-mode 1)
-	            (buffer-face-mode 1)))
-
+        (darkroom-mode 1)
+        (buffer-face-mode 1)
         ;; Proselint
-        (when (fboundp 'flymake-proselint-setup)
-            (flymake-mode))
-        
+        (flymake-mode)
         ;; Spellcheck
         (flyspell-mode)))
 
