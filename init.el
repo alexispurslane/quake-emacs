@@ -47,7 +47,6 @@
 ;; PLEASE DO SO INSTEAD OF USING THIS FILE DIRECTLY
 
 ;; For more information, see the README in the online repository.
-(setq debug-on-error t)
 (setq gc-cons-threshold-original gc-cons-threshold)
 (setq gc-cons-threshold most-positive-fixnum)
 (run-with-timer 5 0 (lambda ()
@@ -173,10 +172,10 @@ passed in as an argument."
 ;;;; Setting up Emacs to behave in a more familiar and pleasing way
     (setq inhibit-startup-message t               ; we're going to have our own dashboard
 	      visible-bell t                          ; nobody likes being beeped at
-        backup-by-copying t                     ; backing up a file by moving it is insane
-        backup-directory-alist `((".*" . ,temporary-file-directory))
-        auto-save-file-name-transforms `((".*" ,temporary-file-directory t)) ; don't litter dammit
-        delete-old-versions t                   ; delete excess backup files
+          backup-by-copying t                     ; backing up a file by moving it is insane
+          backup-directory-alist `((".*" . ,temporary-file-directory))
+          auto-save-file-name-transforms `((".*" ,temporary-file-directory t)) ; don't litter dammit
+          delete-old-versions t                   ; delete excess backup files
 	      lisp-body-indent 4                      ; four space tabs
 	      vc-follow-symlinks t                    ; we'll always want to follow symlinks
 	      warning-minimum-level :emergency        ; don't completely shit the bed on errors
@@ -1027,7 +1026,7 @@ current buffer in Normal Mode."
         (setq org-ellipsis "  " ;; folding symbol
 	          org-startup-indented t
 	          org-image-actual-width (list 300)      ; no one wants gigantic images inline
-            org-pretty-entities t                  ; part of the benefit of lightweight markup is seeing these 
+              org-pretty-entities t                  ; part of the benefit of lightweight markup is seeing these 
 	          org-agenda-block-separator ""
 	          org-fontify-done-headline t
 	          org-fontify-quote-and-verse-blocks t)
