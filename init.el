@@ -64,7 +64,8 @@
       use-package-compute-statistics t)
 
 ;; Print a little message to the user that we're loading packages if this is a fresh install
-(when (length< package-selected-packages 2)
+(when (let ((place (file-name-concat user-emacs-directory "elpa/")))
+          (or (directory-empty-p place) (not (file-directory-p place))))
     (with-current-buffer "*scratch*"
         (insert (propertize "Installing Quake Emacs..." 'face '(:height 400)))
         (insert "
