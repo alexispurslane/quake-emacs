@@ -28,6 +28,7 @@ Text editors are most often used for three core tasks: *code editing*, *writing*
 
 ** Table of Contents                                               :TOC_2_gh:
   - [[#how-to-install][How To Install]]
+  - [[#supported-languages][Supported Languages]]
   - [[#key-features][Key Features]]
   - [[#showcase][Showcase]]
   - [[#personal-configuration-and-extra-layers][Personal Configuration and Extra Layers]]
@@ -48,6 +49,39 @@ mkdir -p ~/.quake.d/ && cp ~/.emacs.d/user.el ~/.quake.d/
 #+end_src
 
 To update, just =git pull= to the latest tag. I recommend you check the release notes for the tag for any tips, known issues to avoid, etc.
+
+3. Once the directories are set up, simply launch Emacs and it should begin downloading and installing the packages that make up Quake Emacs, as well as configuring them. Installation is idempotent, and the install process can take some time, so feel free to close Emacs anytime you need to — it will pick up where it left off next time!
+
+4. For any languages you want to use, you need two things: tree-sitter support, and a language server. Languages that don't have these things /will/, unfortunately, require external packages until they gain support (if they ever do, as some languages such as Common Lisp and Clojure have their own IDE systems that are superior to language servers). For languages that do have these things, there are typically two steps necessary to use Quake Emacs with that language:
+
+   a. Install the language server somewhere in your PATH so Emacs can find it automatically OR download the language server executable to a custom location and then specify that location when you start Eglot, or in a =.dir-locals.el= file.
+
+   b. Open a file in that language and answer "yes" to =treesit-auto= asking whether you want to automatically download, compile, and install the tree sitter grammar.
+
+   However, the second step only works for languages that have a tree-sitter mode wired up to activate when a file with the correct extension is opened, both because that's how =treesit-auto= knows to trigger, and because tree sitter modes are needed to translate the syntax tree created by the tree sitter grammar into font lock and syntax tables for Emacs to understand. Emacs comes with many tree sitter modes built in by default (see the list below) but unfortunately, not all of them are (yet — [[new languages are being added every version!][https://github.com/emacs-mirror/emacs/blob/331610aef0572eacb2846f817e979aa5e29170b7/etc/NEWS#L2142]]). In that case, you'll need to install an external package for that tree sitter mode.
+
+** Supported Languages
+
+Note that this is only /out of the box/: further languages can be integrated into the tree-sitter/LSP system Quake Emacs uses by installing the necessary tree sitter mode via =use-package=, and support for languages that don't fall into that system can be added like normal.
+
+- Bash
+- C++
+- C
+- CMake
+- C#
+- CSS
+- Dockerfile
+- Go
+- Java
+- JS
+- JSON
+- Python
+- Ruby
+- Rust
+- TOML
+- TSX
+- TypeScript
+- Yaml
 
 ** Key Features
 - 🎯 *Lean and focused*: Quake Emacs includes just the packages and configuration you need for a beautiful, modern IDE-lite experience when coding and a focused, ergonomic experience when writing or taking notes, and /nothing else/. It even completely does away with the need for language-specific layers through the use of tree-sitter and LSP support. Consider Quake Emacs part of your editor --- it's just there to give you a good out of the box experience, like [[https://helix-editor.com/][Helix]]. The rest is up to you!
@@ -161,7 +195,7 @@ With the introduction of various modern Emacs features in the last few years, an
 
 Now that =use-package= is included with Emacs by default, configuration frameworks are less necessary then ever, as vanilla Emacs's built-in capabilities are likely clearer, faster, and more powerful than whatever a configuration framework could offer, with the benefit of also being the community standard. In my experience, Doom Emacs's ideosyncratic package management system was less clear, less-organized, less-documented, and much less reliable than what is now built into Emacs 29.
 
-Likewise, with the inclusion of =eglot= and =tree-sitter=, language-specific "layers" that compose five or six packages, together with a lot of configuration, in order to give a decent experience, are mostly a thing of the past. Quake Emacs leverages these powerful built-in modern Emacs features to give you the experience of an Emacs configuration framework and distribution, without all the downsides.
+Likewise, with the inclusion of =eglot= and =tree-sitter=, language-specific "layers" that compose five or six packages, together with a lot of configuration, in order to give a decent experience, are mostly a thing of the past. Tree-Sitter modes may still need to be provided, but these can be very simple and direct mappings from an AST to font locking and syntax tables, simple enough that a huge breadth of them can eventually be included by default in Emacs, as opposed to the previous situation of various competing, often very imperfect, highlighting packages, and then several packages to provide completions and linting and other amenities. Quake Emacs leverages these powerful built-in modern Emacs features to give you the experience of an Emacs configuration framework and distribution, without all the downsides.
 
 Similarly, with the creation of amazing packages like =vertico=, =orderless=, and =corfu=, the need to manually integrate added features from various packages into your Emacs system and other Emacs packages is basically obsolete: these packages integrate directly with Emacs, by hooking into or outright replacing Emacs's built in functions for performing various actions, so there's no need to do anything. As a result, much of the configuration work Emacs distributions needed to do to wire everything up simply doesn't need to be done.
 
