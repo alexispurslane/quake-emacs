@@ -38,33 +38,44 @@ Text editors are most often used for three core tasks: *code editing*, *writing*
 ** How To Install
 1. First, you install Quake Emacs like usual:
 
-#+begin_src sh
-  git clone --depth=1 -b main https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
-#+end_src
+   #+begin_src sh
+   git clone --depth=1 -b main https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
+   #+end_src
 
 2. Then copy the example =user.el= provided with Quake to your Quake Emacs configuration directory at =~/.quake.d/user.el=:
 
-#+begin_src sh
-mkdir -p ~/.quake.d/ && cp ~/.emacs.d/user.el ~/.quake.d/
-#+end_src
+   #+begin_src sh
+   mkdir -p ~/.quake.d/ && cp ~/.emacs.d/user.el ~/.quake.d/
+   #+end_src
 
-To update, just =git pull= to the latest tag. I recommend you check the release notes for the tag for any tips, known issues to avoid, etc.
+   To update, just =git pull= to the latest tag. I recommend you check the release notes for the tag for any tips, known issues to avoid, etc.
 
 3. Once the directories are set up, simply launch Emacs and it should begin downloading and installing the packages that make up Quake Emacs, as well as configuring them. Installation is idempotent, and the install process can take some time, so feel free to close Emacs anytime you need to — it will pick up where it left off next time!
 
-4. For any languages you want to use, you need two things: tree-sitter support, and a language server. Languages that don't have these things /will/, unfortunately, require the usual external packages you'd use with regular Emacs until they gain support (if they ever do, as some languages such as Common Lisp and Clojure have their own IDE systems that are superior to language servers). For languages that do have these things, there are typically two steps necessary to use Quake Emacs with that language:
+4. For any languages you want to use, you need two things: *tree-sitter support*, and *a language server*.
 
-   a. Install the language server somewhere in your PATH so Emacs can find it automatically OR download the language server executable to a custom location and then specify that location when you start Eglot, or in a =.dir-locals.el= file.
+   Languages that /don't/ have these things will require the usual set of external packages you'd use with regular Emacs, until they gain support if they ever do (as some languages such as Common Lisp and Clojure have their own IDE systems that are superior to language servers).
+   
+   For languages that /do/ have these things, there are typically two steps necessary to use Quake Emacs with that language:
 
-   b. Open a file in that language and answer "yes" to =treesit-auto= asking whether you want to automatically download, compile, and install the tree sitter grammar.
+   1. Install the language server somewhere in your PATH so Emacs can find it automatically OR download the language server executable to a custom location and then specify that location when you start Eglot, or in a =.dir-locals.el= file.
 
-   However, the second step only works for languages that have a tree-sitter mode wired up to activate when a file with the correct extension is opened, both because that's how =treesit-auto= knows to trigger, and because tree sitter modes are needed to translate the syntax tree created by the tree sitter grammar into font lock and syntax tables for Emacs to understand. Emacs comes with many tree sitter modes built in by default (see the list below) but unfortunately, not all of them are (yet — [[new languages are being added every version!][https://github.com/emacs-mirror/emacs/blob/331610aef0572eacb2846f817e979aa5e29170b7/etc/NEWS#L2142]]). In that case, you'll need to install an external package for that tree sitter mode.
+   2. Open a file in that language and answer "yes" to =treesit-auto= asking whether you want to automatically download, compile, and install the tree sitter grammar.
+
+   With that done, everthing should work.
+   
+   *However!* The second step only works for languages that *have a tree-sitter mode installed and wired up to activate when a file with the correct extension is opened*, both because that's how =treesit-auto= knows to trigger, and because tree sitter modes are needed to translate the syntax tree created by the tree sitter grammar into font lock and syntax tables for Emacs to understand. Emacs comes with a fair number of tree sitter modes built in by default (see the list below) but unfortunately, not all of them are (yet — [[new languages are being added every version!][https://github.com/emacs-mirror/emacs/blob/331610aef0572eacb2846f817e979aa5e29170b7/etc/NEWS#L2142]]). In that case, you'll need to install an external package for that tree sitter mode — but nothing else, at least!
 
 ** Supported Languages
 
 Note that this is only /out of the box/: further languages can be integrated into the tree-sitter/LSP system Quake Emacs uses by installing the necessary tree sitter mode via =use-package=, and support for languages that don't fall into that system can be added like normal.
 
 - Bash
+- PHP
+- Elixir
+- HEEx
+- HTML
+- LUA
 - C++
 - C
 - CMake
