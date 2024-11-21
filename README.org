@@ -52,7 +52,7 @@ To update, just =git pull= to the latest tag. I recommend you check the release 
 
 3. Once the directories are set up, simply launch Emacs and it should begin downloading and installing the packages that make up Quake Emacs, as well as configuring them. Installation is idempotent, and the install process can take some time, so feel free to close Emacs anytime you need to — it will pick up where it left off next time!
 
-4. For any languages you want to use, you need two things: tree-sitter support, and a language server. Languages that don't have these things /will/, unfortunately, require external packages until they gain support (if they ever do, as some languages such as Common Lisp and Clojure have their own IDE systems that are superior to language servers). For languages that do have these things, there are typically two steps necessary to use Quake Emacs with that language:
+4. For any languages you want to use, you need two things: tree-sitter support, and a language server. Languages that don't have these things /will/, unfortunately, require the usual external packages you'd use with regular Emacs until they gain support (if they ever do, as some languages such as Common Lisp and Clojure have their own IDE systems that are superior to language servers). For languages that do have these things, there are typically two steps necessary to use Quake Emacs with that language:
 
    a. Install the language server somewhere in your PATH so Emacs can find it automatically OR download the language server executable to a custom location and then specify that location when you start Eglot, or in a =.dir-locals.el= file.
 
