@@ -94,6 +94,8 @@ Note that this is only /out of the box/: further languages can be integrated int
 - TypeScript
 - Yaml
 
+If you want support for another language, one place to start is [[the list of =-ts-mode=s available for Emacs on GitHub][https://github.com/search?q=-ts-mode+emacs&type=repositories]].
+
 ** Key Features
 - 🎯 *Lean and focused*: Quake Emacs includes just the packages and configuration you need for a beautiful, modern IDE-lite experience when coding and a focused, ergonomic experience when writing or taking notes, and /nothing else/. It even completely does away with the need for language-specific layers through the use of tree-sitter and LSP support. Consider Quake Emacs part of your editor --- it's just there to give you a good out of the box experience, like [[https://helix-editor.com/][Helix]]. The rest is up to you!
 - 🚀 *Fast*: On my machine, Quake Emacs loads in under 0.6 seconds. Every single package is carefully chosen with performance in mind, and the default load order is tuned obsessively to ensure Emacs starts as fast as possible. Enjoy fast startup times, or use it as extra headroom to add your own packages.
