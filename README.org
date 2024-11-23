@@ -1,21 +1,62 @@
 #+STARTUP: indent
+#+OPTIONS: toc:nil
 
-#+begin_HTML
+#+begin_export html
+<style>
+body {
+    max-width: 65ch;
+    padding: 15px;
+    margin: 0 auto;
+    background-color: #282828;
+    color: white;
+}
+
+pre {
+    background-color: #32302F;
+    color: white;
+    border: 1px solid #665C54;
+}
+
+a {
+    color: #FABD2F;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+a:visited {
+    color: #EEBD35;
+}
+
+p {
+    text-align: justify;
+}
+
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    max-height: 300px;
+}
+</style>
+
 <div align="center">
-  <img src="./banner-quake.png" height="128" style="display: block; margin: 0 auto"/>
+  <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/main/banner-quake.png" height="128" style="display: block; margin: 0 auto"/>
   <h1>Quake Emacs</h1>
-  <p>Lean, fast, focused, and based on the latest Emacs tech</p>
+  <p style="text-align: center;">Lean, fast, focused, and based on the latest Emacs tech</p>
   <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/badge.svg"/>
 </div>
-#+end_html
+#+end_export
 
 --------------
 
-#+begin_html
+#+begin_export html
   <p align="center">
   <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/dashboard.png" width="25%"/>
   </p>
-#+end_html
+#+end_export
 
 If you want to use Emacs, but you:
 
@@ -26,25 +67,25 @@ then Quake Emacs is for you.
 
 Text editors are most often used for three core tasks: *code editing*, *writing*, and *note-taking*. Quake Emacs is a single-file Emacs distribution architected around those three fundamental tasks, aiming to provide a lean, fast, focused, and complete experience for all three right out of the box, while remaining as simple and vanilla as possible, so you can use it as a great foundation for bare-metal Emacs configuration.
 
-** Table of Contents                                               :TOC_3_gh:
-  - [[#key-features][Key Features]]
-  - [[#how-to-install][How To Install]]
-  - [[#supported-languages][Supported Languages]]
-    - [[#language-server][Language Server]]
-    - [[#tree-sitter-grammar][Tree Sitter Grammar]]
-    - [[#tree-sitter-mode][Tree Sitter Mode]]
-    - [[#built-in-language-support-matrix][Built-In Language Support Matrix]]
-  - [[#showcase][Showcase]]
-    - [[#simple-config][Simple Config]]
-    - [[#code-editing][Code Editing]]
-    - [[#writing][Writing]]
-    - [[#note-taking][Note-taking]]
-  - [[#personal-configuration-and-extra-layers][Personal Configuration and Extra Layers]]
-  - [[#justification][Justification]]
-  - [[#inspiration-and-prior-art][Inspiration and Prior Art]]
-    - [[#doom-emacs][Doom Emacs]]
-    - [[#minemacs][MinEmacs]]
-    - [[#emacs-prelude][Emacs Prelude]]
+** Table of Contents                                               :TOC_3_org:
+  - [[Key Features][Key Features]]
+  - [[How To Install][How To Install]]
+  - [[Supported Languages][Supported Languages]]
+    - [[Language Server][Language Server]]
+    - [[Tree Sitter Grammar][Tree Sitter Grammar]]
+    - [[Tree Sitter Mode][Tree Sitter Mode]]
+    - [[Built-In Language Support Matrix][Built-In Language Support Matrix]]
+  - [[Showcase][Showcase]]
+    - [[Simple Config][Simple Config]]
+    - [[Code Editing][Code Editing]]
+    - [[Writing][Writing]]
+    - [[Note-taking][Note-taking]]
+  - [[Personal Configuration and Extra Layers][Personal Configuration and Extra Layers]]
+  - [[Justification][Justification]]
+  - [[Inspiration and Prior Art][Inspiration and Prior Art]]
+    - [[Doom Emacs][Doom Emacs]]
+    - [[MinEmacs][MinEmacs]]
+    - [[Emacs Prelude][Emacs Prelude]]
 
 ** Key Features
 - 🎯 *Lean and focused*: Quake Emacs includes just the packages and configuration you need for a beautiful, modern IDE-lite experience when coding and a focused, ergonomic experience when writing or taking notes, and /nothing else/. It even completely does away with the need for language-specific layers through the use of tree-sitter and LSP support. Consider Quake Emacs part of your editor --- it's just there to give you a good out of the box experience, like [[https://helix-editor.com/][Helix]]. The rest is up to you!
@@ -97,7 +138,63 @@ In order for Emacs to be able to interpret the meaning of the concrete syntax tr
 
 **Note:** The range of languages that have a tree sitter grammar and tree sitter mode /available/ for Emacs is going to be much larger than this. And if you can't find a tree sitter mode for a language, there's no need to worry either: Quake Emacs is still /just Emacs/, and the range of languages that Emacs can support through more traditional packages still larger than that, of course. This table is focusing on the languages that have some degree of built-in support.
 
-If you want support for another language, one place to start is [[the list of =-ts-mode=s available for Emacs on GitHub][https://github.com/search?q=-ts-mode+emacs&type=repositories]].
+| Language   | Tree-Sitter Mode Built In? | Tree-Sitter Grammar Auto Install? |
+|------------+----------------------------+-----------------------------------|
+| Bash       | ✔️                         | ✔️                                |
+| PHP        | ✔️                         | ❌                                |
+| Elixir     | ✔️                         | ✔️                                |
+| HEEx       | ✔️                         | ✔️                                |
+| HTML       | ✔️                         | ✔️                                |
+| LUA        | ✔️                         | ✔️                                |
+| C++        | ✔️                         | ✔️                                |
+| C          | ✔️                         | ✔️                                |
+| CMake      | ✔️                         | ✔️                                |
+| C#         | ✔️                         | ✔️                                |
+| CSS        | ✔️                         | ✔️                                |
+| Dockerfile | ✔️                         | ✔️                                |
+| Go         | ✔️                         | ✔️                                |
+| Java       | ✔️                         | ✔️                                |
+| JS         | ✔️                         | ✔️                                |
+| JSON       | ✔️                         | ✔️                                |
+| Python     | ✔️                         | ✔️                                |
+| Ruby       | ✔️                         | ✔️                                |
+| Rust       | ✔️                         | ✔️                                |
+| TOML       | ✔️                         | ✔️                                |
+| TSX        | ✔️                         | ✔️                                |
+| TypeScript | ✔️                         | ✔️                                |
+| Yaml       | ✔️                         | ✔️                                |
+| awk        | ❌                         | ✔️                                |
+| bibtex     | ❌                         | ✔️                                |
+| blueprint  | ❌                         | ✔️                                |
+| clojure    | ❌                         | ✔️                                |
+| commonlisp | ❌                         | ✔️                                |
+| dart       | ❌                         | ✔️                                |
+| glsl       | ❌                         | ✔️                                |
+| janet      | ❌                         | ✔️                                |
+| julia      | ❌                         | ✔️                                |
+| kotlin     | ❌                         | ✔️                                |
+| latex      | ❌                         | ✔️                                |
+| magik      | ❌                         | ✔️                                |
+| make       | ❌                         | ✔️                                |
+| markdown   | ❌                         | ✔️                                |
+| nix        | ❌                         | ✔️                                |
+| nu         | ❌                         | ✔️                                |
+| org        | ❌                         | ✔️                                |
+| perl       | ❌                         | ✔️                                |
+| proto      | ❌                         | ✔️                                |
+| r          | ❌                         | ✔️                                |
+| scala      | ❌                         | ✔️                                |
+| sql        | ❌                         | ✔️                                |
+| surface    | ❌                         | ✔️                                |
+| typst      | ❌                         | ✔️                                |
+| verilog    | ❌                         | ✔️                                |
+| vhdl       | ❌                         | ✔️                                |
+| vue        | ❌                         | ✔️                                |
+| wast       | ❌                         | ✔️                                |
+| wat        | ❌                         | ✔️                                |
+| wgsl       | ❌                         | ✔️                                |
+
+If you want support for another language, one place to start is [[https://github.com/search?q=-ts-mode+emacs&type=repositories][the list of =-ts-mode=s available for Emacs on GitHub]].
 
 ** Showcase
 *** Simple Config
