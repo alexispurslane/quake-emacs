@@ -1,5 +1,7 @@
 #+STARTUP: indent
 #+OPTIONS: toc:nil
+#+OPTIONS: title:nil
+#+TITLE: Quake Emacs - the single-file vanilla-first Emacs configuration framework
 
 #+begin_export html
 
@@ -7,6 +9,7 @@
 body {
     max-width: 65ch;
     padding: 15px;
+    font-family: sans-serif;
     margin: 0 auto;
     background-color: #282828;
     color: white;
@@ -48,6 +51,10 @@ img {
   <h1>Quake Emacs</h1>
   <p style="text-align: center;">Lean, fast, focused, and based on the latest Emacs tech</p>
   <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/badge.svg"/>
+  <br/>
+  <a href="https://github.com/alexispurslane/quake-emacs">
+  <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white"/>
+  </a>
 </div>
 #+end_export
 
@@ -150,7 +157,7 @@ Quake Emacs also provides IDE class-features thanks to LSP support via [[https:/
 
 I've also spent a great deal of time setting up tree-sitter based structural text objects for selection, editing, and motion using [[file:%5Bhttps://github.com/meain/evil-textobj-tree-sitter%5D][evil-textobj-tree-sitter]], supporting all the text objects Helix or NeoVim does thanks to reading Helix's source code and NeoVim's documentation. Enjoy the text generation of advanced text editing!
 
-[[https://github.com/alexispurslane/quake-emacs/assets/1920151/b196fffb-dba2-470a-b2e1-a4dadd2c968f][structural-textobjects.webm]]
+[[https://github.com/alexispurslane/quake-emacs/assets/1920151/b196fffb-dba2-470a-b2e1-a4dadd2c968f][video: structural-textobjects.webm]]
 
 And, Quake Emacs wouldn't be able to live up to its name unless it had a classic Quake-style popup terminal! So here it is, implemented entirely without any external packages, and bound to =SPC ~=:
 
@@ -238,59 +245,59 @@ This matrix shows the list of languages that Quake Emacs has *built-in* support 
 
 | Language   | Tree-Sitter Mode Built In? | Tree-Sitter Grammar Auto Install? |
 |------------+----------------------------+-----------------------------------|
-| Bash       | ✔️                         | ✔️                                |
-| PHP        | ✔️                         | ❌                                |
-| Elixir     | ✔️                         | ✔️                                |
-| HEEx       | ✔️                         | ✔️                                |
-| HTML       | ✔️                         | ✔️                                |
-| LUA        | ✔️                         | ✔️                                |
-| C++        | ✔️                         | ✔️                                |
-| C          | ✔️                         | ✔️                                |
-| CMake      | ✔️                         | ✔️                                |
-| C#         | ✔️                         | ✔️                                |
-| CSS        | ✔️                         | ✔️                                |
-| Dockerfile | ✔️                         | ✔️                                |
-| Go         | ✔️                         | ✔️                                |
-| Java       | ✔️                         | ✔️                                |
-| JS         | ✔️                         | ✔️                                |
-| JSON       | ✔️                         | ✔️                                |
-| Python     | ✔️                         | ✔️                                |
-| Ruby       | ✔️                         | ✔️                                |
-| Rust       | ✔️                         | ✔️                                |
-| TOML       | ✔️                         | ✔️                                |
-| TSX        | ✔️                         | ✔️                                |
-| TypeScript | ✔️                         | ✔️                                |
-| Yaml       | ✔️                         | ✔️                                |
-| awk        | ❌                         | ✔️                                |
-| bibtex     | ❌                         | ✔️                                |
-| blueprint  | ❌                         | ✔️                                |
-| clojure    | ❌                         | ✔️                                |
-| commonlisp | ❌                         | ✔️                                |
-| dart       | ❌                         | ✔️                                |
-| glsl       | ❌                         | ✔️                                |
-| janet      | ❌                         | ✔️                                |
-| julia      | ❌                         | ✔️                                |
-| kotlin     | ❌                         | ✔️                                |
-| latex      | ❌                         | ✔️                                |
-| magik      | ❌                         | ✔️                                |
-| make       | ❌                         | ✔️                                |
-| markdown   | ❌                         | ✔️                                |
-| nix        | ❌                         | ✔️                                |
-| nu         | ❌                         | ✔️                                |
-| org        | ❌                         | ✔️                                |
-| perl       | ❌                         | ✔️                                |
-| proto      | ❌                         | ✔️                                |
-| r          | ❌                         | ✔️                                |
-| scala      | ❌                         | ✔️                                |
-| sql        | ❌                         | ✔️                                |
-| surface    | ❌                         | ✔️                                |
-| typst      | ❌                         | ✔️                                |
-| verilog    | ❌                         | ✔️                                |
-| vhdl       | ❌                         | ✔️                                |
-| vue        | ❌                         | ✔️                                |
-| wast       | ❌                         | ✔️                                |
-| wat        | ❌                         | ✔️                                |
-| wgsl       | ❌                         | ✔️                                |
+| Bash       | ✅                         | ✅                                |
+| PHP        | ✅                         | ❌                                |
+| Elixir     | ✅                         | ✅                                |
+| HEEx       | ✅                         | ✅                                |
+| HTML       | ✅                         | ✅                                |
+| LUA        | ✅                         | ✅                                |
+| C++        | ✅                         | ✅                                |
+| C          | ✅                         | ✅                                |
+| CMake      | ✅                         | ✅                                |
+| C#         | ✅                         | ✅                                |
+| CSS        | ✅                         | ✅                                |
+| Dockerfile | ✅                         | ✅                                |
+| Go         | ✅                         | ✅                                |
+| Java       | ✅                         | ✅                                |
+| JS         | ✅                         | ✅                                |
+| JSON       | ✅                         | ✅                                |
+| Python     | ✅                         | ✅                                |
+| Ruby       | ✅                         | ✅                                |
+| Rust       | ✅                         | ✅                                |
+| TOML       | ✅                         | ✅                                |
+| TSX        | ✅                         | ✅                                |
+| TypeScript | ✅                         | ✅                                |
+| Yaml       | ✅                         | ✅                                |
+| awk        | ❌                         | ✅                                |
+| bibtex     | ❌                         | ✅                                |
+| blueprint  | ❌                         | ✅                                |
+| clojure    | ❌                         | ✅                                |
+| commonlisp | ❌                         | ✅                                |
+| dart       | ❌                         | ✅                                |
+| glsl       | ❌                         | ✅                                |
+| janet      | ❌                         | ✅                                |
+| julia      | ❌                         | ✅                                |
+| kotlin     | ❌                         | ✅                                |
+| latex      | ❌                         | ✅                                |
+| magik      | ❌                         | ✅                                |
+| make       | ❌                         | ✅                                |
+| markdown   | ❌                         | ✅                                |
+| nix        | ❌                         | ✅                                |
+| nu         | ❌                         | ✅                                |
+| org        | ❌                         | ✅                                |
+| perl       | ❌                         | ✅                                |
+| proto      | ❌                         | ✅                                |
+| r          | ❌                         | ✅                                |
+| scala      | ❌                         | ✅                                |
+| sql        | ❌                         | ✅                                |
+| surface    | ❌                         | ✅                                |
+| typst      | ❌                         | ✅                                |
+| verilog    | ❌                         | ✅                                |
+| vhdl       | ❌                         | ✅                                |
+| vue        | ❌                         | ✅                                |
+| wast       | ❌                         | ✅                                |
+| wat        | ❌                         | ✅                                |
+| wgsl       | ❌                         | ✅                                |
 
 If you want support for another language, one place to start is [[https://github.com/search?q=-ts-mode+emacs&type=repositories][the list of =-ts-mode=s available for Emacs on GitHub]].
 
