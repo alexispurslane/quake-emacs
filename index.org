@@ -51,6 +51,10 @@ img {
   <h1>Quake Emacs</h1>
   <p style="text-align: center;">Lean, fast, focused, and based on the latest Emacs tech</p>
   <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/badge.svg"/>
+  <br/>
+  <a href="https://github.com/alexispurslane/quake-emacs">
+  <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white"/>
+  </a>
 </div>
 #+end_export
 
