@@ -26,14 +26,25 @@ then Quake Emacs is for you.
 
 Text editors are most often used for three core tasks: *code editing*, *writing*, and *note-taking*. Quake Emacs is a single-file Emacs distribution architected around those three fundamental tasks, aiming to provide a lean, fast, focused, and complete experience for all three right out of the box, while remaining as simple and vanilla as possible, so you can use it as a great foundation for bare-metal Emacs configuration.
 
-** Table of Contents                                               :TOC_2_gh:
+** Table of Contents                                               :TOC_3_gh:
   - [[#how-to-install][How To Install]]
   - [[#supported-languages][Supported Languages]]
+    - [[#language-server][Language Server]]
+    - [[#tree-sitter-grammar][Tree Sitter Grammar]]
+    - [[#tree-sitter-mode][Tree Sitter Mode]]
+    - [[#language-support-matrix][Language Support Matrix]]
   - [[#key-features][Key Features]]
   - [[#showcase][Showcase]]
+    - [[#simple-config][Simple Config]]
+    - [[#code-editing][Code Editing]]
+    - [[#writing][Writing]]
+    - [[#note-taking][Note-taking]]
   - [[#personal-configuration-and-extra-layers][Personal Configuration and Extra Layers]]
   - [[#justification][Justification]]
   - [[#inspiration-and-prior-art][Inspiration and Prior Art]]
+    - [[#doom-emacs][Doom Emacs]]
+    - [[#minemacs][MinEmacs]]
+    - [[#emacs-prelude][Emacs Prelude]]
 
 ** How To Install
 1. First, you install Quake Emacs like usual:
@@ -52,47 +63,84 @@ Text editors are most often used for three core tasks: *code editing*, *writing*
 
 3. Once the directories are set up, simply launch Emacs and it should begin downloading and installing the packages that make up Quake Emacs, as well as configuring them. Installation is idempotent, and the install process can take some time, so feel free to close Emacs anytime you need to — it will pick up where it left off next time!
 
-4. For any languages you want to use, you need two things: *tree-sitter support*, and *a language server*.
-
-   Languages that /don't/ have these things will require the usual set of external packages you'd use with regular Emacs, until they gain support if they ever do (as some languages such as Common Lisp and Clojure have their own IDE systems that are superior to language servers).
-   
-   For languages that /do/ have these things, there are typically two steps necessary to use Quake Emacs with that language:
-
-   1. Install the language server somewhere in your PATH so Emacs can find it automatically OR download the language server executable to a custom location and then specify that location when you start Eglot, or in a =.dir-locals.el= file.
-
-   2. Open a file in that language and answer "yes" to =treesit-auto= asking whether you want to automatically download, compile, and install the tree sitter grammar.
-
-   With that done, everthing should work.
-   
-   *However!* The second step only works for languages that *have a tree-sitter mode installed and wired up to activate when a file with the correct extension is opened*, both because that's how =treesit-auto= knows to trigger, and because tree sitter modes are needed to translate the syntax tree created by the tree sitter grammar into font lock and syntax tables for Emacs to understand. Emacs comes with a fair number of tree sitter modes built in by default (see the list below) but unfortunately, not all of them are (yet — [[new languages are being added every version!][https://github.com/emacs-mirror/emacs/blob/331610aef0572eacb2846f817e979aa5e29170b7/etc/NEWS#L2142]]). In that case, you'll need to install an external package for that tree sitter mode — but nothing else, at least!
+4. Once Quake Emacs has installed and configured all its packages, the next step will be making sure it supports the languages you want to work in, which leads us to the next section...
 
 ** Supported Languages
 
-Note that this is only /out of the box/: further languages can be integrated into the tree-sitter/LSP system Quake Emacs uses by installing the necessary tree sitter mode via =use-package=, and support for languages that don't fall into that system can be added like normal.
+Three things are required for Quake Emacs to support a language using the modern language support facilities within Emacs (tree-sitter and the LSP):
 
-- Bash
-- PHP
-- Elixir
-- HEEx
-- HTML
-- LUA
-- C++
-- C
-- CMake
-- C#
-- CSS
-- Dockerfile
-- Go
-- Java
-- JS
-- JSON
-- Python
-- Ruby
-- Rust
-- TOML
-- TSX
-- TypeScript
-- Yaml
+*** Language Server
+Your language server, of course, does not need to be installed within Quake Emacs. It is an independent program you will need to install on your host system to a [[path][https://www.emacswiki.org/emacs/ExecPath]] Emacs knows to look in for executables, at which point Quake Emacs's LSP package, Eglot, will probably be able to detect your language server automatically.
+
+If Eglot cannot automatically detect your LSP, [[it is easy to specify a custom language server for a given mode][https://www.gnu.org/software/emacs/manual/html_mono/eglot.html#Setting-Up-LSP-Servers]].
+
+*** Tree Sitter Grammar
+
+Tree sitter grammars are also technically external to Quake Emacs, since they are dynamic libraries that are loaded in at runtime; however, Quake Emacs's tree sitter support package expects them to be installed in a specific location by default (=~/.emacs.d/tree-sitter/=), and through the use of =treesit-auto=, Quake Emacs has a fairly large set of tree sitter grammers it knows how to automatically install from within the editor (please consult the language support matrix at the bottom of the parent section).
+
+*** Tree Sitter Mode
+
+In order for Emacs to be able to interpret the meaning of the concrete syntax tree generated by the tree sitter grammar, it needs a tree-sitter mode for that language, to translate the syntax tree into font locking and syntax tables and so on. These are generally fairly simple to write, so a fair number of them are already built into Emacs, and more are being added over time (six in Emacs 30.1 alone!), but some packages may need to be [[added to your user.el][https://www.gnu.org/software/emacs/manual/html_mono/use-package.html#Installing-packages]] instead. For information on which are built into Emacs and which are not, please consult the language support matrix below.
+
+*** Language Support Matrix
+
+**Note:** The range of languages that have a tree sitter grammar and tree sitter mode /available/ for Emacs is going to be much larger than this. And if you can't find a tree sitter mode for a language, there's no need to worry either: Quake Emacs is still /just Emacs/, and the range of languages that Emacs can support through more traditional packages still larger than that, of course. This table is focusing on the languages that have some degree of built-in support.
+
+| Language   | Tree-Sitter Mode Built In? | Tree-Sitter Grammar Auto Install? |
+|------------+----------------------------+-----------------------------------|
+| Bash       | ✔️                         | ✔️                                |
+| PHP        | ✔️                         | ❌                                |
+| Elixir     | ✔️                         | ✔️                                |
+| HEEx       | ✔️                         | ✔️                                |
+| HTML       | ✔️                         | ✔️                                |
+| LUA        | ✔️                         | ✔️                                |
+| C++        | ✔️                         | ✔️                                |
+| C          | ✔️                         | ✔️                                |
+| CMake      | ✔️                         | ✔️                                |
+| C#         | ✔️                         | ✔️                                |
+| CSS        | ✔️                         | ✔️                                |
+| Dockerfile | ✔️                         | ✔️                                |
+| Go         | ✔️                         | ✔️                                |
+| Java       | ✔️                         | ✔️                                |
+| JS         | ✔️                         | ✔️                                |
+| JSON       | ✔️                         | ✔️                                |
+| Python     | ✔️                         | ✔️                                |
+| Ruby       | ✔️                         | ✔️                                |
+| Rust       | ✔️                         | ✔️                                |
+| TOML       | ✔️                         | ✔️                                |
+| TSX        | ✔️                         | ✔️                                |
+| TypeScript | ✔️                         | ✔️                                |
+| Yaml       | ✔️                         | ✔️                                |
+| awk        | ❌                         | ✔️                                |
+| bibtex     | ❌                         | ✔️                                |
+| blueprint  | ❌                         | ✔️                                |
+| clojure    | ❌                         | ✔️                                |
+| commonlisp | ❌                         | ✔️                                |
+| dart       | ❌                         | ✔️                                |
+| glsl       | ❌                         | ✔️                                |
+| janet      | ❌                         | ✔️                                |
+| julia      | ❌                         | ✔️                                |
+| kotlin     | ❌                         | ✔️                                |
+| latex      | ❌                         | ✔️                                |
+| magik      | ❌                         | ✔️                                |
+| make       | ❌                         | ✔️                                |
+| markdown   | ❌                         | ✔️                                |
+| nix        | ❌                         | ✔️                                |
+| nu         | ❌                         | ✔️                                |
+| org        | ❌                         | ✔️                                |
+| perl       | ❌                         | ✔️                                |
+| proto      | ❌                         | ✔️                                |
+| r          | ❌                         | ✔️                                |
+| scala      | ❌                         | ✔️                                |
+| sql        | ❌                         | ✔️                                |
+| surface    | ❌                         | ✔️                                |
+| typst      | ❌                         | ✔️                                |
+| verilog    | ❌                         | ✔️                                |
+| vhdl       | ❌                         | ✔️                                |
+| vue        | ❌                         | ✔️                                |
+| wast       | ❌                         | ✔️                                |
+| wat        | ❌                         | ✔️                                |
+| wgsl       | ❌                         | ✔️                                |
 
 If you want support for another language, one place to start is [[the list of =-ts-mode=s available for Emacs on GitHub][https://github.com/search?q=-ts-mode+emacs&type=repositories]].
 
