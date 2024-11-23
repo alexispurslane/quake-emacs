@@ -1,7 +1,9 @@
 #+STARTUP: indent
 #+OPTIONS: toc:nil
 #+OPTIONS: title:nil
-#+TITLE: Quake Emacs - the single-file vanilla-first Emacs configuration framework
+#+TITLE: Quake Emacs
+#+DESCRIPTION: Lean, fast, focused, and based on the latest Emacs tech: the single-file vanilla-first Emacs anti-distribution
+#+HTML_HEAD:     <meta property="og:image" content="https://raw.githubusercontent.com/alexispurslane/quake-emacs/main/banner-quake.png" />
 
 #+begin_export html
 
@@ -13,6 +15,17 @@ body {
     margin: 0 auto;
     background-color: #282828;
     color: white;
+}
+
+blockquote {
+  border-left: 10px solid #665C54;
+  margin: 1.5em 10px;
+  padding: 0.5em 10px;
+  quotes: "\201C""\201D""\2018""\2019";
+}
+
+blockquote p {
+  display: inline;
 }
 
 pre {
@@ -101,7 +114,7 @@ Text editors are most often used for three core tasks: *code editing*, *writing*
 
 - 🚀 *Fast*: On my machine, Quake Emacs loads in under 0.5 seconds. Every single package is carefully chosen with performance in mind, and the default load order is tuned obsessively to ensure Emacs starts as fast as possible. Enjoy fast startup times, or use it as extra headroom to add your own packages.
 
-- 🥇 *Just one single file*: The configuration framework itself is only one simple, extensively documented, self-contained 1000-line file. That's it. Just put the file in your Emacs directory and go. No external commands, no multiple thousands of lines of Lisp scattered throughout hundreds of files across interminable layers of abstraction. If you want to know where something is, or how it works, it's easy to find.
+- 🥇 *Just one single file*: The Quake code itself is only one simple, extensively documented, self-contained 1000-line file. That's it. Just put the file in your Emacs directory and go. No external commands, no multiple thousands of lines of Lisp scattered throughout hundreds of files across interminable layers of abstraction. If you want to know where something is, or how it works, it's easy to find.
 
 - 🌐 *Modern and vanilla*: Despite having an opinionated UX out of the box, Quake Emacs prioritizes [[https://b.tuxes.uk/avoiding-emacs-bankruptcy.html][using Emacs's built-in capabilities plus packages that integrate well with them]] as much as feasibly possible. No more extra layers of abstraction, no more dozens or hundreds of redundant packages, no more complex configuration to integrate everything, and no more Emacs documentation not applying to you because of the Emacs distribution you're using. Quake Emacs even uses [[https://github.com/emacsorphanage/god-mode][god-mode]] to provide Doom-style leader key keybindings *while reusing all of Emacs's default keybindings and mnemonics*, so all existing documentation for Emacs will still be usable for you!
 
@@ -124,7 +137,7 @@ Before I get to showing you any of the fancy things Quake Emacs can do, the most
 It's much more difficult to demonstrate code clarity and simplicity in a gif, though, so if you're still skeptical, I highly encourage you to skim the [[https://github.com/alexispurslane/quake-emacs/blob/develop/init.el][source code]] yourself.
 
 #+begin_quote
-[!NOTE] Why isn't this a literate config? I've seriously considered it for code clarity reasons, but decided against it for a number of reasons:
+⚠️ Why isn't this a literate config? I've seriously considered it for code clarity reasons, but decided against it for a number of reasons:
 
 1. First, as a literate config, I'd want to move all the per-layer documentation out of docstrings and into the org mode markup to avoid tedious duplication, but then eldoc wouldn't document layers for you.
 2. Second, it would mean Quake Emacs would really be two files, instead of one and a user file, which is annoying. I do want it to be as self-sufficient as possible. In fact, I'm planning on making the user file optional.
@@ -320,14 +333,18 @@ Out of the box, Quake Emacs contains only the layers that you will absolutely ne
 | [[https://gist.github.com/alexispurslane/fe520a69210fbe5e0462be39c351a370][devil-layer]]            | A basic set of Doom/Spacemacs style leader-key keybindings to get you started. (Quake Emacs has switched to god-mode and a package that makes god-mode behave like a leader key, because it's more compatible with vanilla emacs, and much easier to maintain.) |
 
 #+begin_quote
-[!NOTE] If you write a layer you think might be generally  useful to others, as long as it is reasonably small and self-contained, you are more than encouraged to submit a PR on this readme so we can add it to the list!
+⚠️ If you write a layer you think might be generally  useful to others, as long as it is reasonably small and self-contained, you are more than encouraged to submit a PR on this readme so we can add it to the list!
 #+end_quote
 
 ** Quake Leader Key Keybindings
 
-Functionally, the Quake leader key system works the same as the leader keys in something like Doom Emacs: if you press the spacebar while in Normal Mode, you will enter a special leader key mode (God Mode) wherein all subsequent keys will be interpreted as navigating through a tree of keybindings until you either reach a leaf, fail to do so, or quit the mode, at which point the command (if any) will be executed, and you will be returned to Normal Mode.
+#+begin_quote
+ ⚠️ You can find a guide to reading Emacs keybinding notation [[https://riptutorial.com/emacs/example/19969/key-bindings-notation][here]].
+#+end_quote
 
-The difference between Quake's god-mode based leader key keybindings and traditional ones, however, is that instead of the tree of keybindings provided in the leader key mode being created from scratch, and unique to the leader key mode — in essence, a sort of "world all its own" — instead, Quake's leader key keybindings are actually translated into traditional key chords that Emacs understands by default, navigating through the already-existing (and still accessible through key chords when outside the leader key mode!) tree of Emacs keybindings.
+Functionally, the Quake leader key system works the same as the leader keys in something like Doom Emacs: if you press the spacebar while in Normal Mode, you will enter a special leader key mode (God Mode) wherein all subsequent keys will be interpreted as navigating through a [[https://www.gnu.org/software/emacs/manual/html_mono/emacs.html#Keys][tree of keybindings]] until you either reach a leaf, fail to do so, or quit the mode, at which point the command (if any) will be executed, and you will be returned to Normal Mode. So for instance, if you type =SPC=, you will enter the leader key mode. Then if you type =h=, you will enter the "help" tree of keybindings. Then you can type =i= for the =info= command, at which point leader key mode will automatically exit because you have indicated a complete command, and the command will run, or you can type =SPC 4= to enter a subtree of the help keybinding tree, at which point you could either type =i= to complete your command, or exit with an error, since there are no other command options.
+
+The difference between Quake's god-mode based leader key keybindings and traditional ones, however, is that instead of the tree of keybindings provided in the leader key mode being created from scratch, and unique to the leader key mode — in essence, a sort of "world all its own" — instead, Quake's leader key keybindings are actually translated into [[http://xahlee.info/emacs/emacs/gnu_emacs_keybinding.html][traditional key chords that Emacs understands by default]], navigating through the already-existing (and still accessible through key chords when outside the leader key mode!) tree of Emacs keybindings.
 
 The translation is pretty simple. Allow me to quote the god-mode documentation:
 
