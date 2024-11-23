@@ -97,64 +97,6 @@ In order for Emacs to be able to interpret the meaning of the concrete syntax tr
 
 **Note:** The range of languages that have a tree sitter grammar and tree sitter mode /available/ for Emacs is going to be much larger than this. And if you can't find a tree sitter mode for a language, there's no need to worry either: Quake Emacs is still /just Emacs/, and the range of languages that Emacs can support through more traditional packages still larger than that, of course. This table is focusing on the languages that have some degree of built-in support.
 
-#+begin_comment
-| Language   | Tree-Sitter Mode Built In? | Tree-Sitter Grammar Auto Install? |
-|------------+----------------------------+-----------------------------------|
-| Bash       | ✔️                         | ✔️                                |
-| PHP        | ✔️                         | ❌                                |
-| Elixir     | ✔️                         | ✔️                                |
-| HEEx       | ✔️                         | ✔️                                |
-| HTML       | ✔️                         | ✔️                                |
-| LUA        | ✔️                         | ✔️                                |
-| C++        | ✔️                         | ✔️                                |
-| C          | ✔️                         | ✔️                                |
-| CMake      | ✔️                         | ✔️                                |
-| C#         | ✔️                         | ✔️                                |
-| CSS        | ✔️                         | ✔️                                |
-| Dockerfile | ✔️                         | ✔️                                |
-| Go         | ✔️                         | ✔️                                |
-| Java       | ✔️                         | ✔️                                |
-| JS         | ✔️                         | ✔️                                |
-| JSON       | ✔️                         | ✔️                                |
-| Python     | ✔️                         | ✔️                                |
-| Ruby       | ✔️                         | ✔️                                |
-| Rust       | ✔️                         | ✔️                                |
-| TOML       | ✔️                         | ✔️                                |
-| TSX        | ✔️                         | ✔️                                |
-| TypeScript | ✔️                         | ✔️                                |
-| Yaml       | ✔️                         | ✔️                                |
-| awk        | ❌                         | ✔️                                |
-| bibtex     | ❌                         | ✔️                                |
-| blueprint  | ❌                         | ✔️                                |
-| clojure    | ❌                         | ✔️                                |
-| commonlisp | ❌                         | ✔️                                |
-| dart       | ❌                         | ✔️                                |
-| glsl       | ❌                         | ✔️                                |
-| janet      | ❌                         | ✔️                                |
-| julia      | ❌                         | ✔️                                |
-| kotlin     | ❌                         | ✔️                                |
-| latex      | ❌                         | ✔️                                |
-| magik      | ❌                         | ✔️                                |
-| make       | ❌                         | ✔️                                |
-| markdown   | ❌                         | ✔️                                |
-| nix        | ❌                         | ✔️                                |
-| nu         | ❌                         | ✔️                                |
-| org        | ❌                         | ✔️                                |
-| perl       | ❌                         | ✔️                                |
-| proto      | ❌                         | ✔️                                |
-| r          | ❌                         | ✔️                                |
-| scala      | ❌                         | ✔️                                |
-| sql        | ❌                         | ✔️                                |
-| surface    | ❌                         | ✔️                                |
-| typst      | ❌                         | ✔️                                |
-| verilog    | ❌                         | ✔️                                |
-| vhdl       | ❌                         | ✔️                                |
-| vue        | ❌                         | ✔️                                |
-| wast       | ❌                         | ✔️                                |
-| wat        | ❌                         | ✔️                                |
-| wgsl       | ❌                         | ✔️                                |
-#+end_comment
-
 If you want support for another language, one place to start is [[the list of =-ts-mode=s available for Emacs on GitHub][https://github.com/search?q=-ts-mode+emacs&type=repositories]].
 
 ** Showcase
