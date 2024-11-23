@@ -26,14 +26,25 @@ then Quake Emacs is for you.
 
 Text editors are most often used for three core tasks: *code editing*, *writing*, and *note-taking*. Quake Emacs is a single-file Emacs distribution architected around those three fundamental tasks, aiming to provide a lean, fast, focused, and complete experience for all three right out of the box, while remaining as simple and vanilla as possible, so you can use it as a great foundation for bare-metal Emacs configuration.
 
-** Table of Contents                                               :TOC_2_gh:
+** Table of Contents                                               :TOC_3_gh:
   - [[#how-to-install][How To Install]]
   - [[#supported-languages][Supported Languages]]
+    - [[#language-server][Language Server]]
+    - [[#tree-sitter-grammar][Tree Sitter Grammar]]
+    - [[#tree-sitter-mode][Tree Sitter Mode]]
+    - [[#language-support-matrix][Language Support Matrix]]
   - [[#key-features][Key Features]]
   - [[#showcase][Showcase]]
+    - [[#simple-config][Simple Config]]
+    - [[#code-editing][Code Editing]]
+    - [[#writing][Writing]]
+    - [[#note-taking][Note-taking]]
   - [[#personal-configuration-and-extra-layers][Personal Configuration and Extra Layers]]
   - [[#justification][Justification]]
   - [[#inspiration-and-prior-art][Inspiration and Prior Art]]
+    - [[#doom-emacs][Doom Emacs]]
+    - [[#minemacs][MinEmacs]]
+    - [[#emacs-prelude][Emacs Prelude]]
 
 ** How To Install
 1. First, you install Quake Emacs like usual:
@@ -75,6 +86,7 @@ In order for Emacs to be able to interpret the meaning of the concrete syntax tr
 
 **Note:** The range of languages that have a tree sitter grammar and tree sitter mode /available/ for Emacs is going to be much larger than this. And if you can't find a tree sitter mode for a language, there's no need to worry either: Quake Emacs is still /just Emacs/, and the range of languages that Emacs can support through more traditional packages still larger than that, of course. This table is focusing on the languages that have some degree of built-in support.
 
+#+begin_comment
 | Language   | Tree-Sitter Mode Built In? | Tree-Sitter Grammar Auto Install? |
 |------------+----------------------------+-----------------------------------|
 | Bash       | ✔️                         | ✔️                                |
