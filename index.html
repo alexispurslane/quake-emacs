@@ -3,7 +3,7 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<!-- 2024-11-22 Fri 20:24 -->
+<!-- 2024-11-22 Fri 21:25 -->
 <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>&lrm;</title>
@@ -196,6 +196,7 @@
 </head>
 <body>
 <div id="content" class="content">
+
 <style>
 body {
     max-width: 65ch;
@@ -266,63 +267,273 @@ then Quake Emacs is for you.
 Text editors are most often used for three core tasks: <b>code editing</b>, <b>writing</b>, and <b>note-taking</b>. Quake Emacs is a single-file Emacs distribution architected around those three fundamental tasks, aiming to provide a lean, fast, focused, and complete experience for all three right out of the box, while remaining as simple and vanilla as possible, so you can use it as a great foundation for bare-metal Emacs configuration.
 </p>
 
-<div id="outline-container-org8dea81f" class="outline-2">
-<h2 id="org8dea81f"><span class="section-number-2">1.</span> Table of Contents&#xa0;&#xa0;&#xa0;<span class="tag"><span class="TOC_3_org">TOC_3_org</span></span></h2>
+<div id="outline-container-orgc6bbff6" class="outline-2">
+<h2 id="orgc6bbff6"><span class="section-number-2">1.</span> Table of Contents&#xa0;&#xa0;&#xa0;<span class="tag"><span class="TOC_3_org">TOC_3_org</span></span></h2>
 <div class="outline-text-2" id="text-1">
 <ul class="org-ul">
-<li><a href="#org7f775fb">Key Features</a></li>
-<li><a href="#orgde99da9">How To Install</a></li>
-<li><a href="#org3a50d5a">Supported Languages</a>
+<li><a href="#orgffa0d35">Key Features</a></li>
+<li><a href="#orgb3dd68e">Justification</a></li>
+<li><a href="#org608834c">Showcase</a>
 <ul class="org-ul">
-<li><a href="#org5591d05">Language Server</a></li>
-<li><a href="#org157e46d">Tree Sitter Grammar</a></li>
-<li><a href="#org2949d4f">Tree Sitter Mode</a></li>
-<li><a href="#orgb1ecdac">Built-In Language Support Matrix</a></li>
+<li><a href="#orgdd7a58e">Simple Config</a></li>
+<li><a href="#org98910b9">Code Editing</a></li>
+<li><a href="#org3b74c74">Writing</a></li>
+<li><a href="#org28272c5">Note-taking</a></li>
 </ul></li>
-<li><a href="#org9b1d035">Showcase</a>
+<li><a href="#org5e43738">How To Install</a></li>
+<li><a href="#org71345aa">Supported Languages</a>
 <ul class="org-ul">
-<li><a href="#org6f898bb">Simple Config</a></li>
-<li><a href="#org7294fe5">Code Editing</a></li>
-<li><a href="#org31f20d8">Writing</a></li>
-<li><a href="#orgaaf22b5">Note-taking</a></li>
+<li><a href="#org6386c02">Language Server</a></li>
+<li><a href="#orgcda9d62">Tree Sitter Grammar</a></li>
+<li><a href="#orge2f176e">Tree Sitter Mode</a></li>
+<li><a href="#org72d4f95">Built-In Language Support Matrix</a></li>
 </ul></li>
-<li><a href="#orgb755551">Personal Configuration and Extra Layers</a></li>
-<li><a href="#org255f4d9">Justification</a></li>
-<li><a href="#orgceaa2b2">Inspiration and Prior Art</a>
+<li><a href="#orga61abdd">Personal Configuration and Extra Layers</a></li>
+<li><a href="#org261e96d">Quake Leader Key Keybindings</a></li>
+<li><a href="#org876eab5">Inspiration and Prior Art</a>
 <ul class="org-ul">
-<li><a href="#org19dc883">Doom Emacs</a></li>
-<li><a href="#orgc657a71">MinEmacs</a></li>
-<li><a href="#org75f380a">Emacs Prelude</a></li>
+<li><a href="#orgab336bf">Doom Emacs</a></li>
+<li><a href="#org3fe035c">MinEmacs</a></li>
+<li><a href="#orga9a0d0d">Emacs Prelude</a></li>
 </ul></li>
 </ul>
 </div>
 </div>
 
-<div id="outline-container-org7f775fb" class="outline-2">
-<h2 id="org7f775fb"><span class="section-number-2">2.</span> Key Features</h2>
+<div id="outline-container-orgffa0d35" class="outline-2">
+<h2 id="orgffa0d35"><span class="section-number-2">2.</span> Key Features</h2>
 <div class="outline-text-2" id="text-2">
 <ul class="org-ul">
-<li>🎯 <b>Lean and focused</b>: Quake Emacs includes just the packages and configuration you need for a beautiful, modern IDE-lite experience when coding and a focused, ergonomic experience when writing or taking notes, and <i>nothing else</i>. It even completely does away with the need for language-specific layers through the use of tree-sitter and LSP support. Consider Quake Emacs part of your editor &#x2014; it's just there to give you a good out of the box experience, like <a href="https://helix-editor.com/">Helix</a>. The rest is up to you!</li>
+<li>🎯 <b>Lean and focused</b>: Quake Emacs includes only the packages and configuration needed for a beautiful and modern coding experience, a distraction-free writing experience, and a powerful note-taking experience. It even mostly does away with the need for large language-specific collections of packages through the use of tree-sitter and LSP support! Consider Quake Emacs part of your editor, just there to give you a good out of the box experience to jump off from and make your own.</li>
+
 <li>🚀 <b>Fast</b>: On my machine, Quake Emacs loads in under 0.5 seconds. Every single package is carefully chosen with performance in mind, and the default load order is tuned obsessively to ensure Emacs starts as fast as possible. Enjoy fast startup times, or use it as extra headroom to add your own packages.</li>
+
 <li>🥇 <b>Just one single file</b>: The configuration framework itself is only one simple, extensively documented, self-contained 1000-line file. That's it. Just put the file in your Emacs directory and go. No external commands, no multiple thousands of lines of Lisp scattered throughout hundreds of files across interminable layers of abstraction. If you want to know where something is, or how it works, it's easy to find.</li>
-<li>🌐 <b>Modern and vanilla</b>: Despite having an opinionated UX out of the box, Quake Emacs prioritizes <a href="https://b.tuxes.uk/avoiding-emacs-bankruptcy.html">using Emacs's built-in capabilities and packages that integrate well with them</a> as much as feasibly possible. No more extra layers of abstraction, no more dozens or hundreds of redundant packages, and no more Emacs documentation not applying to you because of the Emacs distribution you're using.</li>
+
+<li>🌐 <b>Modern and vanilla</b>: Despite having an opinionated UX out of the box, Quake Emacs prioritizes <a href="https://b.tuxes.uk/avoiding-emacs-bankruptcy.html">using Emacs's built-in capabilities plus packages that integrate well with them</a> as much as feasibly possible. No more extra layers of abstraction, no more dozens or hundreds of redundant packages, no more complex configuration to integrate everything, and no more Emacs documentation not applying to you because of the Emacs distribution you're using. Quake Emacs even uses <a href="https://github.com/emacsorphanage/god-mode">god-mode</a> to provide Doom-style leader key keybindings <b>while reusing all of Emacs's default keybindings and mnemonics</b>, so all existing documentation for Emacs will still be usable for you!</li>
 </ul>
+</div>
+</div>
+
+<div id="outline-container-orgb3dd68e" class="outline-2">
+<h2 id="orgb3dd68e"><span class="section-number-2">3.</span> Justification</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+With the introduction of various modern Emacs features in the last few years, and the emergence of a new generation of Emacs packages focused on integrating with vanilla Emacs, Emacs distributions as we have known them are less and less relevant.
+</p>
+
+<p>
+Now that <code>use-package</code> is included with Emacs by default, configuration frameworks are less necessary then ever, as vanilla Emacs's built-in capabilities are likely clearer, faster, and more powerful than whatever a configuration framework could offer, with the benefit of also being the community standard. In my experience, Doom Emacs's ideosyncratic package management system was less clear, less-organized, less-documented, and much less reliable than what is now built into Emacs 29.
+</p>
+
+<p>
+Likewise, with the inclusion of <code>eglot</code> and <code>tree-sitter</code>, language-specific "layers" that compose five or six packages, together with a lot of configuration, in order to give a decent experience, are mostly a thing of the past. Tree-Sitter modes may still need to be provided, but these can be very simple and direct mappings from an AST to font locking and syntax tables, simple enough that a huge breadth of them can eventually be included by default in Emacs, as opposed to the previous situation of various competing, often very imperfect, highlighting packages, and then several packages to provide completions and linting and other amenities. Quake Emacs leverages these powerful built-in modern Emacs features to give you the experience of an Emacs configuration framework and distribution, without all the downsides.
+</p>
+
+<p>
+Similarly, with the creation of amazing packages like <code>vertico</code>, <code>orderless</code>, and <code>corfu</code>, the need to manually integrate added features from various packages into your Emacs system and other Emacs packages is basically obsolete: these packages integrate directly with Emacs, by hooking into or outright replacing Emacs's built in functions for performing various actions, so there's no need to do anything. As a result, much of the configuration work Emacs distributions needed to do to wire everything up simply doesn't need to be done.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org608834c" class="outline-2">
+<h2 id="org608834c"><span class="section-number-2">4.</span> Showcase</h2>
+<div class="outline-text-2" id="text-4">
+</div>
+<div id="outline-container-orgdd7a58e" class="outline-3">
+<h3 id="orgdd7a58e"><span class="section-number-3">4.1.</span> Simple Config</h3>
+<div class="outline-text-3" id="text-4-1">
+<p>
+Before I get to showing you any of the fancy things Quake Emacs can do, the most important thing is proving that it will be manageable for you to understand and fork if necessary, and won't lead either you or me to Emacs bankruptcy. One of the key things I've done in this regard is optimizing the layout of <code>init.el</code> to work with Emacs's built-in <code>outline-minor-mode</code> to help you get an overview of it and jump to specific things in it without needing finnicky text search or getting overwhelmed:
+</p>
+
+
+<div id="org2a35d00" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/outline-mode-compat.gif" alt="outline-mode-compat.gif" />
+</p>
+</div>
+
+<p>
+It's much more difficult to demonstrate code clarity and simplicity in a gif, though, so if you're still skeptical, I highly encourage you to skim the <a href="https://github.com/alexispurslane/quake-emacs/blob/develop/init.el">source code</a> yourself.
+</p>
 
 <blockquote>
 <p>
-Quake Emacs even uses <a href="https://github.com/emacsorphanage/god-mode">god-mode</a> with <a href="https://github.com/gridaphobe/evil-god-state">evil-god-state</a> to provide Doom/Spacemacs style leader key keybindings <b>while reusing all of Emacs's default keybindings and mnemonics</b>, meaning there's no need to define custom keybindings for everything, <b>the defaults that come with any existing Emacs package will just work</b>, and existing Emacs documentation will still be meaningful to you!
+[!NOTE] Why isn't this a literate config? I've seriously considered it for code clarity reasons, but decided against it for a number of reasons:
+</p>
+
+<ol class="org-ol">
+<li>First, as a literate config, I'd want to move all the per-layer documentation out of docstrings and into the org mode markup to avoid tedious duplication, but then eldoc wouldn't document layers for you.</li>
+<li>Second, it would mean Quake Emacs would really be two files, instead of one and a user file, which is annoying. I do want it to be as self-sufficient as possible. In fact, I'm planning on making the user file optional.</li>
+<li>Third, it adds a layer of indirection and complexity that goes against the core goal of Quake Emacs: with a literate config, I'd have to use org-tangle to 'compile' it before it could be loaded into Emacs, and it would be possible for the literate config and the tangled config to get out of sync locally, not to mention needing to use {C-c '} to edit the blocks.</li>
+<li>And fourth, it would probably significantly slow start times, since =load=ing is slow, and I want to avoid that. However, I've tried to get as close to what a literate configuration file would offer by other means</li>
+</ol>
+
+<p>
+Feel free to open an issue if you think this was a bad choice, though!
 </p>
 </blockquote>
 </div>
 </div>
 
+<div id="outline-container-org98910b9" class="outline-3">
+<h3 id="org98910b9"><span class="section-number-3">4.2.</span> Code Editing</h3>
+<div class="outline-text-3" id="text-4-2">
+<p>
+Quake Emacs has fuzzy autocompletion with <a href="https://elpa.gnu.org/packages/doc/corfu.html">Corfu</a> and Orderless enabled everywhere.
+</p>
 
-<div id="outline-container-orgde99da9" class="outline-2">
-<h2 id="orgde99da9"><span class="section-number-2">3.</span> How To Install</h2>
-<div class="outline-text-2" id="text-3">
+
+<div id="orgf64b252" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fuzzy-autocompletion-everywhere1.gif" alt="fuzzy-autocompletion-everywhere1.gif" />
+</p>
+</div>
+
+<p>
+Full autocompletion even works in the Lisp Eval line (<code>M-:</code>). It's a real repl, so why not have a real coding experience in it?
+</p>
+
+
+<div id="orgcbb68ad" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fuzzy-autocompletion-everywhere2.gif" alt="fuzzy-autocompletion-everywhere2.gif" />
+</p>
+</div>
+
+<p>
+We also have a vertical fuzzy searching UI for popups, with live narrowing, like you're used to in other modern editors, available <b>using Emacs's built-in completion UI</b>, <a href="https://www.gnu.org/software/emacs/manual/html_node/emacs/Icomplete.html">Icomplete</a>! No need for Vertico now that we have <code>icomplete-vertical-mode</code> and the ability to tweak icomplete's existing settings to remove all the limits and delays, and especially since <a href="https://github.com/oantolin/orderless">Orderless</a>, <a href="https://github.com/minad/marginalia">Marginalia</a>, and <a href="https://github.com/minad/consult">Consult</a> integrate with vanilla Emacs's existing functions and capabilities, so anything tha makes use of them is automatically enhanced!
+</p>
+
+
+<div id="orgff63a79" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fuzzy-searching-everywhere.gif" alt="fuzzy-searching-everywhere.gif" />
+</p>
+</div>
+
+<p>
+Quake Emacs also features <a href="https://github.com/abo-abo/hydra?tab=readme-ov-file">which-key</a> for more discoverable keybindings, and a meticulous set of <a href="https://github.com/emacs-evil/evil">evil-mode</a> keybindings.
+</p>
+
+
+<div id="orga66985c" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/which-key-leader-key.gif" alt="which-key-leader-key.gif" />
+</p>
+</div>
+
+<p>
+Quake Emacs also provides IDE class-features thanks to LSP support via <a href="https://github.com/joaotavora/eglot">Eglot</a> and <a href="https://github.com/casouri/eldoc-box">eldoc-box</a>, highly automatic <a href="https://www.emacswiki.org/emacs/Tree-sitter">tree-sitter</a> support with <a href="https://github.com/renzmann/treesit-auto">treesit-auto</a>, inline errors and linting and even quick-fixes with Eglot's integration with Flymake, and advanced language-agnostic debugging with <a href="https://github.com/svaante/dape">DAPE</a>. Here's just LSP and eldoc-box (and tree-sitter's syntax highlighting) on display:
+</p>
+
+
+<div id="org1c320ef" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/ide-class-features.gif" alt="ide-class-features.gif" />
+</p>
+</div>
+
+<p>
+I've also spent a great deal of time setting up tree-sitter based structural text objects for selection, editing, and motion using <a href="%5Bhttps://github.com/meain/evil-textobj-tree-sitter%5D">evil-textobj-tree-sitter</a>, supporting all the text objects Helix or NeoVim does thanks to reading Helix's source code and NeoVim's documentation. Enjoy the text generation of advanced text editing!
+</p>
+
+<p>
+<a href="https://github.com/alexispurslane/quake-emacs/assets/1920151/b196fffb-dba2-470a-b2e1-a4dadd2c968f">structural-textobjects.webm</a>
+</p>
+
+<p>
+And, Quake Emacs wouldn't be able to live up to its name unless it had a classic Quake-style popup terminal! So here it is, implemented entirely without any external packages, and bound to <code>SPC ~</code>:
+</p>
+
+
+<div id="orgfa43b8c" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/quake-term.gif" alt="quake-term.gif" />
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org3b74c74" class="outline-3">
+<h3 id="org3b74c74"><span class="section-number-3">4.3.</span> Writing</h3>
+<div class="outline-text-3" id="text-4-3">
+<p>
+For those of you who prefer to write your prose in Emacs, I've also created an excellent writing mode, which switches to <a href="https://github.com/iaolo/iA-Fonts/tree/master">a variable pitch font</a> of your choice, enables a <a href="https://github.com/joaotavora/darkroom">distraction-free writing mode</a>, and enables <a href="https://github.com/joostkremers/visual-fill-column">visual fill column mode</a> wrapped at 65 characters so that lines behave pleasingly like in a WYSIWYG editor:
+</p>
+
+
+<div id="orgb5a1eb1" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/proselint-enabled-writing-mode.png" alt="proselint-enabled-writing-mode.png" />
+</p>
+</div>
+
+<p>
+Writing mode also enables a flymake <a href="https://github.com/amperser/proselint">proselint</a> backend to help you improve your prose:
+</p>
+
+
+<div id="org977d616" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/proselint-up-close.png" alt="proselint-up-close.png" />
+</p>
+</div>
+
+<p>
+To enable all of that, just use <code>SPC o d</code>!
+</p>
+
+<p>
+Lusting after the capabilities of <a href="https://www.gnu.org/software/hyperbole/">GNU Hyperbole</a> but not so sure about such a gigantic package, that doesn't integrate well with Emacs's standard UI? Quake Emacs has <a href="https://github.com/oantolin/embark">Embark</a> by default, to imbue all your text buffers with meaning and actions without any need for explicit syntax or buttonization. Now every text buffer is an active hypertext experience!
+</p>
+
+
+<div id="orgcbc4c60" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/embark.gif" alt="embark.gif" />
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org28272c5" class="outline-3">
+<h3 id="org28272c5"><span class="section-number-3">4.4.</span> Note-taking</h3>
+<div class="outline-text-3" id="text-4-4">
+<p>
+For those that want Emacs to serve as their note-taking machine, Quake Emacs uses <a href="https://protesilaos.com/emacs/denote">Denote</a>, a lightweight personal hypertext information manager that offers all of the same basic features as <code>org-roam</code>, without locking you down to using only Org, or requiring you to use an SQLite database, while also offering optional excellent integration with org if you want it. It can incorporate an extensible list of markup languages instead of just org and markdown, or even non-text-markup files directly into its linking and searching system. Moreover, it also makes deep use of existing Emacs built-ins, as well as integrating explicitly with packages like marginalia, and consult (via <a href="https://github.com/mclear-tools/consult-notes">consult-notes</a>). And of course I've created a set of convenient leader key keybinds for managing it.
+</p>
+
+
+<div id="org1eeb5b2" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/denote.png" alt="denote.png" />
+</p>
+</div>
+
+<p>
+I've also unlocked the power of having your code editor, word processor, and note-taking application all be one and the same through enabling global <a href="https://github.com/protesilaos/denote/issues/364">buttonization and insertion of denote links</a>. Now <b>you can link to your notes from any file you open, no matter where it is or what file type it is.</b> Want to keep a huge library of notes on your various projects and link to them in the comments of your code? Now you can.
+</p>
+
+
+<div id="org8671cf7" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/denote-global-links.png" alt="denote-global-links.png" />
+</p>
+</div>
+
+<p>
+Want to have several separate Zettelkasten for different projects? I've created a <a href="https://github.com/protesilaos/denote/issues/367">custom command</a> that allows you to automatically create a new denote silo and add it to <code>project.el</code>, so you can manage your silos just like any other project without having to put them in version control.
+</p>
+
+
+<div id="org16c4fb8" class="figure">
+<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/denote-note-project.png" alt="denote-note-project.png" />
+</p>
+</div>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org5e43738" class="outline-2">
+<h2 id="org5e43738"><span class="section-number-2">5.</span> How To Install</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+Convinced?
+</p>
+
 <ol class="org-ol">
 <li><p>
-First, you install Quake Emacs like usual:
+First, install the Quake Emacs project directly to your Emacs configuration directory, so Quake can take over your Emacs installation:
 </p>
 
 <div class="org-src-container">
@@ -350,17 +561,17 @@ To update, just <code>git pull</code> to the latest tag. I recommend you check t
 </div>
 </div>
 
-<div id="outline-container-org3a50d5a" class="outline-2">
-<h2 id="org3a50d5a"><span class="section-number-2">4.</span> Supported Languages</h2>
-<div class="outline-text-2" id="text-4">
+<div id="outline-container-org71345aa" class="outline-2">
+<h2 id="org71345aa"><span class="section-number-2">6.</span> Supported Languages</h2>
+<div class="outline-text-2" id="text-6">
 <p>
-Three things are required for Quake Emacs to support a language using the modern language support facilities within Emacs (tree-sitter and the LSP):
+Three things are required for Quake Emacs to support a language using the modern language support facilities built in to it:
 </p>
 </div>
 
-<div id="outline-container-org5591d05" class="outline-3">
-<h3 id="org5591d05"><span class="section-number-3">4.1.</span> Language Server</h3>
-<div class="outline-text-3" id="text-4-1">
+<div id="outline-container-org6386c02" class="outline-3">
+<h3 id="org6386c02"><span class="section-number-3">6.1.</span> Language Server</h3>
+<div class="outline-text-3" id="text-6-1">
 <p>
 Your language server, of course, does not need to be installed within Quake Emacs. It is an independent program you will need to install on your host system to a <a href="https://www.emacswiki.org/emacs/ExecPath">path</a> Emacs knows to look in for executables, at which point Quake Emacs's LSP package, Eglot, will probably be able to detect your language server automatically.
 </p>
@@ -368,32 +579,48 @@ Your language server, of course, does not need to be installed within Quake Emac
 <p>
 If Eglot cannot automatically detect your LSP, <a href="https://www.gnu.org/software/emacs/manual/html_mono/eglot.html#Setting-Up-LSP-Servers">it is easy to specify a custom language server for a given mode</a>.
 </p>
+
+<p>
+Some languages, such as Common Lisp (SLIME/SLY) and Clojure (CIDER) have their own alternatives to a language server that you should use instead.
+</p>
 </div>
 </div>
 
-<div id="outline-container-org157e46d" class="outline-3">
-<h3 id="org157e46d"><span class="section-number-3">4.2.</span> Tree Sitter Grammar</h3>
-<div class="outline-text-3" id="text-4-2">
+<div id="outline-container-orgcda9d62" class="outline-3">
+<h3 id="orgcda9d62"><span class="section-number-3">6.2.</span> Tree Sitter Grammar</h3>
+<div class="outline-text-3" id="text-6-2">
 <p>
 Tree sitter grammars are also technically external to Quake Emacs, since they are dynamic libraries that are loaded in at runtime; however, Quake Emacs's tree sitter support package expects them to be installed in a specific location by default (<code>~/.emacs.d/tree-sitter/</code>), and through the use of <code>treesit-auto</code>, Quake Emacs has a fairly large set of tree sitter grammers it knows how to automatically install from within the editor (please consult the language support matrix at the bottom of the parent section).
 </p>
-</div>
-</div>
 
-<div id="outline-container-org2949d4f" class="outline-3">
-<h3 id="org2949d4f"><span class="section-number-3">4.3.</span> Tree Sitter Mode</h3>
-<div class="outline-text-3" id="text-4-3">
 <p>
-In order for Emacs to be able to interpret the meaning of the concrete syntax tree generated by the tree sitter grammar, it needs a tree-sitter mode for that language, to translate the syntax tree into font locking and syntax tables and so on. These are generally fairly simple to write, so a fair number of them are already built into Emacs, and more are being added over time (six in Emacs 30.1 alone!), but some packages may need to be <a href="https://www.gnu.org/software/emacs/manual/html_mono/use-package.html#Installing-packages">added to your user.el</a> instead. For information on which are built into Emacs and which are not, please consult the language support matrix below.
+If <code>treesit-auto</code> does not have an auto-install recipe for the language you wish to use, simply use the built-in command <code>treesit-install-language-grammar</code> and follow the easy-to-understand prompts to install the grammar you want. After that, you should be all set!
 </p>
 </div>
 </div>
 
-<div id="outline-container-orgb1ecdac" class="outline-3">
-<h3 id="orgb1ecdac"><span class="section-number-3">4.4.</span> Built-In Language Support Matrix</h3>
-<div class="outline-text-3" id="text-4-4">
+<div id="outline-container-orge2f176e" class="outline-3">
+<h3 id="orge2f176e"><span class="section-number-3">6.3.</span> Tree Sitter Mode</h3>
+<div class="outline-text-3" id="text-6-3">
 <p>
-<b><b>Note:</b></b> The range of languages that have a tree sitter grammar and tree sitter mode <i>available</i> for Emacs is going to be much larger than this. And if you can't find a tree sitter mode for a language, there's no need to worry either: Quake Emacs is still <i>just Emacs</i>, and the range of languages that Emacs can support through more traditional packages still larger than that, of course. This table is focusing on the languages that have some degree of built-in support.
+In order for Emacs to be able to interpret the meaning of the concrete syntax tree generated by the tree sitter grammar, it needs a tree-sitter mode for that language, to translate the syntax tree into font locking and syntax tables and so on. These are generally fairly simple to write, so a fair number of them are already built into Emacs, and more are being added over time (six in Emacs 30.1 alone!).
+</p>
+
+<p>
+Nevertheless, some packages may need to be <a href="https://www.gnu.org/software/emacs/manual/html_mono/use-package.html#Installing-packages">added to your user.el</a> instead (remember to use <code>use-package :ensure t</code>, as the documentation link explains, instead of <code>package-install</code>, so that your configuration is reproducable on other machines).
+</p>
+
+<p>
+For information on which are built into Emacs and which are not, please consult the language support matrix below.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org72d4f95" class="outline-3">
+<h3 id="org72d4f95"><span class="section-number-3">6.4.</span> Built-In Language Support Matrix</h3>
+<div class="outline-text-3" id="text-6-4">
+<p>
+This matrix shows the list of languages that Quake Emacs has <b>built-in</b> support for in some capacity, and to what capacity that's true. There are many more languages that have tree-sitter modes available for them, and still more languages that Emacs supports in the traditional way, which can also be installed with <code>use-package</code> as mentioned above.
 </p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -741,197 +968,9 @@ If you want support for another language, one place to start is <a href="https:/
 </div>
 </div>
 
-<div id="outline-container-org9b1d035" class="outline-2">
-<h2 id="org9b1d035"><span class="section-number-2">5.</span> Showcase</h2>
-<div class="outline-text-2" id="text-5">
-</div>
-<div id="outline-container-org6f898bb" class="outline-3">
-<h3 id="org6f898bb"><span class="section-number-3">5.1.</span> Simple Config</h3>
-<div class="outline-text-3" id="text-5-1">
-<p>
-Before I get to showing you any of the fancy things Quake Emacs can do, the most important thing is proving that it will be manageable for you to understand and fork if necessary, and won't lead either you or me to Emacs bankruptcy. One of the key things I've done in this regard is optimizing the layout of <code>init.el</code> to work with Emacs's built-in <code>outline-minor-mode</code> to help you get an overview of it and jump to specific things in it without needing finnicky text search or getting overwhelmed:
-</p>
-
-
-<div id="orgaa492e0" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/outline-mode-compat.gif" alt="outline-mode-compat.gif" />
-</p>
-</div>
-
-<p>
-It's much more difficult to demonstrate code clarity and simplicity in a gif, though, so if you're still skeptical, I highly encourage you to skim the <a href="https://github.com/alexispurslane/quake-emacs/blob/develop/init.el">source code</a> yourself.
-</p>
-
-<blockquote>
-<p>
-[!NOTE] Why isn't this a literate config? I've seriously considered it for code clarity reasons, but decided against it for a number of reasons:
-</p>
-
-<ol class="org-ol">
-<li>First, as a literate config, I'd want to move all the per-layer documentation out of docstrings and into the org mode markup to avoid tedious duplication, but then eldoc wouldn't document layers for you.</li>
-<li>Second, it would mean Quake Emacs would really be two files, instead of one and a user file, which is annoying. I do want it to be as self-sufficient as possible. In fact, I'm planning on making the user file optional.</li>
-<li>Third, it adds a layer of indirection and complexity that goes against the core goal of Quake Emacs: with a literate config, I'd have to use org-tangle to 'compile' it before it could be loaded into Emacs, and it would be possible for the literate config and the tangled config to get out of sync locally, not to mention needing to use {C-c '} to edit the blocks.</li>
-<li>And fourth, it would probably significantly slow start times, since =load=ing is slow, and I want to avoid that. However, I've tried to get as close to what a literate configuration file would offer by other means</li>
-</ol>
-
-<p>
-Feel free to open an issue if you think this was a bad choice, though!
-</p>
-</blockquote>
-</div>
-</div>
-
-<div id="outline-container-org7294fe5" class="outline-3">
-<h3 id="org7294fe5"><span class="section-number-3">5.2.</span> Code Editing</h3>
-<div class="outline-text-3" id="text-5-2">
-<p>
-Quake Emacs has fuzzy autocompletion with <a href="https://elpa.gnu.org/packages/doc/corfu.html">Corfu</a> and Orderless enabled everywhere.
-</p>
-
-
-<div id="org5c7d16f" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fuzzy-autocompletion-everywhere1.gif" alt="fuzzy-autocompletion-everywhere1.gif" />
-</p>
-</div>
-
-<p>
-Full autocompletion even works in the Lisp Eval line (<code>M-:</code>). It's a real repl, so why not have a real coding experience in it?
-</p>
-
-
-<div id="org816ea2f" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fuzzy-autocompletion-everywhere2.gif" alt="fuzzy-autocompletion-everywhere2.gif" />
-</p>
-</div>
-
-<p>
-We also have a vertical fuzzy searching UI for popups, with live narrowing, like you're used to in other modern editors, available <b>using Emacs's built-in completion UI</b>, <a href="https://www.gnu.org/software/emacs/manual/html_node/emacs/Icomplete.html">Icomplete</a>! No need for Vertico now that we have <code>icomplete-vertical-mode</code> and the ability to tweak icomplete's existing settings to remove all the limits and delays, and especially since <a href="https://github.com/oantolin/orderless">Orderless</a>, <a href="https://github.com/minad/marginalia">Marginalia</a>, and <a href="https://github.com/minad/consult">Consult</a> integrate with vanilla Emacs's existing functions and capabilities, so anything tha makes use of them is automatically enhanced!
-</p>
-
-
-<div id="orga77d916" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fuzzy-searching-everywhere.gif" alt="fuzzy-searching-everywhere.gif" />
-</p>
-</div>
-
-<p>
-Quake Emacs also features <a href="https://github.com/abo-abo/hydra?tab=readme-ov-file">which-key</a> for more discoverable keybindings, and a meticulous set of <a href="https://github.com/emacs-evil/evil">evil-mode</a> keybindings.
-</p>
-
-
-<div id="orgbcac1d8" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/which-key-leader-key.gif" alt="which-key-leader-key.gif" />
-</p>
-</div>
-
-<p>
-Quake Emacs also provides IDE class-features thanks to LSP support via <a href="https://github.com/joaotavora/eglot">Eglot</a> and <a href="https://github.com/casouri/eldoc-box">eldoc-box</a>, highly automatic <a href="https://www.emacswiki.org/emacs/Tree-sitter">tree-sitter</a> support with <a href="https://github.com/renzmann/treesit-auto">treesit-auto</a>, inline errors and linting and even quick-fixes with Eglot's integration with Flymake, and advanced language-agnostic debugging with <a href="https://github.com/svaante/dape">DAPE</a>. Here's just LSP and eldoc-box (and tree-sitter's syntax highlighting) on display:
-</p>
-
-
-<div id="org46b127f" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/ide-class-features.gif" alt="ide-class-features.gif" />
-</p>
-</div>
-
-<p>
-I've also spent a great deal of time setting up tree-sitter based structural text objects for selection, editing, and motion using <a href="%5Bhttps://github.com/meain/evil-textobj-tree-sitter%5D">evil-textobj-tree-sitter</a>, supporting all the text objects Helix or NeoVim does thanks to reading Helix's source code and NeoVim's documentation. Enjoy the text generation of advanced text editing!
-</p>
-
-<p>
-<a href="https://github.com/alexispurslane/quake-emacs/assets/1920151/b196fffb-dba2-470a-b2e1-a4dadd2c968f">structural-textobjects.webm</a>
-</p>
-
-<p>
-And, Quake Emacs wouldn't be able to live up to its name unless it had a classic Quake-style popup terminal! So here it is, implemented entirely without any external packages, and bound to <code>SPC ~</code>:
-</p>
-
-
-<div id="orge18872e" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/quake-term.gif" alt="quake-term.gif" />
-</p>
-</div>
-</div>
-</div>
-
-<div id="outline-container-org31f20d8" class="outline-3">
-<h3 id="org31f20d8"><span class="section-number-3">5.3.</span> Writing</h3>
-<div class="outline-text-3" id="text-5-3">
-<p>
-For those of you who prefer to write your prose in Emacs, I've also created an excellent writing mode, which switches to <a href="https://github.com/iaolo/iA-Fonts/tree/master">a variable pitch font</a> of your choice, enables a <a href="https://github.com/joaotavora/darkroom">distraction-free writing mode</a>, and enables <a href="https://github.com/joostkremers/visual-fill-column">visual fill column mode</a> wrapped at 65 characters so that lines behave pleasingly like in a WYSIWYG editor:
-</p>
-
-
-<div id="org79187aa" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/proselint-enabled-writing-mode.png" alt="proselint-enabled-writing-mode.png" />
-</p>
-</div>
-
-<p>
-Writing mode also enables a flymake <a href="https://github.com/amperser/proselint">proselint</a> backend to help you improve your prose:
-</p>
-
-
-<div id="org427660e" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/proselint-up-close.png" alt="proselint-up-close.png" />
-</p>
-</div>
-
-<p>
-To enable all of that, just use <code>SPC o d</code>!
-</p>
-
-<p>
-Lusting after the capabilities of <a href="https://www.gnu.org/software/hyperbole/">GNU Hyperbole</a> but not so sure about such a gigantic package, that doesn't integrate well with Emacs's standard UI? Quake Emacs has <a href="https://github.com/oantolin/embark">Embark</a> by default, to imbue all your text buffers with meaning and actions without any need for explicit syntax or buttonization. Now every text buffer is an active hypertext experience!
-</p>
-
-
-<div id="orge843afa" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/embark.gif" alt="embark.gif" />
-</p>
-</div>
-</div>
-</div>
-
-<div id="outline-container-orgaaf22b5" class="outline-3">
-<h3 id="orgaaf22b5"><span class="section-number-3">5.4.</span> Note-taking</h3>
-<div class="outline-text-3" id="text-5-4">
-<p>
-For those that want Emacs to serve as their note-taking machine, Quake Emacs uses <a href="https://protesilaos.com/emacs/denote">Denote</a>, a lightweight personal hypertext information manager that offers all of the same basic features as <code>org-roam</code>, without locking you down to using only Org, or requiring you to use an SQLite database, while also offering optional excellent integration with org if you want it. It can incorporate an extensible list of markup languages instead of just org and markdown, or even non-text-markup files directly into its linking and searching system. Moreover, it also makes deep use of existing Emacs built-ins, as well as integrating explicitly with packages like marginalia, and consult (via <a href="https://github.com/mclear-tools/consult-notes">consult-notes</a>). And of course I've created a set of convenient leader key keybinds for managing it.
-</p>
-
-
-<div id="org20c9b09" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/denote.png" alt="denote.png" />
-</p>
-</div>
-
-<p>
-I've also unlocked the power of having your code editor, word processor, and note-taking application all be one and the same through enabling global <a href="https://github.com/protesilaos/denote/issues/364">buttonization and insertion of denote links</a>. Now <b>you can link to your notes from any file you open, no matter where it is or what file type it is.</b> Want to keep a huge library of notes on your various projects and link to them in the comments of your code? Now you can.
-</p>
-
-
-<div id="org20d90e0" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/denote-global-links.png" alt="denote-global-links.png" />
-</p>
-</div>
-
-<p>
-Want to have several separate Zettelkasten for different projects? I've created a <a href="https://github.com/protesilaos/denote/issues/367">custom command</a> that allows you to automatically create a new denote silo and add it to <code>project.el</code>, so you can manage your silos just like any other project without having to put them in version control.
-</p>
-
-
-<div id="org8f99cbb" class="figure">
-<p><img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/denote-note-project.png" alt="denote-note-project.png" />
-</p>
-</div>
-</div>
-</div>
-</div>
-
-<div id="outline-container-orgb755551" class="outline-2">
-<h2 id="orgb755551"><span class="section-number-2">6.</span> Personal Configuration and Extra Layers</h2>
-<div class="outline-text-2" id="text-6">
+<div id="outline-container-orga61abdd" class="outline-2">
+<h2 id="orga61abdd"><span class="section-number-2">7.</span> Personal Configuration and Extra Layers</h2>
+<div class="outline-text-2" id="text-7">
 <p>
 When writing custom configuration in your <code>user.el</code>, it is recommended that you separate your configuration out into logical groups according to general purpose, with each group contained within a function (and preferably with everything within those functions/groups bundled neatly into <code>use-package</code> declarations). This is precisely what Quake Emacs does — we call these logical units "layers", after the fashion of Doom Emacs and Spacemacs, although they're just regular functions, no boilerplate necessary — and it has a few benefits:
 </p>
@@ -943,7 +982,7 @@ When writing custom configuration in your <code>user.el</code>, it is recommende
 </ol>
 
 <p>
-Out of the box, Quake Emacs contains only the layers that you will absolutely need for a good general-purpose writing, note taking, and code editing experience, as explained above. However, if you find yourself needing more functionality, in addition to writing your own layers, I have a few Gists containing some layers I've constructed for personal use, here:
+Out of the box, Quake Emacs contains only the layers that you will absolutely need for a good general-purpose writing, note taking, and code editing experience, as explained above. However, if you find yourself needing more functionality, in addition to writing your own layers, I have a few Gists containing some layers I've constructed for personal use, here, which you can either use yourself, or treat as examples of how to write Quake Emacs layers:
 </p>
 
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
@@ -996,42 +1035,200 @@ Out of the box, Quake Emacs contains only the layers that you will absolutely ne
 </div>
 </div>
 
-<div id="outline-container-org255f4d9" class="outline-2">
-<h2 id="org255f4d9"><span class="section-number-2">7.</span> Justification</h2>
-<div class="outline-text-2" id="text-7">
-<p>
-With the introduction of various modern Emacs features in the last few years, and the emergence of a new generation of Emacs packages focused on integrating with vanilla Emacs, Emacs distributions as we have known them are less and less relevant.
-</p>
-
-<p>
-Now that <code>use-package</code> is included with Emacs by default, configuration frameworks are less necessary then ever, as vanilla Emacs's built-in capabilities are likely clearer, faster, and more powerful than whatever a configuration framework could offer, with the benefit of also being the community standard. In my experience, Doom Emacs's ideosyncratic package management system was less clear, less-organized, less-documented, and much less reliable than what is now built into Emacs 29.
-</p>
-
-<p>
-Likewise, with the inclusion of <code>eglot</code> and <code>tree-sitter</code>, language-specific "layers" that compose five or six packages, together with a lot of configuration, in order to give a decent experience, are mostly a thing of the past. Tree-Sitter modes may still need to be provided, but these can be very simple and direct mappings from an AST to font locking and syntax tables, simple enough that a huge breadth of them can eventually be included by default in Emacs, as opposed to the previous situation of various competing, often very imperfect, highlighting packages, and then several packages to provide completions and linting and other amenities. Quake Emacs leverages these powerful built-in modern Emacs features to give you the experience of an Emacs configuration framework and distribution, without all the downsides.
-</p>
-
-<p>
-Similarly, with the creation of amazing packages like <code>vertico</code>, <code>orderless</code>, and <code>corfu</code>, the need to manually integrate added features from various packages into your Emacs system and other Emacs packages is basically obsolete: these packages integrate directly with Emacs, by hooking into or outright replacing Emacs's built in functions for performing various actions, so there's no need to do anything. As a result, much of the configuration work Emacs distributions needed to do to wire everything up simply doesn't need to be done.
-</p>
-</div>
-</div>
-
-<div id="outline-container-orgceaa2b2" class="outline-2">
-<h2 id="orgceaa2b2"><span class="section-number-2">8.</span> Inspiration and Prior Art</h2>
+<div id="outline-container-org261e96d" class="outline-2">
+<h2 id="org261e96d"><span class="section-number-2">8.</span> Quake Leader Key Keybindings</h2>
 <div class="outline-text-2" id="text-8">
+<p>
+Functionally, the Quake leader key system works the same as the leader keys in something like Doom Emacs: if you press the spacebar while in Normal Mode, you will enter a special leader key mode (God Mode) wherein all subsequent keys will be interpreted as navigating through a tree of keybindings until you either reach a leaf, fail to do so, or quit the mode, at which point the command (if any) will be executed, and you will be returned to Normal Mode.
+</p>
+
+<p>
+The difference between Quake's god-mode based leader key keybindings and traditional ones, however, is that instead of the tree of keybindings provided in the leader key mode being created from scratch, and unique to the leader key mode — in essence, a sort of "world all its own" — instead, Quake's leader key keybindings are actually translated into traditional key chords that Emacs understands by default, navigating through the already-existing (and still accessible through key chords when outside the leader key mode!) tree of Emacs keybindings.
+</p>
+
+<p>
+The translation is pretty simple. Allow me to quote the god-mode documentation:
+</p>
+
+<blockquote>
+<p>
+This package defines the following key mappings:
+</p>
+
+<ul class="org-ul">
+<li><p>
+All commands are assumed to use the control modifier (<code>C-</code>) unless 
+otherwise indicated. Here are some examples:
+</p>
+
+<ul class="org-ul">
+<li><code>x</code> → <code>C-x</code></li>
+<li><code>f</code> → <code>C-f</code></li>
+<li><code>x</code> <code>s</code> → <code>C-x</code> <code>C-s</code></li>
+<li><code>x</code> <code>SPC</code> <code>s</code> → <code>C-x</code> <code>s</code></li>
+</ul>
+
+<p>
+Note the use of the space key (<code>SPC</code>)
+to produce <code>C-x</code> <code>s</code>.
+</p></li>
+
+<li>The literal key (<code>SPC</code>) is sticky. This means you don't have to enter 
+<code>SPC</code> repeatedly for key bindings such as <code>C-x</code> <code>r</code> <code>t</code>.
+Entering the literal key again toggles its state.
+The literal key can be changed through `god-literal-key`. Here are some examples:
+
+<ul class="org-ul">
+<li><code>x</code> <code>SPC</code> <code>r</code> <code>t</code> → <code>C-x</code> <code>r</code> <code>t</code></li>
+<li><code>x</code> <code>SPC</code> <code>r</code> <code>SPC</code> <code>g</code> <code>w</code> → <code>C-x</code> <code>r</code> <code>M-w</code></li>
+</ul></li>
+
+<li><code>g</code> is used to indicate the meta modifier (<code>M-</code>). This means
+that there is no way to enter <code>C-g</code> in God mode, and you must
+therefore type in <code>C-g</code> directly. This key can be changed through
+`god-mode-alist`. Here are some examples:
+
+<ul class="org-ul">
+<li><code>g</code> <code>x</code> → <code>M-x</code></li>
+<li><code>g</code> <code>f</code> → <code>M-f</code></li>
+</ul></li>
+
+<li><code>G</code> is used to indicate both the control and meta modifiers
+(<code>C-M-</code>). This key can also be changed through `god-mode-alist`. Here
+are some examples:
+
+<ul class="org-ul">
+<li><code>G</code> <code>x</code> → <code>C-M-x</code></li>
+<li><code>G</code> <code>f</code> → <code>C-M-f</code></li>
+</ul></li>
+
+<li>Digit arguments can also be used:
+
+<ul class="org-ul">
+<li><code>1</code> <code>2</code> <code>f</code> → <code>M-12</code> <code>C-f</code></li>
+</ul></li>
+
+<li>If you use some of the [useful key bindings][useful-key-bindings],
+<code>z</code> or <code>.</code> can repeat the previous command:
+
+<ul class="org-ul">
+<li><code>g</code> <code>f</code> <code>.</code> <code>.</code> → <code>M-f</code>
+<code>M-f</code> <code>M-f</code></li>
+</ul></li>
+
+<li>Universal arguments can also be specified using <code>u</code>:
+
+<ul class="org-ul">
+<li><code>u</code> <code>c</code> <code>o</code> → <code>C-u</code> <code>C-c</code>
+<code>C-o</code></li>
+</ul></li>
+</ul>
+</blockquote>
+
+<p>
+Quake Emacs also defines several additional keybindings beyond the ones that Emacs has by default, for the various things it adds. To understand the following list, remember that its form reflects the fact that in Emacs all keybindings are a tree of key chords, navigated by pressing successive key chords.
+</p>
+
+<dl class="org-dl">
+<dt><code>C-c n</code></dt><dd>Notes
+<dl class="org-dl">
+<dt><code>s</code></dt><dd><code>denote-silo</code></dd>
+<dt><code>c</code></dt><dd><code>org-capture</code></dd>
+<dt><code>l</code></dt><dd><code>org-store-link</code></dd>
+<dt><code>n</code></dt><dd><code>consult-notes</code></dd>
+<dt><code>i</code></dt><dd><code>denote-link-global</code></dd>
+<dt><code>I</code></dt><dd><code>denote-link-after-creating</code></dd>
+<dt><code>r</code></dt><dd><code>denote-rename-file</code></dd>
+<dt><code>k</code></dt><dd><code>denote-keywords-add</code></dd>
+<dt><code>K</code></dt><dd><code>denote-keywords-remove</code></dd>
+<dt><code>b</code></dt><dd><code>denote-backlinks</code></dd>
+<dt><code>B</code></dt><dd><code>denote-find-backlink</code></dd>
+<dt><code>R</code></dt><dd><code>denote-region</code></dd>
+</dl></dd>
+<dt><code>C-c &amp;</code></dt><dd>Code Snippets
+<dl class="org-dl">
+<dt><code>n</code></dt><dd><code>yas-new-snippet</code></dd>
+<dt><code>s</code></dt><dd><code>yas-insert-snippet</code></dd>
+<dt><code>v</code></dt><dd><code>yas-visit-snippet-file</code></dd>
+</dl></dd>
+<dt><code>C-c p</code></dt><dd>Profile Management
+<dl class="org-dl">
+<dt><code>t</code></dt><dd><code>consult-theme</code></dd>
+<dt><code>f</code></dt><dd>open framework config</dd>
+<dt><code>u</code></dt><dd>open user config</dd>
+<dt><code>r</code></dt><dd><code>restart-emacs</code></dd>
+<dt><code>l</code></dt><dd>Reload user config</dd>
+</dl></dd>
+<dt><code>C-c o</code></dt><dd>Open Tools
+<dl class="org-dl">
+<dt><code>w</code></dt><dd><code>eww</code></dd>
+<dt><code>a</code></dt><dd><code>org-agenda</code></dd>
+<dt><code>=</code></dt><dd><code>calc</code></dd>
+<dt><code>s</code></dt><dd>open new shell</dd>
+<dt><code>-</code></dt><dd><code>dired</code></dd>
+<dt><code>T</code></dt><dd><code>treemacs</code></dd>
+<dt><code>t</code></dt><dd><code>toggle-frame-tab-bar</code></dd>
+<dt><code>m</code></dt><dd><code>gnus-other-frame</code></dd>
+<dt><code>d</code></dt><dd><code>word-processing-mode</code></dd>
+<dt><code>S</code></dt><dd><code>scratch-window-toggle</code></dd>
+</dl></dd>
+<dt>= =</dt><dd>Top Level Keybindings
+<dl class="org-dl">
+<dt><code>C-~</code></dt><dd><code>shell-toggle</code></dd>
+<dt><code>C-:</code></dt><dd><code>pp-eval-expression</code></dd>
+<dt><code>C-;</code></dt><dd><code>execute-extended-command</code></dd>
+</dl></dd>
+<dt><code>C-x</code></dt><dd>File, Buffer, and Project Manipulation
+<dl class="org-dl">
+<dt><code>C-x</code></dt><dd><code>delete-file</code></dd>
+<dt><code>C-X</code></dt><dd><code>delete-directory</code></dd>
+<dt><code>K</code></dt><dd><code>kill-current-buffer</code></dd>
+<dt><code>B</code></dt><dd><code>ibuffer</code></dd>
+<dt><code>p E</code></dt><dd><code>flymake-show-project-diagnostics</code></dd>
+</dl></dd>
+<dt><code>C-c l</code></dt><dd>LSP Server
+<dl class="org-dl">
+<dt><code>E</code></dt><dd><code>flymake-show-buffer-diagnostics</code></dd>
+<dt><code>e</code></dt><dd><code>consult-flymake</code></dd>
+<dt><code>s</code></dt><dd><code>eglot</code></dd>
+<dt><code>a</code></dt><dd><code>eglot-code-actions</code></dd>
+<dt><code>r</code></dt><dd><code>eglot-rename</code></dd>
+<dt><code>h</code></dt><dd><code>eldoc</code></dd>
+<dt><code>f</code></dt><dd><code>eglot-format</code></dd>
+<dt><code>F</code></dt><dd><code>eglot-format-buffer</code></dd>
+<dt><code>R</code></dt><dd><code>eglot-reconnect</code></dd>
+</dl></dd>
+<dt><code>C-h</code></dt><dd>Helpful Docs
+<dl class="org-dl">
+<dt><code>v</code></dt><dd><code>helpful-variable</code></dd>
+<dt><code>f</code></dt><dd><code>helpful-callable</code></dd>
+<dt><code>k</code></dt><dd><code>helpful-key</code></dd>
+<dt><code>x</code></dt><dd><code>helpful-command</code></dd>
+</dl></dd>
+<dt><code>C-w</code></dt><dd>Window Management
+<dl class="org-dl">
+<dt><code>C-w</code>     </dt><dd><code>vil-window-map</code></dd>
+<dt><code>C-w C-u</code> </dt><dd><code>winner-undo</code></dd>
+</dl></dd>
+</dl>
 </div>
-<div id="outline-container-org19dc883" class="outline-3">
-<h3 id="org19dc883"><span class="section-number-3">8.1.</span> Doom Emacs</h3>
-<div class="outline-text-3" id="text-8-1">
+</div>
+
+<div id="outline-container-org876eab5" class="outline-2">
+<h2 id="org876eab5"><span class="section-number-2">9.</span> Inspiration and Prior Art</h2>
+<div class="outline-text-2" id="text-9">
+</div>
+<div id="outline-container-orgab336bf" class="outline-3">
+<h3 id="orgab336bf"><span class="section-number-3">9.1.</span> Doom Emacs</h3>
+<div class="outline-text-3" id="text-9-1">
 <p>
 <a href="https://github.com/doomemacs/doomemacs">DOOM Emacs</a> was my previous (and fallback) daily driver. It is an excellent Emacs distribution and piece of software, but essentially its own editor in many ways. Still what I would probably recommend to a newbie until Quake hypothetically becomes stable and mature.
 </p>
 </div>
 
-<div id="outline-container-orgeceae3c" class="outline-4">
-<h4 id="orgeceae3c"><span class="section-number-4">8.1.1.</span> Points of similarity:</h4>
-<div class="outline-text-4" id="text-8-1-1">
+<div id="outline-container-org8864f46" class="outline-4">
+<h4 id="org8864f46"><span class="section-number-4">9.1.1.</span> Points of similarity:</h4>
+<div class="outline-text-4" id="text-9-1-1">
 <ol class="org-ol">
 <li>Extensive evil mode support and integration, allowing you to control your editor entirely from Vim-style leader key combinations, and integrating evil mode into every other mode and package installed.</li>
 <li>Opinionated and aesthetically pleasing defaults to try to make Emacs look and feel, not like another editor like VSCode, but like a <i>modern Emacs</i> &#x2014; unique, but not recalcitrant.</li>
@@ -1040,9 +1237,9 @@ Similarly, with the creation of amazing packages like <code>vertico</code>, <cod
 </div>
 </div>
 
-<div id="outline-container-orga43c9dc" class="outline-4">
-<h4 id="orga43c9dc"><span class="section-number-4">8.1.2.</span> Differences:</h4>
-<div class="outline-text-4" id="text-8-1-2">
+<div id="outline-container-org45b3ad7" class="outline-4">
+<h4 id="org45b3ad7"><span class="section-number-4">9.1.2.</span> Differences:</h4>
+<div class="outline-text-4" id="text-9-1-2">
 <ol class="org-ol">
 <li>Doesn't install nearly as many packages and does fewer (no) ideosyncratic things. This gives you less of a complete experience you aren't supposed to tinker with besides toggling layers, and more of a comfortable and usable-out-of-the-box, but relatively simple and straightforward, foundation to build from.</li>
 <li>Has no "alternate" layers to achieve the same functionality in different ways (e.g. helm vs ivy vs vertico). There is one blessed set of packages, to avoid the combinatorial explosion of complexity that brings.</li>
@@ -1057,17 +1254,17 @@ Similarly, with the creation of amazing packages like <code>vertico</code>, <cod
 </div>
 </div>
 
-<div id="outline-container-orgc657a71" class="outline-3">
-<h3 id="orgc657a71"><span class="section-number-3">8.2.</span> MinEmacs</h3>
-<div class="outline-text-3" id="text-8-2">
+<div id="outline-container-org3fe035c" class="outline-3">
+<h3 id="org3fe035c"><span class="section-number-3">9.2.</span> MinEmacs</h3>
+<div class="outline-text-3" id="text-9-2">
 <p>
 I have not personally used MinEmacs, but I rifled fairly extensively through its codebase to borrow ideas, tips, tricks, and so on, and read its mission statement and looked at the screenshots.
 </p>
 </div>
 
-<div id="outline-container-org65c38af" class="outline-4">
-<h4 id="org65c38af"><span class="section-number-4">8.2.1.</span> Points of similarity:</h4>
-<div class="outline-text-4" id="text-8-2-1">
+<div id="outline-container-org22f2dab" class="outline-4">
+<h4 id="org22f2dab"><span class="section-number-4">9.2.1.</span> Points of similarity:</h4>
+<div class="outline-text-4" id="text-9-2-1">
 <ol class="org-ol">
 <li>Primarily one user's config, generalized into a general distribution, but not designed to automatically provide for use-cases or configurations wildly separate from the author's own.</li>
 <li>Desiring to be more minimal and closer to "bare metal Emacs."</li>
@@ -1076,9 +1273,9 @@ I have not personally used MinEmacs, but I rifled fairly extensively through its
 </div>
 </div>
 
-<div id="outline-container-org715ba24" class="outline-4">
-<h4 id="org715ba24"><span class="section-number-4">8.2.2.</span> Differences:</h4>
-<div class="outline-text-4" id="text-8-2-2">
+<div id="outline-container-orgc3779a7" class="outline-4">
+<h4 id="orgc3779a7"><span class="section-number-4">9.2.2.</span> Differences:</h4>
+<div class="outline-text-4" id="text-9-2-2">
 <ol class="org-ol">
 <li>Far less complexity and fewer layers of abstraction, provides NO "configuration framework," NO custom standard library, nothing like that.</li>
 <li>Different opinionated design decisions (not based on NANO Emacs's design philosophy)</li>
@@ -1088,17 +1285,17 @@ I have not personally used MinEmacs, but I rifled fairly extensively through its
 </div>
 </div>
 
-<div id="outline-container-org75f380a" class="outline-3">
-<h3 id="org75f380a"><span class="section-number-3">8.3.</span> Emacs Prelude</h3>
-<div class="outline-text-3" id="text-8-3">
+<div id="outline-container-orga9a0d0d" class="outline-3">
+<h3 id="orga9a0d0d"><span class="section-number-3">9.3.</span> Emacs Prelude</h3>
+<div class="outline-text-3" id="text-9-3">
 <p>
 <a href="https://prelude.emacsredux.com/en/latest/">Emacs Prelude</a> seems to be the most philosophically similar Emacs distribution to Quake Emacs. They share many goals and have very similar approaches. You could perhaps think of Quake Emacs as a more modern, and slightly more opinionated, take on Prelude!
 </p>
 </div>
 
-<div id="outline-container-orgbcfc0be" class="outline-4">
-<h4 id="orgbcfc0be"><span class="section-number-4">8.3.1.</span> Points of similarity:</h4>
-<div class="outline-text-4" id="text-8-3-1">
+<div id="outline-container-orgf3622c2" class="outline-4">
+<h4 id="orgf3622c2"><span class="section-number-4">9.3.1.</span> Points of similarity:</h4>
+<div class="outline-text-4" id="text-9-3-1">
 <ol class="org-ol">
 <li>Shared goals:</li>
 
@@ -1115,9 +1312,9 @@ I have not personally used MinEmacs, but I rifled fairly extensively through its
 </div>
 </div>
 
-<div id="outline-container-org87338ed" class="outline-4">
-<h4 id="org87338ed"><span class="section-number-4">8.3.2.</span> Differences:</h4>
-<div class="outline-text-4" id="text-8-3-2">
+<div id="outline-container-org5da3c88" class="outline-4">
+<h4 id="org5da3c88"><span class="section-number-4">9.3.2.</span> Differences:</h4>
+<div class="outline-text-4" id="text-9-3-2">
 <ol class="org-ol">
 <li>Installs relatively few packages and vets every single one that <i>is</i> installed for active maintinence, general stability/maturity, etc, like MinEmacs, but still uses much more modern Emacs capabilities and packages, as soon as they <i>are</i> reasonably mature, instead of choosing older packages simply for the sake of longevity.</li>
 <li>Intended to strike a balance between being a great end-user product out of the box <i>while also</i> being a great foundation to build on.</li>
@@ -1135,7 +1332,7 @@ I have not personally used MinEmacs, but I rifled fairly extensively through its
 </div>
 <div id="postamble" class="status">
 <p class="author">Author: Alexis Purslane</p>
-<p class="date">Created: 2024-11-22 Fri 20:24</p>
+<p class="date">Created: 2024-11-22 Fri 21:25</p>
 <p class="validation"><a href="https://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
