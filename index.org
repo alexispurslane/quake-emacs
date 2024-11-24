@@ -2,7 +2,7 @@
 #+OPTIONS: toc:nil
 #+OPTIONS: title:nil
 #+TITLE: Quake Emacs
-#+DESCRIPTION: Lean, fast, focused, and based on the latest Emacs tech: the single-file vanilla-first Emacs anti-distribution
+#+DESCRIPTION: The modern, single-file, vanilla-first Emacs anti-distribution
 #+HTML_HEAD:     <meta property="og:image" content="https://raw.githubusercontent.com/alexispurslane/quake-emacs/main/banner-quake.png" />
 
 #+begin_export html
@@ -86,7 +86,7 @@ If you want to use Emacs, but you:
 
 then Quake Emacs is for you.
 
-Text editors are most often used for three core tasks: *code editing*, *writing*, and *note-taking*. Quake Emacs is a single-file Emacs distribution architected around those three fundamental tasks, aiming to provide a lean, fast, focused, and complete experience for all three right out of the box, while remaining as simple and vanilla as possible, so you can use it as a great foundation for bare-metal Emacs configuration.
+Quake Emacs is a single-file Emacs distribution aiming to provide a the "just works out of the box" experience of an editor like [[https://helix-editor.com/][Helix]], combined with a Doom Emacs-lite opinionated configuration, while still remaining as simple and vanilla-first as possible, so that you can still use and configure it just like regular vanilla Emacs.
 
 ** Table of Contents                                               :TOC_3_org:
   - [[Key Features][Key Features]]
