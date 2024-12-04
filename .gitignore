@@ -1,7 +1,9 @@
 *
 !init.el
 !user.el
+!index.html
 !README.org
+!index.org
 !LICENSE
 !.gitignore
 !.tokignore
