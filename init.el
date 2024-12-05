@@ -52,7 +52,6 @@
 (run-with-timer 5 0 (lambda ()
                         (setq gc-cons-threshold gc-cons-threshold-original)
                         (message "Restored GC cons threshold")))
-(profiler-start 'cpu)
 ;;; ======Prelude======
 (require 'cl-lib)
 (require 'rx)
@@ -727,6 +726,9 @@ configuration"
         :after (god-mode)
         :config
 ;;;;; Make which-key for the top level keybindings show up when you enter evil-god-state
+        (add-hook 'evil-local-mode-hook 
+                  (lambda () (remove-hook 'activate-mark-hook 'evil-visual-activate-hook t)))
+
         (add-hook 'evil-god-state-exit-hook
                   (lambda ()
                       (which-key--hide-popup)))
@@ -825,9 +827,17 @@ configuration"
             "Kill, exit, escape, stop, everything, now, and put me back in the
 current buffer in Normal Mode."
             (interactive)
-            (evil-god-state-bail)
-            (evil-normal-state)
-            (keyboard-escape-quit))
+            (cond ((evil-god-state-p)             (evil-god-state-bail))
+                  ((not (evil-normal-state-p))    (evil-normal-state))
+                  ((eq last-command 'mode-exited) nil)
+                  ((region-active-p)              (deactivate-mark))
+                  ((> (minibuffer-depth) 0)       (abort-recursive-edit))
+                  (current-prefix-arg             nil)
+                  ((> (recursion-depth) 0)        (exit-recursive-edit))
+                  (buffer-quit-function           (funcall buffer-quit-function))
+                  ((not (one-window-p t))         (delete-window))
+                  ((string-match "^ \\*" (buffer-name (current-buffer)))
+                   (bury-buffer))))
         (global-set-key (kbd "<escape>") 'escape-dwim)
         (quake-evil-define-key (god) global-map
             "C-w"      evil-window-map
@@ -1369,4 +1379,3 @@ in `denote-link'."
 ;; Fix the aesthetics
 (quake/set-aesthetics nil)
 (put 'erase-buffer 'disabled nil)
-(profiler-stop)
