@@ -726,6 +726,9 @@ configuration"
         :after (god-mode)
         :config
 ;;;;; Make which-key for the top level keybindings show up when you enter evil-god-state
+        (add-hook 'evil-local-mode-hook 
+                  (lambda () (remove-hook 'activate-mark-hook 'evil-visual-activate-hook t)))
+
         (add-hook 'evil-god-state-exit-hook
                   (lambda ()
                       (which-key--hide-popup)))
