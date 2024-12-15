@@ -548,6 +548,10 @@ Loads:
   bring the ergonomics of modal editors to Emacs without changing
   vanilla behavior as much as possible.
 
+- `expreg' - A version of the famous `expand-region' package that
+  incorporates treesit.el support and behaves in a slightly more
+  simple and predictable way
+
 - `puni' - Puni provides Smartparens-style structural editing
   based on Emacs's already exising structural editing commands,
   instead of reinventing the wheel, meaning that it can take
@@ -582,15 +586,14 @@ Loads:
     ;; Use puni-mode globally and disable it for term-mode.
     (use-package puni
         :defer t
-        :bind (:repeat-map puni-repeat-map
-                           (")" . puni-slurp-forward)
-                           ("}" . puni-barf-forward)
-                           ("(" . puni-slurp-backward)
-                           ("{" . puni-barf-backward)
-                           ("s" . puni-split)
-                           ("c" . puni-convolute)
-                           ("r" . puni-raise)
-                           ("S-S" . puni-splice))
+        (:bind ("C-)" . puni-slurp-forward)
+               ("C-}" . puni-barf-forward)
+               ("C-(" . puni-slurp-backward)
+               ("C-{" . puni-barf-backward)
+               ("C-%" . puni-split)
+               ("C-&" . puni-convolute)
+               ("C-^" . puni-raise)
+               ("C-$" . puni-splice))
         
         :init
         ;; The autoloads of Puni are set up so you can enable `puni-mode` or
@@ -619,6 +622,36 @@ Loads:
 
     (winner-mode 1)
 
+;;;;; Expreg
+
+    ;; substitute for Vim's "inside/around" commands
+    (unless (fboundp 'expreg-expand)
+        (package-vc-install "https://github.com/casouri/expreg"))
+
+;;;;; Define useful editing keys
+    
+    (quake-emacs-define-key global-map
+        "C-x C-S-T"  #'transpose-regions
+        "M-S-U"      #'upcase-dwim
+        "C-S-U"      #'upcase-char
+        "C-S-R"      #'overwrite-mode
+        "M-F"        #'forward-to-word
+        "M-B"        #'backward-to-word
+        "M-A"        #'align-regexp
+        "M-S"        #'sort-lines
+        "M-R"        #'reverse-region
+        "M-j"        #'join-line
+        "C-."        #'repeat
+        "C-'"        #'expreg-expand
+        "C-x @"      #'rectangle-mark-mode
+        "C-="        #'indent-region
+        "M-RET"      #'embark-act
+        "C-RET"      #'embark-dwim)
+    
+    (quake-emacs-define-key icomplete-minibuffer-map
+        "M-RET"   #'embark-act
+        "C-RET"   #'embark-dwim)
+    
 ;;;;; Notes
     (quake-emacs-define-key global-map
         "C-c n" (cons "Notes"
@@ -647,7 +680,6 @@ Loads:
                              "v"   'yas-visit-snippet-file)))
 ;;;;; General Quake-recommended keybindings
     (quake-emacs-define-key global-map
-        "C-c C-p" puni-repeat-map
         "C-c p"   (cons "Profile..."
                         (quake-emacs-create-keymap
                             "t" 'consult-theme
@@ -1081,7 +1113,7 @@ in `denote-link'."
 
     ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
     (use-package mood-line
-        :after (evil doom-themes)
+        :after (doom-themes)
         :custom
         (mood-line-glyph-alist mood-line-glyphs-unicode)
         (mood-line-segment-modal-evil-state-alist 
