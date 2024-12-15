@@ -558,7 +558,8 @@ Loads:
   it can automatically take advantage of tree sitter, because
   Emacs's built in structural editing commands do, instead of
   having to maintian its own library of queries."
-    
+
+;;;;; God Mode    
     (use-package god-mode
         :config
         (defun quake-god-mode-update-cursor-type ()
@@ -577,9 +578,20 @@ Loads:
         (define-key god-local-mode-map (kbd "i") #'god-local-mode)
         (global-set-key (kbd "<escape>") #'(lambda () (interactive) (god-local-mode 1))))
 
+;;;;; Structural editing with Puni Mode
     ;; Use puni-mode globally and disable it for term-mode.
     (use-package puni
         :defer t
+        :bind (:repeat-map puni-repeat-map
+                           (")" . puni-slurp-forward)
+                           ("}" . puni-barf-forward)
+                           ("(" . puni-slurp-backward)
+                           ("{" . puni-barf-backward)
+                           ("s" . puni-split)
+                           ("c" . puni-convolute)
+                           ("r" . puni-raise)
+                           ("S-S" . puni-splice))
+        
         :init
         ;; The autoloads of Puni are set up so you can enable `puni-mode` or
         ;; `puni-global-mode` before `puni` is actually loaded. Only after you press
@@ -587,6 +599,25 @@ Loads:
         (puni-global-mode)
         (add-hook 'term-mode-hook #'puni-disable-puni-mode)
         (add-hook 'eshell-mode-hook #'puni-disable-puni-mode))
+
+;;;;; Repeat Mode
+
+    (repeat-mode 1)
+    (defun repeatize (keymap)
+        "Add `repeat-mode' support to a KEYMAP."
+        (map-keymap
+         (lambda (_key cmd)
+             (when (symbolp cmd)
+                 (put cmd 'repeat-map keymap)))
+         (symbol-value keymap)))
+    (repeatize 'ctl-x-4-map)
+    (repeatize 'ctl-x-5-map)
+    (put 'winner-undo 'repeat-map 'window-prefix-map)
+    (put 'winner-redo 'repeat-map 'window-prefix-map)
+
+;;;;; Winner
+
+    (winner-mode 1)
 
 ;;;;; Notes
     (quake-emacs-define-key global-map
@@ -604,6 +635,9 @@ Loads:
                           "b"     'denote-backlinks
                           "S-B"   'denote-find-backlink
                           "S-R"   'denote-region)))
+    (quake-emacs-define-key global-map
+        "C-x w u"     'winner-undo
+        "C-x w r"     'winner-redo)
 ;;;;; Yasnippet
     (quake-emacs-define-key global-map
         "C-c &"    (cons "Code Snippets..."
@@ -613,6 +647,7 @@ Loads:
                              "v"   'yas-visit-snippet-file)))
 ;;;;; General Quake-recommended keybindings
     (quake-emacs-define-key global-map
+        "C-c C-p" puni-repeat-map
         "C-c p"   (cons "Profile..."
                         (quake-emacs-create-keymap
                             "t" 'consult-theme
