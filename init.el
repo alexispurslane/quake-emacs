@@ -552,6 +552,10 @@ Loads:
   incorporates treesit.el support and behaves in a slightly more
   simple and predictable way
 
+- `whole-line-or-region' - Save you keystrokes and mental load by
+  making all region commands automatically operate on lines when
+  no region is active.
+
 - `puni' - Puni provides Smartparens-style structural editing
   based on Emacs's already exising structural editing commands,
   instead of reinventing the wheel, meaning that it can take
@@ -586,7 +590,7 @@ Loads:
     ;; Use puni-mode globally and disable it for term-mode.
     (use-package puni
         :defer t
-        (:bind ("C-)" . puni-slurp-forward)
+        :bind (("C-)" . puni-slurp-forward)
                ("C-}" . puni-barf-forward)
                ("C-(" . puni-slurp-backward)
                ("C-{" . puni-barf-backward)
@@ -622,11 +626,17 @@ Loads:
 
     (winner-mode 1)
 
-;;;;; Expreg
+;;;;; Whole Line or Region
 
-    ;; substitute for Vim's "inside/around" commands
-    (unless (fboundp 'expreg-expand)
-        (package-vc-install "https://github.com/casouri/expreg"))
+    (use-package whole-line-or-region
+        :after (puni)
+        :config
+        (whole-line-or-region-global-mode)
+        ;; Puni overrides some of the region commands, so we need
+        ;; to advise those new commands to work with
+        ;; `whole-line-or-region'
+        (advice-add 'puni-kill-region :around (lambda (oldfun &rest r)
+                                                  (apply #'whole-line-or-region-wrap-modified-region oldfun (or r '(1))))))
 
 ;;;;; Define useful editing keys
     
@@ -642,7 +652,8 @@ Loads:
         "M-R"        #'reverse-region
         "M-j"        #'join-line
         "C-."        #'repeat
-        "C-'"        #'expreg-expand
+        "C-'"        #'puni-expand-region
+        "C-\""       #'puni-contract-region
         "C-x @"      #'rectangle-mark-mode
         "C-="        #'indent-region
         "M-RET"      #'embark-act
