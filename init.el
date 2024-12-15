@@ -97,14 +97,12 @@ org-agenda files will be placed in by default. Always ends in a slash."
 (defcustom quake-enabled-layers
     (list
      #'core/usability-layer
-     #'core/editor-layer
-     #'optional/god-layer ;; or #'optional/devil-layer
+     #'core/keys-layer
      #'task/coding-layer
      #'task/writing-layer
      #'task/notes-layer
      #'core/aesthetic-layer
-     #'optional/bling-layer
-     )
+     #'optional/bling-layer)
     "The function symbols for the layers that Quake Emacs
 should enable on startup.
 
@@ -117,21 +115,6 @@ YOURSELF, IT MAY BREAK UPDATES."
     "The theme quake loads and uses at startup."
     :group 'quake
     :type 'symbol)
-
-(defcustom quake-evil-text-objects
-    '(("f" . "function")
-      ("s" . ("list" "conditional" "loop" "assignment" "call" "block" "statement"))
-      ("t" . "class")
-      ("c" . "comment")
-      ("a" . "parameter")
-      ("T" . "test"))
-    "The text objects added to evil mode at startup.
-
-A list of pairs, where the first element is a string, KEY, and
-the second object is either a string or a list containing the
-query to be made for that text object minus the .inner and .outer
-qualifiers."
-    :group 'quake)
 
 (defcustom quake-term-preferred-command 'eshell
     "Which Emacs command Quake Emacs's popup terminal will trigger.
@@ -343,6 +326,7 @@ passed in as an argument."
 
     (use-package which-key
         :init (which-key-mode)
+        :bind (("C-?" . which-key-show-top-level))
         :diminish which-key-mode
         :custom
         (which-key-idle-delay 0.1)
@@ -498,25 +482,7 @@ targets."
         (wgrep-auto-save-buffer t)
         (wgrep-enable-key "i")))
 
-
-;;; ======Non-Emacs Keybindings======
 ;;;; Custom keybinding macros, to replace `general'
-(defmacro quake-emacs-define-key (keymaps &rest args)
-    "Define the given keys in ARGS for the given KEYMAPS.
-ARGS is a plist of the form (KEY DEF  KEY DEF). It must have an
-even number of elements. If DEF is a symbol or function value,
-that is what will be called when the key is pressed if the keymap
-is active. If DEF is a `cons' cell, the car is the label that
-will be shown in which-key, and the cadr is either a symbol or a
-function."
-    (declare (indent defun))
-    (if (cl-evenp (length args))
-            `(progn
-                 ,@(cl-loop for (key def) on args by #'cddr
-                            append (cl-loop 
-                                    for keymap in (if (symbolp keymaps) (list keymaps) keymaps)
-                                    collect `(define-key ,keymap (kbd ,key) ,def))))
-        (error "Expected even number of arguments in ARGS so every key chord has a corresponding definition.")))
 (defmacro quake-evil-define-key (states keymaps &rest args)
     "Define the given keys in ARGS in STATES for the given KEYMAPS.
 ARGS is a plist of the form (KEY DEF  KEY DEF). It must have an
@@ -533,14 +499,7 @@ function."
                                     for keymap in (if (symbolp keymaps) (list keymaps) keymaps)
                                     collect `(evil-define-key* ',states ,keymap (kbd ,key) ,def))))
         (error "Expected even number of arguments in ARGS so every key chord has a corresponding definition.")))
-(defmacro quake-emacs-create-keymap (&rest args)
-    "Create a new keymap with the given key definitions and return it.
-Uses the same syntax and semantics as `quake-emacs-define-key'."
-    (declare (indent defun))
-    (cl-with-gensyms (keymap)
-        `(let ((,keymap (make-keymap)))
-             (quake-emacs-define-key ,keymap ,@args)
-             ,keymap)))
+
 (defmacro quake-evil-create-keymap (states &rest args)
     "Create a new keymap with the given key definitions and return it.
 Uses the same syntax and semantics as `quake-emacs-define-key'."
@@ -549,302 +508,166 @@ Uses the same syntax and semantics as `quake-emacs-define-key'."
         `(let ((,keymap (make-keymap)))
              (quake-evil-define-key ,states ,keymap ,@args)
              ,keymap)))
-;;;; Core largely unopinionated evil-mode layer
-(defun core/editor-layer ()
-    "'Emacs is a great OS, if only it had a good editor.' With
-  the powerful text-object based command language of Vim, and the
-  flexibility of Emacs, at your command, Evil is that editor.
 
-  Loads:
+(defmacro quake-emacs-define-key (keymaps &rest args)
+    "Define the given keys in ARGS for the given KEYMAPS.
+ARGS is a plist of the form (KEY DEF  KEY DEF). It must have an
+even number of elements. If DEF is a symbol or function value,
+that is what will be called when the key is pressed if the keymap
+is active. If DEF is a `cons' cell, the car is the label that
+will be shown in which-key, and the cadr is either a symbol or a
+function."
+    (declare (indent defun))
+    (if (cl-evenp (length args))
+            `(progn
+                 ,@(cl-loop for (key def) on args by #'cddr
+                            append (cl-loop 
+                                    for keymap in (if (symbolp keymaps) (list keymaps) keymaps)
+                                    collect `(define-key ,keymap (kbd ,key) ,def))))
+        (error "Expected even number of arguments in ARGS so every key chord has a corresponding definition.")))
 
-  - `evil', the Emacs editor of choice
-  - `evil-collection', to integrate Evil mode with everything else
-  - `evil-cleverparens', to give you proper S-expr editing
-    capabilities, since you'll be doing a lot of that"
-
-;;;;; Evil mode itself (and associated integrations)
-    (use-package evil
-        :custom
-        (evil-want-integration t)
-        (evil-want-minibuffer t)
-        (evil-want-keybinding nil)
-        (evil-want-C-u-scroll t)
-        (evil-want-C-i-jump nil)
-        (evil-undo-system 'undo-redo)
-        (evil-kill-on-visual-paste nil) ;; oh thank god
-        (evil-move-beyond-eol t) ;; so that it's easier to evaluate sexprs in normal mode
-        :config
-        (evil-mode 1) 
-        
-;;;;; Custom evil mode key bindings
-        ;; Make :q close the buffer and window, not quit the entire
-        ;; Emacs application (we never leave Emacs!)
-        (global-set-key [remap evil-quit] 'kill-buffer-and-window)
-
-        ;; Override evil mode's exceptions to defaulting to normal-mode
-        (evil-set-initial-state 'enlight-mode 'motion)
-        (evil-set-initial-state 'minibuffer-mode 'insert)
-
-;;;;;; CUA integration
-        (add-hook 'evil-insert-state-entry-hook (lambda () (cua-mode 1)))
-        (add-hook 'evil-normal-state-entry-hook (lambda () (cua-mode -1)))
-;;;;;; Miscillanious useful keybindings for emacs capabilities
-        (quake-evil-define-key (normal visual) global-map
-            "g ."   'embark-act
-            "g RET" 'embark-dwim
-            ;; buffers
-            "gb"   'evil-switch-to-windows-last-buffer
-            ;; org mode
-            "gt"   'org-toggle-checkbox
-            ;; fill-region >> vim gqq
-            "gq"   'fill-region-as-paragraph
-            ;; Support for visual fill column mode and visual line mode
-            ;; Make evil-mode up/down operate in screen lines instead of logical lines
-            "j"    'evil-next-visual-line
-            "k"    'evil-previous-visual-line
-            ;; outline keybindings
-            "gh"   'outline-up-heading
-            "gj"   'outline-forward-same-level
-            "gk"   'outline-backward-same-level
-            "gl"   'outline-next-visible-heading
-            "gu"   'outline-previous-visible-heading) 
-
-        (quake-evil-define-key (normal motion) global-map
-            ;; tab bar mode
-            "gR" 'tab-rename
-            "gn" 'tab-bar-new-tab
-            "gx" 'tab-bar-close-tab
-            "gX" 'tab-bar-close-other-tabs
-            ;; Nice commenting
-            "gc" 'comment-region
-            "gC" 'uncomment-region)
-
-        (quake-evil-define-key (normal motion) (outline-minor-mode-map org-mode-map outline-mode-map diff-mode-map)
-            "TAB" 'evil-toggle-fold)
-        (quake-evil-define-key (normal motion) (org-mode-map)
-            "RET" 'evil-org-return))
-
-    (use-package evil-collection
-        :after (evil)
-        :config
-        (evil-collection-init))
-
-    (use-package evil-cleverparens
-        :after (evil)
-        :hook ((lisp-mode . evil-cleverparens-mode)
-               (emacs-lisp-mode . evil-cleverparens-mode))) 
-
-;;;;; Evil mode text object support
-
-    ;; NOTE: Eventually replace this *entire* boondoggle with
-    ;; [[https://github.com/dvzubarev/evil-ts-obj/tree/master]],
-    ;; which provides an even better set of text objects, and a
-    ;; far more complete set of operations on them, instead of me
-    ;; manually having to implement them. This would mean *all*
-    ;; tree-sitter langauges get slurp/barf/convolute/etc,
-    ;; meaning that we could eliminate evil-cleverparents and
-    ;; just have a generalized structural editing system on our
-    ;; hands. Currently however, it depends on Emacs 30.0.50.
-    (use-package evil-textobj-tree-sitter
-        :after (evil evil-collection)
-        :config
-        ;; Thanks to foxfriday/evil-ts for this one
-        (defun evil-ts-expand-region ()
-            "Expand selection to the closest tree-sitter parent node."
-            (let* ((point (point))
-                   (mark (or (mark t) point))
-                   (start (min point mark))
-                   (end (max point mark))
-                   (node (treesit-node-at start))
-                   (parent (treesit-parent-until node
-                                                 (lambda (n) (and (> start (treesit-node-start  n))
-							                                      (< end (treesit-node-end n))))
-                                                 nil))
-                   (pstart (if parent (treesit-node-start parent) nil))
-                   (pend (if parent (treesit-node-end parent) nil)))
-                (when parent
-	                (goto-char pstart)
-	                (list pstart pend))))
-
-        ;; make "tree sitter expand region" a manipulable text object
-        (evil-define-text-object evil-ts-text-obj-expand-region (count &optional beg end type)
-            (evil-ts-expand-region))
-
-        ;; bind it to "x"
-        (define-key evil-outer-text-objects-map "x" 'evil-ts-text-obj-expand-region)
-        (define-key evil-inner-text-objects-map "x" 'evil-ts-text-obj-expand-region)
-
-        ;; This being a macro is necessary because define-key does not
-        ;; evaluate its arguments so it won't work in a regular loop.
-        (eval-when-compile
-            (defmacro define-textobjs ()
-                "Loop through `quake-evil-text-objects' and construct
-a flat list of the `define-key' expressions to set the text objects up."
-                `(progn ,@(cl-loop for thing in quake-evil-text-objects
-                                   for key = (car thing)
-                                   for query = (if (listp (cdr thing)) (cdr thing) (list (cdr thing)))
-
-                                   for outer-query = (mapcar (lambda (x) (concat x ".outer")) query)
-                                   for inner-query = (mapcar (lambda (x) (concat x ".inner")) query)
-
-                                   for docname-start = (concat "go-to-next-" (car query) "-start")
-                                   for docname-end = (concat "go-to-next-" (car query) "-end")
-
-                                   appending
-                                   `((define-key evil-outer-text-objects-map ,key
-                                                 (evil-textobj-tree-sitter-get-textobj ,outer-query))
-			                         (define-key evil-inner-text-objects-map ,key
-                                                 (evil-textobj-tree-sitter-get-textobj ,inner-query))
-			                         (quake-evil-define-key (normal visual) global-map
-                                         ;; go to next start
-                                         ,(concat "[" key) (cons
-                                                            ,(concat "goto-textobj-" (car query) "-start")
-                                                            (lambda ()
-                                                                (interactive)
-                                                                (evil-textobj-tree-sitter-goto-textobj ,(car outer-query) t nil)))
-                                         ;; go to next end
-                                         ,(concat "]" key) (cons
-                                                            ,(concat "goto-textobj-" (car query) "-end")
-                                                            (lambda ()
-                                                                (interactive)
-                                                                (evil-textobj-tree-sitter-goto-textobj ,(car outer-query) nil t)))))
-                                   into exprs
-
-                                   finally (return exprs)))))
-        (define-textobjs)))
-;;;; God-Mode based leader key layer
+(defmacro quake-emacs-create-keymap (&rest args)
+    "Create a new keymap with the given key definitions and return it.
+Uses the same syntax and semantics as `quake-emacs-define-key'."
+    (declare (indent defun))
+    (cl-with-gensyms (keymap)
+        `(let ((,keymap (make-keymap)))
+             (quake-emacs-define-key ,keymap ,@args)
+             ,keymap)))
+;;;; Core Keybindings
 (make-obsolete 'optional/devil-layer "an obsolete keybinding layer that required too much maintinence to be practical." "Jun 1st, 2024")
 
-(defun optional/god-layer ()
-    "This layer sets up and configures `god-mode' to act like a leader
-key, so that you can take advantage of all existing Emacs
-keybindings and documentation, while having something close to
-the ergonomics of a true leader key. This is the recommended
-configuration"
-    (use-package god-mode :after (evil))
-    (use-package evil-god-state
-        :after (god-mode)
-        :config
-;;;;; Make which-key for the top level keybindings show up when you enter evil-god-state
-        (add-hook 'evil-local-mode-hook 
-                  (lambda () (remove-hook 'activate-mark-hook 'evil-visual-activate-hook t)))
+(defun core/keys-layer ()
+    "Defines all the custom keybindings for Quake Emacs and pull
+in god mode, since both evil and non-evil users willprobably want it.
 
-        (add-hook 'evil-god-state-exit-hook
-                  (lambda ()
-                      (which-key--hide-popup)))
-        (add-hook 'evil-god-state-entry-hook
-                  (lambda ()
-                      (which-key--create-buffer-and-show nil
-                                                         nil
-                                                         (lambda (x) (and (not (null (car x)))
-                                                                          (not (null (cdr x)))))
-                                                         "Top-level bindings")))
+Loads:
+
+- `god-mode' - God mode provides a mode where you can run all
+  normal Emacs commands without modifier keys. A useful way to
+  bring the ergonomics of modal editors to Emacs without changing
+  vanilla behavior as much as possible.
+
+- `puni' - Puni provides Smartparens-style structural editing
+  based on Emacs's already exising structural editing commands,
+  instead of reinventing the wheel, meaning that it can take
+  advantage of the syntax tables already available for those
+  commands in most language modes instead of having to write
+  custom language specific logic itself, and integrate better
+  with existing Emacs behavior and commands. It also means that
+  it can automatically take advantage of tree sitter, because
+  Emacs's built in structural editing commands do, instead of
+  having to maintian its own library of queries."
+    
+    (use-package god-mode
+        :config
+        (defun quake-god-mode-update-cursor-type ()
+            (setq cursor-type (if (or god-local-mode buffer-read-only) 'box 'bar)))
+
+        (add-hook 'post-command-hook #'quake-god-mode-update-cursor-type)
+        (defun quake-god-mode-toggle-on-overwrite ()
+            "Toggle god-mode on overwrite-mode."
+            (if (bound-and-true-p overwrite-mode)
+                    (god-local-mode-pause)
+                (god-local-mode-resume)))
+
+        (add-hook 'overwrite-mode-hook #'quake-god-mode-toggle-on-overwrite)
+
+        (define-key god-local-mode-map (kbd ".") #'repeat)
+        (define-key god-local-mode-map (kbd "i") #'god-local-mode)
+        (global-set-key (kbd "<escape>") #'(lambda () (interactive) (god-local-mode 1))))
+
+    ;; Use puni-mode globally and disable it for term-mode.
+    (use-package puni
+        :defer t
+        :init
+        ;; The autoloads of Puni are set up so you can enable `puni-mode` or
+        ;; `puni-global-mode` before `puni` is actually loaded. Only after you press
+        ;; any key that calls Puni commands, it's loaded.
+        (puni-global-mode)
+        (add-hook 'term-mode-hook #'puni-disable-puni-mode)
+        (add-hook 'eshell-mode-hook #'puni-disable-puni-mode))
+
 ;;;;; Notes
-        (quake-emacs-define-key global-map
-            "C-c n" (cons "Notes"
-                          (quake-emacs-create-keymap
-                              "s"     'denote-silo
-                              "c"     'org-capture
-                              "l"     'org-store-link
-                              "n"     'consult-notes
-                              "i"     'denote-link-global
-                              "S-I"   'denote-link-after-creating
-                              "r"     'denote-rename-file
-                              "k"     'denote-keywords-add
-                              "S-K"   'denote-keywords-remove
-                              "b"     'denote-backlinks
-                              "S-B"   'denote-find-backlink
-                              "S-R"   'denote-region)))
+    (quake-emacs-define-key global-map
+        "C-c n" (cons "Notes"
+                      (quake-emacs-create-keymap
+                          "s"     'denote-silo
+                          "c"     'org-capture
+                          "l"     'org-store-link
+                          "n"     'consult-notes
+                          "i"     'denote-link-global
+                          "S-I"   'denote-link-after-creating
+                          "r"     'denote-rename-file
+                          "k"     'denote-keywords-add
+                          "S-K"   'denote-keywords-remove
+                          "b"     'denote-backlinks
+                          "S-B"   'denote-find-backlink
+                          "S-R"   'denote-region)))
 ;;;;; Yasnippet
-        (quake-emacs-define-key global-map
-            "C-c &"    (cons "Code Snippets..."
-                             (quake-emacs-create-keymap
-                                 "n"   'yas-new-snippet
-                                 "s"   'yas-insert-snippet
-                                 "v"   'yas-visit-snippet-file)))
+    (quake-emacs-define-key global-map
+        "C-c &"    (cons "Code Snippets..."
+                         (quake-emacs-create-keymap
+                             "n"   'yas-new-snippet
+                             "s"   'yas-insert-snippet
+                             "v"   'yas-visit-snippet-file)))
 ;;;;; General Quake-recommended keybindings
-        (quake-emacs-define-key global-map
-            "C-c p"   (cons "Profile..."
-                            (quake-emacs-create-keymap
-                                "t" 'consult-theme
-                                "f" (cons "Open framework config"
-                                          (lambda () (interactive) (find-file "~/.emacs.d/init.el")))
-                                "u" (cons "Open user config"
-                                          (lambda () (interactive) (find-file "~/.quake.d/user.el")))
-                                "r" 'restart-emacs
-                                "l" (cons "Reload user config"
-                                          (lambda () (interactive) (load-file "~/.emacs.d/init.el")))))
+    (quake-emacs-define-key global-map
+        "C-c p"   (cons "Profile..."
+                        (quake-emacs-create-keymap
+                            "t" 'consult-theme
+                            "f" (cons "Open framework config"
+                                      (lambda () (interactive) (find-file "~/.emacs.d/init.el")))
+                            "u" (cons "Open user config"
+                                      (lambda () (interactive) (find-file "~/.quake.d/user.el")))
+                            "r" 'restart-emacs
+                            "l" (cons "Reload user config"
+                                      (lambda () (interactive) (load-file "~/.emacs.d/init.el")))))
 ;;;;;; Opening things
-            "C-c o"     (cons "Open..."
-                              (quake-emacs-create-keymap
-                                  "w"   'eww
-                                  "a"   'org-agenda
-                                  "="   'calc
-                                  "s"   (cons "Open new shell"
-                                              (lambda () (interactive)
-                                                  (let ((new-shell-frame (make-frame)))
-                                                      (select-frame new-shell-frame)
-                                                      (funcall quake-term-preferred-command 'new))))
-                                  "-"   'dired
-                                  "T"   'treemacs
-                                  "t"   'toggle-frame-tab-bar
-                                  "m"   'gnus-other-frame
-                                  "d"   'word-processing-mode
-                                  "S"   'scratch-window-toggle))
+        "C-c o"     (cons "Open..."
+                          (quake-emacs-create-keymap
+                              "w"   'eww
+                              "a"   'org-agenda
+                              "="   'calc
+                              "s"   (cons "Open new shell"
+                                          (lambda () (interactive)
+                                              (let ((new-shell-frame (make-frame)))
+                                                  (select-frame new-shell-frame)
+                                                  (funcall quake-term-preferred-command 'new))))
+                              "-"   'dired
+                              "T"   'treemacs
+                              "t"   'toggle-frame-tab-bar
+                              "m"   'gnus-other-frame
+                              "d"   'word-processing-mode
+                              "S"   'scratch-window-toggle))
 ;;;;;; Top-level keybindings for convenience
-            "C-~" 'shell-toggle
-            "C-:" 'pp-eval-expression
-            "C-;" 'execute-extended-command
-;;;;;; File and directory manpulation
-            "C-x C-x"   'delete-file
-            "C-x C-S-x" 'delete-directory
+        "C-~" 'shell-toggle
+        "C-:" 'pp-eval-expression
+        "C-;" 'execute-extended-command
 ;;;;;; Buffer manipulation
-            "C-x S-K" 'kill-current-buffer
-            "C-x B"   'ibuffer
+        "C-x S-K" 'kill-current-buffer
+        "C-x B"   'ibuffer
 ;;;;;; Project.el
-            "C-x p E" 'flymake-show-project-diagnostics
+        "C-x p E" 'flymake-show-project-diagnostics
 ;;;;;; Eglot
-            "C-c l"   (cons "LSP Server..."
-                            (quake-emacs-create-keymap
-                                "E" 'flymake-show-buffer-diagnostics
-                                "e" 'consult-flymake
-                                "s" 'eglot
-                                "a" 'eglot-code-actions
-                                "r" 'eglot-rename
-                                "h" 'eldoc
-                                "f" 'eglot-format
-                                "F" 'eglot-format-buffer
-                                "R" 'eglot-reconnect))
+        "C-c l"   (cons "LSP Server..."
+                        (quake-emacs-create-keymap
+                            "E" 'flymake-show-buffer-diagnostics
+                            "e" 'consult-flymake
+                            "s" 'eglot
+                            "a" 'eglot-code-actions
+                            "r" 'eglot-rename
+                            "h" 'eldoc
+                            "f" 'eglot-format
+                            "F" 'eglot-format-buffer
+                            "R" 'eglot-reconnect))
 
 ;;;;;; Helpful
-            "C-h v" 'helpful-variable
-            "C-h f" 'helpful-callable
-            "C-h k" 'helpful-key
-            "C-h x" 'helpful-command
-            )
-;;;;; Core keybindings that make all this work
-        (defun escape-dwim ()
-            "Kill, exit, escape, stop, everything, now, and put me back in the
-current buffer in Normal Mode."
-            (interactive)
-            (cond ((evil-god-state-p)             (evil-god-state-bail))
-                  ((not (evil-normal-state-p))    (evil-normal-state))
-                  ((eq last-command 'mode-exited) nil)
-                  ((region-active-p)              (deactivate-mark))
-                  ((> (minibuffer-depth) 0)       (abort-recursive-edit))
-                  (current-prefix-arg             nil)
-                  ((> (recursion-depth) 0)        (exit-recursive-edit))
-                  (buffer-quit-function           (funcall buffer-quit-function))
-                  ((not (one-window-p t))         (delete-window))
-                  ((string-match "^ \\*" (buffer-name (current-buffer)))
-                   (bury-buffer))))
-        (global-set-key (kbd "<escape>") 'escape-dwim)
-        (quake-evil-define-key (god) global-map
-            "C-w"      evil-window-map
-            "C-w C-u"  'winner-undo)
-        (quake-evil-define-key (motion normal visual) override-global-map
-            "<escape>" 'escape-dwim
-            "SPC"      'evil-execute-in-god-state)))
+        "C-h v" 'helpful-variable
+        "C-h f" 'helpful-callable
+        "C-h k" 'helpful-key
+        "C-h x" 'helpful-command))
+
 ;;; ======Task Specific Layers======
 ;;;; Coding layer
 (defun task/coding-layer ()
@@ -1069,6 +892,7 @@ current buffer in Normal Mode."
     (use-package darkroom
         :commands (darkroom-mode darkroom-tentative-mode))
 
+    (defvar *previous-line-spacing* nil)
     (define-minor-mode word-processing-mode
         "Toggle Word Processing mode.
 Interactively with no argument, this command toggles the mode. A
@@ -1084,19 +908,26 @@ face to iA Writer Quattro V or your choice of writing-specific
 faces, and the flymake `proselint' backend is enabled."
         :init-value nil
         :lighter " Word Processing"
-        (setq line-spacing 0.1)
-        (column-number-mode -1)
-        (ligature-mode -1)
-        (prettify-symbols-mode -1)
-        ;; Less distracting UI
-        (setq left-fringe-width 0)
-        (setq right-fringe-width 0)
-        (darkroom-mode 1)
-        (buffer-face-mode 1)
-        ;; Proselint
-        (flymake-mode)
-        ;; Spellcheck
-        (flyspell-mode)))
+        (if word-processing-mode
+                (progn
+                    (setq *previous-line-spacing* line-spacing)
+                    (setq line-spacing 0.1)
+                    (column-number-mode -1)
+                    (ligature-mode -1)
+                    (darkroom-mode 1)
+                    (buffer-face-mode 1)
+                    (flymake-mode 1)
+                    (flyspell-mode 1)
+                    (prettify-symbols-mode -1))
+            (progn
+                (setq line-spacing *previous-line-spacing*)
+                (column-number-mode 1)
+                (ligature-mode 1)
+                (darkroom-mode 0)
+                (buffer-face-mode 0)
+                (flymake-mode 0)
+                (flyspell-mode 0)
+                (prettify-symbols-mode 1)))))
 
 ;;;; Zettelkasten note-taking layer
 (defun task/notes-layer ()
@@ -1250,7 +1081,7 @@ in `denote-link'."
           (propertize "QUAKE EMACS" 'display (create-image "~/.emacs.d/banner-quake.png"))
           "\n"
           "\n"
-          (propertize  (format "Started in %s\n" (emacs-init-time)) 'face '(:inherit 'font-lock-comment-face))
+          (propertize  (format "Started in %s\n" (emacs-init-time)) 'face '(:inherit font-lock-comment-face))
           (enlight-menu
            '(("Org Mode"
 	          ("Org-Agenda (current day)" (org-agenda nil "a") "a")
@@ -1265,7 +1096,7 @@ in `denote-link'."
 
     (use-package eldoc-box
         :config
-        (set-face-attribute 'eldoc-box-body nil :inherit 'variable-pitch)
+        ;; (set-face-attribute 'eldoc-box-body nil :inherit 'variable-pitch)
         (set-face-foreground 'border (face-background 'mode-line))
         :hook (eldoc-mode . eldoc-box-hover-at-point-mode))
 
