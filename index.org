@@ -61,12 +61,14 @@ img {
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/main/banner-quake.png" height="128" style="display: block; margin: 0 auto"/>
+  
   <h1>Quake Emacs</h1>
+  
   <p style="text-align: center;">Lean, fast, focused, and based on the latest Emacs tech</p>
-  <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/badge.svg"/>
+    <img src="https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/badge.svg"/>
   <br/>
   <a href="https://github.com/alexispurslane/quake-emacs">
-  <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white"/>
+    <img src="https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white"/>
   </a>
 </div>
 #+end_export
@@ -79,14 +81,14 @@ img {
   </p>
 #+end_export
 
+Quake Emacs is a single-file [[https://www.gnu.org/software/emacs/][Emacs]] distribution aiming to provide the "just works out of the box" experience and opinionated, sane defaults of an editor like [[https://helix-editor.com/][Helix]] or [[https://github.com/doomemacs/doomemacs][DOOM Emacs]], while remaining as minimal a layer of abstraction as possible on top of Emacs, enhancing, rearranging, and /deeply/ integrating with the plethora of powerful capabilities already available in vanilla Emacs to make something that's great to use, instead of reinventing the wheel or building an entirely new editor on top. 
+
 If you want to use Emacs, but you:
 
 1. just want to sit down and have your new text editor work well and look good /right away/, and
 2. don't want the complexity, abstraction, and lack of documentation of a larger Emacs distribution or configuration framework,
 
 then Quake Emacs is for you.
-
-Quake Emacs is a single-file Emacs distribution aiming to provide a the "just works out of the box" experience of an editor like [[https://helix-editor.com/][Helix]], combined with a Doom Emacs-lite opinionated configuration, while still remaining as simple and vanilla-first as possible, so that you can still use and configure it just like regular vanilla Emacs.
 
 ** Table of Contents                                               :TOC_3_org:
   - [[Key Features][Key Features]]
@@ -103,32 +105,40 @@ Quake Emacs is a single-file Emacs distribution aiming to provide a the "just wo
     - [[Tree Sitter Mode][Tree Sitter Mode]]
     - [[Built-In Language Support Matrix][Built-In Language Support Matrix]]
   - [[Personal Configuration and Extra Layers][Personal Configuration and Extra Layers]]
-  - [[Quake Leader Key Keybindings][Quake Leader Key Keybindings]]
+  - [[God Mode Keybindings][God Mode Keybindings]]
   - [[Inspiration and Prior Art][Inspiration and Prior Art]]
     - [[Doom Emacs][Doom Emacs]]
     - [[MinEmacs][MinEmacs]]
     - [[Emacs Prelude][Emacs Prelude]]
+- [[Footnotes][Footnotes]]
 
 ** Key Features
 - 🎯 *Lean and focused*: Quake Emacs includes only the packages and configuration needed for a beautiful and modern coding experience, a distraction-free writing experience, and a powerful note-taking experience. It even mostly does away with the need for large language-specific collections of packages through the use of tree-sitter and LSP support! Consider Quake Emacs part of your editor, just there to give you a good out of the box experience to jump off from and make your own.
 
-- 🚀 *Fast*: On my machine, Quake Emacs loads in under 0.5 seconds. Every single package is carefully chosen with performance in mind, and the default load order is tuned obsessively to ensure Emacs starts as fast as possible. Enjoy fast startup times, or use it as extra headroom to add your own packages.
+- 🚀 *Fast*: On my machine, Quake Emacs loads in under 0.38 seconds. Every single package is carefully chosen with performance in mind, and the default load order is tuned obsessively to ensure Emacs starts as fast as possible. Enjoy fast startup times, or use it as extra headroom to add your own packages.
 
 - 🥇 *Just one single file*: The Quake code itself is only one simple, extensively documented, self-contained 1000-line file. That's it. Just put the file in your Emacs directory and go. No external commands, no multiple thousands of lines of Lisp scattered throughout hundreds of files across interminable layers of abstraction. If you want to know where something is, or how it works, it's easy to find.
 
-- 🌐 *Modern and vanilla*: Despite having an opinionated UX out of the box, Quake Emacs prioritizes [[https://b.tuxes.uk/avoiding-emacs-bankruptcy.html][using Emacs's built-in capabilities plus packages that integrate well with them]] as much as feasibly possible. No more extra layers of abstraction, no more dozens or hundreds of redundant packages, no more complex configuration to integrate everything, and no more Emacs documentation not applying to you because of the Emacs distribution you're using. Quake Emacs even uses [[https://github.com/emacsorphanage/god-mode][god-mode]] to provide Doom-style leader key keybindings *while reusing all of Emacs's default keybindings and mnemonics*, so all existing documentation for Emacs will still be usable for you!
+- 🌐 *Modern and vanilla*: Despite having an opinionated UX out of the box, Quake Emacs prioritizes [[https://b.tuxes.uk/avoiding-emacs-bankruptcy.html][using Emacs's built-in capabilities plus packages that integrate well with them]] as much as feasibly possible. No more extra layers of abstraction, no more dozens or hundreds of redundant packages, no more complex configuration to integrate everything, and no more Emacs documentation not applying to you because of the Emacs distribution you're using. Quake Emacs even uses [[https://github.com/emacsorphanage/god-mode][god-mode]] to provide the ergonomic benefits of modal editing *while reusing all of Emacs's default keybindings and mnemonics*, so all existing documentation for Emacs will still be usable for you!
 
 ** Justification
 
 With the introduction of various modern Emacs features in the last few years, and the emergence of a new generation of Emacs packages focused on integrating with vanilla Emacs, Emacs distributions as we have known them are less and less relevant.
 
-Now that =use-package= is included with Emacs by default, configuration frameworks are less necessary then ever, as vanilla Emacs's built-in capabilities are likely clearer, faster, and more powerful than whatever a configuration framework could offer, with the benefit of also being the community standard. In my experience, Doom Emacs's ideosyncratic package management system was less clear, less-organized, less-documented, and much less reliable than what is now built into Emacs 29.
+Now that =use-package= is included with Emacs by default, configuration frameworks are less necessary then ever, as vanilla Emacs's newly built-in capabilities for reproducable, declaratively specified package management and organized configuration specification are likely much better than whatever a configuration framework could offer, with the benefit of also being the community standard. In my experience, Doom Emacs's ideosyncratic package management system was less clear, since it depended on state that must partially be managed outside the editor in the form of a terminal command in addition to in-editor state, less-organized, as customization could not naturally be grouped with the packages that customization modified, less-documented, since every exising package provides a =use-package= spec, and =use-package= has an excellent and complete manual, while DOOM's configuration framework is partially documented, and much less reliable than what is now built into Emacs 29.
 
-Likewise, with the inclusion of =eglot= and =tree-sitter=, language-specific "layers" that compose five or six packages, together with a lot of configuration, in order to give a decent experience, are mostly a thing of the past. Tree-Sitter modes may still need to be provided, but these can be very simple and direct mappings from an AST to font locking and syntax tables, simple enough that a huge breadth of them can eventually be included by default in Emacs, as opposed to the previous situation of various competing, often very imperfect, highlighting packages, and then several packages to provide completions and linting and other amenities. Quake Emacs leverages these powerful built-in modern Emacs features to give you the experience of an Emacs configuration framework and distribution, without all the downsides.
+Likewise, with the inclusion of =eglot= and =tree-sitter=, language-specific "layers" that compose five or six packages (one for navigation, one for refactoring and snippets, one for completion, one for syntax highlighting, one for linting, etc), together with a lot of configuration, in order to give a decent experience, are mostly a thing of the past. One tree-sitter mode may still need to be provided, but these can be very simple and direct mappings from an AST to font locking and syntax tables, simple enough that a huge breadth of them can eventually be included by default in Emacs. Quake Emacs leverages these powerful built-in modern Emacs features to give you the experience of an Emacs configuration framework and distribution, without all the complexity.
 
-Similarly, with the creation of amazing packages like =vertico=, =orderless=, and =corfu=, the need to manually integrate added features from various packages into your Emacs system and other Emacs packages is basically obsolete: these packages integrate directly with Emacs, by hooking into or outright replacing Emacs's built in functions for performing various actions, so there's no need to do anything. As a result, much of the configuration work Emacs distributions needed to do to wire everything up simply doesn't need to be done.
+Additionally, while one of the major problems with most tree sitter structural editing modes in Emacs that we've seen so far, such as [[https://github.com/mickeynp/combobulate][Combobulate]] and [[https://github.com/ethan-leba/tree-edit][tree-edit]], is that they must maintain their own library of syntax tree queries for various navigation motions and text objects, and their commands become useless outside of the relatively limited set of languages that have tree sitter support, if you build structural editing support on top of Emacs's [[https://dawranliou.com/blog/structural-editing-in-vanilla-emacs/][built in structural editing commands]], which use Emacs major mode syntax tables, then those structural editing commands are always going to be present and at least somewhat useful wherever you go and whatever language you're editing, so you can begin to truly integrate them into your editing vocabulary, and they can automatically use either tree sitter, when it's available, or old fashioned regular expressions when it's not, since syntax tables abstract out the specific parsing logic being used and tree sitter modes implement them automatically in terms of the tree sitter syntax tree whereas regular modes use regexes. This also means that one does not have to maintain a custom tree sitter query library for each language, but instead can just rely on the queries each Emacs tree sitter mode already implements for syntax highlighting and the syntax table via Emacs's existing structural commands, decreasing maintenence burden and increasing versitility![fn:1] Thus, Quake Emacs uses [[https://github.com/AmaiKinono/puni][puni]] to add structural editing, taking maximal advantage of tree sitter /by leveraging already exising vanilla Emacs features!/
+
+Similarly, with the creation of amazing packages like =orderless=, =marginalia= and =corfu=, the need to manually integrate added features from various packages into your Emacs system and other Emacs packages is basically obsolete: these packages integrate directly with Emacs, by hooking into or outright replacing Emacs's built in functions for performing various actions, so there's no need to do anything. No more need for packages to hard-code integration with your completion framework, for instance, as they did with =company-mode=; instead, =corfu= can just hook into =completion-at-point-functions= at work out of the box, for instance. As a result, much of the configuration work Emacs distributions needed to do to wire everything up simply doesn't need to be done. Likewise, since =icomplete-vertical= got integrated into Emacs, and Protesilaos Stavrou discovered how to make it usable by turning off all the delays and timers built in, Emacs doesn't even need a vertical live fuzzy completion minibuffer framework like Helm or even Vertico anymore, it has one built in!
 
 ** Showcase
+
+#+begin_quote
+⚠️ Note: I'm still using evil keybindings instead of =god-mode= in these gifs, but it took hours to record them, so I'm not going to fix them.
+#+end_quote
+
 *** Simple Config
 Before I get to showing you any of the fancy things Quake Emacs can do, the most important thing is proving that it will be manageable for you to understand and fork if necessary, and won't lead either you or me to Emacs bankruptcy. One of the key things I've done in this regard is optimizing the layout of =init.el= to work with Emacs's built-in =outline-minor-mode= to help you get an overview of it and jump to specific things in it without needing finnicky text search or getting overwhelmed:
 
@@ -160,7 +170,7 @@ We also have a vertical fuzzy searching UI for popups, with live narrowing, like
 
 [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/fuzzy-searching-everywhere.gif]]
 
-Quake Emacs also features [[https://github.com/abo-abo/hydra?tab=readme-ov-file][which-key]] for more discoverable keybindings, and a meticulous set of [[https://github.com/emacs-evil/evil][evil-mode]] keybindings.
+Quake Emacs also features [[https://github.com/abo-abo/hydra?tab=readme-ov-file][which-key]] for more discoverable keybindings, and [[https://github.com/emacsorphanage/god-mode][god-mode]] for ergonomic modal editing while remaining fully compatible with vanilla Emacs -- all the same mnemonics, commands, and concepts are available, you can just access them without twisting your fingers into pretzels!
 
 [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/which-key-leader-key.gif]]
 
@@ -168,9 +178,7 @@ Quake Emacs also provides IDE class-features thanks to LSP support via [[https:/
 
 [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/ide-class-features.gif]]
 
-I've also spent a great deal of time setting up tree-sitter based structural text objects for selection, editing, and motion using [[file:%5Bhttps://github.com/meain/evil-textobj-tree-sitter%5D][evil-textobj-tree-sitter]], supporting all the text objects Helix or NeoVim does thanks to reading Helix's source code and NeoVim's documentation. Enjoy the text generation of advanced text editing!
-
-[[https://github.com/alexispurslane/quake-emacs/assets/1920151/b196fffb-dba2-470a-b2e1-a4dadd2c968f][video: structural-textobjects.webm]]
+Quake Emacs also comes with [[https://github.com/AmaiKinono/puni][puni]], a vanilla-Emacs-first structural editing package similar to the more popular [[https://github.com/Fuco1/smartparens][Smartparens]] but using Emacs's built in syntax tables and structural editing commands instead of requiring complex language-specific logic. For more on what that looks like in practice, click the link to puni above.
 
 And, Quake Emacs wouldn't be able to live up to its name unless it had a classic Quake-style popup terminal! So here it is, implemented entirely without any external packages, and bound to =SPC ~=:
 
@@ -331,20 +339,19 @@ Out of the box, Quake Emacs contains only the layers that you will absolutely ne
 | [[https://gist.github.com/alexispurslane/28be85797872fcc3fda80e2aa973903c][gnus-proton-mail-layer]] | Use GNUS to send (asynchronously!) and receive mail with Proton Mail.                                                                                                                                                                                           |
 | [[https://gist.github.com/alexispurslane/f60785a3895dd1d4487717e56f93349c][tramp-distrobox-layer]]  | Use TRAMP with Distrobox (for immutable distros mainly)                                                                                                                                                                                                         |
 | [[https://gist.github.com/alexispurslane/fe520a69210fbe5e0462be39c351a370][devil-layer]]            | A basic set of Doom/Spacemacs style leader-key keybindings to get you started. (Quake Emacs has switched to god-mode and a package that makes god-mode behave like a leader key, because it's more compatible with vanilla emacs, and much easier to maintain.) |
+| evil-layer             | Not part of the core Quake Emacs distribution, but probably common enough of a desiderata that it is provided in the main repo instead of a Gist. Enables evil mode and evil collection, and switches god mode to work as a leader key using evil-god-mode. |
 
 #+begin_quote
 ⚠️ If you write a layer you think might be generally  useful to others, as long as it is reasonably small and self-contained, you are more than encouraged to submit a PR on this readme so we can add it to the list!
 #+end_quote
 
-** Quake Leader Key Keybindings
+** God Mode Keybindings
 
 #+begin_quote
  ⚠️ You can find a guide to reading Emacs keybinding notation [[https://riptutorial.com/emacs/example/19969/key-bindings-notation][here]].
 #+end_quote
 
-Functionally, the Quake leader key system works the same as the leader keys in something like Doom Emacs: if you press the spacebar while in Normal Mode, you will enter a special leader key mode (God Mode) wherein all subsequent keys will be interpreted as navigating through a [[https://www.gnu.org/software/emacs/manual/html_mono/emacs.html#Keys][tree of keybindings]] until you either reach a leaf, fail to do so, or quit the mode, at which point the command (if any) will be executed, and you will be returned to Normal Mode. So for instance, if you type =SPC=, you will enter the leader key mode. Then if you type =h=, you will enter the "help" tree of keybindings. Then you can type =i= for the =info= command, at which point leader key mode will automatically exit because you have indicated a complete command, and the command will run, or you can type =SPC 4= to enter a subtree of the help keybinding tree, at which point you could either type =i= to complete your command, or exit with an error, since there are no other command options.
-
-The difference between Quake's god-mode based leader key keybindings and traditional ones, however, is that instead of the tree of keybindings provided in the leader key mode being created from scratch, and unique to the leader key mode — in essence, a sort of "world all its own" — instead, Quake's leader key keybindings are actually translated into [[http://xahlee.info/emacs/emacs/gnu_emacs_keybinding.html][traditional key chords that Emacs understands by default]], navigating through the already-existing (and still accessible through key chords when outside the leader key mode!) tree of Emacs keybindings.
+For those who want to dabble in the ergonomic benefits of modal editing -- avoiding all those nasty key chords -- Quake Emacs provides [[https://github.com/emacsorphanage/god-mode][=god-mode=]], which can be activated by hitting =ESC= in any Emacs buffer, and deactivated to return to regular Emacs mode using =i=. God mode essentially provides a language for translating un-chorded keystrokes into Emacs's already-existing chorded ones -- think of it like a smarter, more automatic version of sticky keys. This can save your fingers and carpel tunnels a lot of stress if you have pre-existing RSI. Crucially, it does not define any of its own keybindings, or reinvent the wheel in any way; it automatically uses all of [[http://xahlee.info/emacs/emacs/gnu_emacs_keybinding.html][Emacs's built in keybindings]] and any created by you or any package, keeping the form and mnemonics exactly the same, only allowing you to avoid the key modifiers.
 
 The translation is pretty simple. Allow me to quote the god-mode documentation:
 
@@ -466,14 +473,15 @@ Quake Emacs also defines several additional keybindings beyond the ones that Ema
   - =C-w=      :: =vil-window-map=
   - =C-w C-u=  :: =winner-undo=
 
+For true modal editing enthusiasts who want a full text editing grammar, not just a way to avoid key chords, I recommend checking out my package [[https://github.com/alexispurslane/prometheus-mode][=prometheus-mode=]].
+
 ** Inspiration and Prior Art
 *** Doom Emacs
 [[https://github.com/doomemacs/doomemacs][DOOM Emacs]] was my previous (and fallback) daily driver. It is an excellent Emacs distribution and piece of software, but essentially its own editor in many ways. Still what I would probably recommend to a newbie until Quake hypothetically becomes stable and mature.
 
 **** Points of similarity:
-1. Extensive evil mode support and integration, allowing you to control your editor entirely from Vim-style leader key combinations, and integrating evil mode into every other mode and package installed.
-2. Opinionated and aesthetically pleasing defaults to try to make Emacs look and feel, not like another editor like VSCode, but like a /modern Emacs/ --- unique, but not recalcitrant.
-3. Obsessive attention to performance, because one of the main benefits of Emacs is providing a powerful editing experience comparable or vastly superior to something like VSCode, while still relatively having the performance and lightweight footprint of a terminal application.
+1. Opinionated and aesthetically pleasing defaults to try to make Emacs look and feel, not like another editor like VSCode, but like a /modern Emacs/ --- unique, but not recalcitrant.
+2. Obsessive attention to performance, because one of the main benefits of Emacs is providing a powerful editing experience comparable or vastly superior to something like VSCode, while still relatively having the performance and lightweight footprint of a terminal application.
 
 **** Differences:
 1. Doesn't install nearly as many packages and does fewer (no) ideosyncratic things. This gives you less of a complete experience you aren't supposed to tinker with besides toggling layers, and more of a comfortable and usable-out-of-the-box, but relatively simple and straightforward, foundation to build from.
@@ -484,6 +492,7 @@ Quake Emacs also defines several additional keybindings beyond the ones that Ema
 6. Will never have language-specific layers, uses =eglot= and =treesit= for generally excellent language support.
 7. No complex external terminal commands for management.
 8. Has hard complexity and size limits: one 1000-line file, less than a second of startup time even with all layers enabled.
+9. DOOM Emacs focuses on building essentially a whole new editor on top of Emacs using evil mode, instead of helping you use and learn and get familiar with Emacs's own text editing ideas, commands, and features. Quake Emacs uses =god-mode= to make Emacs's existing commands and ideas more ergonomically accessible (my RSI makes key chords painful).
 
 *** MinEmacs
 I have not personally used MinEmacs, but I rifled fairly extensively through its codebase to borrow ideas, tips, tricks, and so on, and read its mission statement and looked at the screenshots.
@@ -515,11 +524,14 @@ I have not personally used MinEmacs, but I rifled fairly extensively through its
 5. Less opinionated than distributions like Spacemacs or Doom Emacs
 
 **** Differences:
-1. Installs relatively few packages and vets every single one that /is/ installed for active maintinence, general stability/maturity, etc, like MinEmacs, but still uses much more modern Emacs capabilities and packages, as soon as they /are/ reasonably mature, instead of choosing older packages simply for the sake of longevity.
+1. Quake installs relatively few packages and vets every single one that /is/ installed for active maintinence, general stability/maturity, etc, like MinEmacs, but still uses much more modern Emacs capabilities and packages, as soon as they /are/ reasonably mature, instead of choosing older packages simply for the sake of longevity.
 2. Intended to strike a balance between being a great end-user product out of the box /while also/ being a great foundation to build on.
 3. Does not come with a bespoke standard library or configuration framework, it's just pure modern Emacs.
 4. Does not make most layers opt-in, since there are so few of them
 5. No language specific layers.
-6. Uses evil-mode by default (intended to lighten the burden of maintaining an Evil config by sharing that work between users!)
 7. Focuses on only supporting the latest Emacs.
 8. Much greater focus on performance.
+
+* Footnotes
+
+[fn:1] It is interesting to note that Emacs had structural editing commands conceptualizing your code as a syntax tree you can navigate up and down and horizontally across siblings through since the beginning, thanks to the fact that Lisp was easy to parse into a usable syntax tree even on the relatively low powered computers of the past, using less advanced algorithms, whereas Vim essentially exclusively conceptualizes your code as a flat list of flat lists of bytes and nothing more, forcing you to express your movements and selections at a much lower level. This was not a serious disadvantage previously, since most languages until recently couldn't be parsed fast enough reliably enough to make Emacs's structural editing commands generally useful, but now that tree sitter is in play, Emacs has a clear advantage in my opinion -- it already has the basic concepts built into its vocabulary, whereas new concepts and verbs must be integrated into Vim's vocabulary. This is why adding even basic tree sitter structural editing required a large package and a lot of elbow grease in the evil layer on my part, but it's easy as pie for Emacs's tree sitter modes to do it. In a sense, Emacs has been waiting for tree sitter for 40 years!
