@@ -3,14 +3,14 @@
 
 ;; Author: Alexis Purslane <alexispurlsane@pm.me>
 ;; URL: https://github.com/alexispurslane/quake-emacs
-;; Package-Requires: ((emacs "29.1") (cl-lib "1.0")) 
-;; Version: 1.0.0-alpha
+;; Package-Requires: ((emacs "29.1") (cl-lib "1.0"))
+;; Version: 1.0.0
 ;; Keywords: emacs-configuration, emacs-distribution, doom-emacs, note-taking, writing, code
 
 ;; This file is not part of GNU Emacs.
 
 ;; Copyright (c) by Alexis Purslane 2024.
-;; 
+;;
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
@@ -32,7 +32,7 @@
 ;; lean, fast and focused modern experience for code editing, writing,
 ;; and note-taking out of the box, while also serving as a good
 ;; starting point for further configuration.
-;; 
+;;
 ;; Installation instructions:
 ;; git clone https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
 ;; mkdir -p ~/.quake.d/ && cp user.el ~/.quake.d/
@@ -42,11 +42,14 @@
 ;;
 ;; Switching to development branch instructions:
 ;; git checkout origin/develop
-;; 
+;;
 ;; IF YOU DID NOT OBTAIN THIS FILE BY CLONING THE GIT REPOSITORY,
 ;; PLEASE DO SO INSTEAD OF USING THIS FILE DIRECTLY
 
 ;; For more information, see the README in the online repository.
+
+;;; Code:
+
 (setq gc-cons-threshold-original gc-cons-threshold)
 (setq gc-cons-threshold most-positive-fixnum)
 (run-with-timer 5 0 (lambda ()
@@ -56,6 +59,7 @@
 (require 'cl-lib)
 (require 'rx)
 (require 'package)
+(autoload 'optional/evil-layer "~/.emacs.d/evil-layer.el")
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
 (setq use-package-always-ensure t
@@ -123,24 +127,6 @@ If you pass in term, your environment shell will be
 passed in as an argument."
     :group 'quake)
 
-;;; ======Utility Functions======
-
-(defun quake/set-aesthetics (frame)
-    (let ((mode-bg (face-background 'mode-line))
-          (main-bg (face-background 'default)))
-        (when (not (frame-parent frame))
-            (set-face-attribute 'internal-border frame :background main-bg)
-            (modify-frame-parameters frame `((internal-border-width . 20))))
-        (set-face-background 'line-number main-bg frame)
-        (set-face-foreground 'vertical-border mode-bg frame)
-        (setq window-divider-default-right-width 1)
-        (window-divider-mode 1)
-        (set-face-attribute 'mode-line frame :inherit 'variable-pitch
-                            :height 120
-                            :box `(:line-width 5 :color ,mode-bg :style nil))
-        (set-face-attribute 'mode-line-inactive frame :inherit 'mode-line
-                            :box `(:line-width 5 :color ,(face-background 'mode-line-inactive) :style nil))))
-
 ;;; ======Load User Script======
 ;; we load the user script at the beginning so that some of their
 ;; config can run *before* layer initialization happens, and
@@ -155,17 +141,19 @@ passed in as an argument."
     :init
 ;;;; Setting up Emacs to behave in a more familiar and pleasing way
     (setq inhibit-startup-message t               ; we're going to have our own dashboard
-	      visible-bell t                          ; nobody likes being beeped at
+          visible-bell t                          ; nobody likes being beeped at
           backup-by-copying t                     ; backing up a file by moving it is insane
           backup-directory-alist `((".*" . ,temporary-file-directory))
           auto-save-file-name-transforms `((".*" ,temporary-file-directory t)) ; don't litter dammit
           delete-old-versions t                   ; delete excess backup files
-	      lisp-body-indent 4                      ; four space tabs
-	      vc-follow-symlinks t                    ; we'll always want to follow symlinks
-	      warning-minimum-level :emergency        ; don't completely shit the bed on errors
-	      display-line-numbers 'relative          ; whether you use evil or not, these are useful
-	      custom-file "~/.emacs.d/custom.el")     ; dump all the shit from custom somewhere else
+          lisp-body-indent 4                      ; four space tabs
+          vc-follow-symlinks t                    ; we'll always want to follow symlinks
+          warning-minimum-level :emergency        ; don't completely shit the bed on errors
+          display-line-numbers 'relative          ; whether you use evil or not, these are useful
+          custom-file "~/.emacs.d/custom.el")     ; dump all the shit from custom somewhere else
     (setq-default fill-column 65)                 ; this will be used in reading modes, so set it to something nice
+    (global-auto-revert-mode t)
+    (add-hook 'before-save-hook 'whitespace-cleanup)
     (setq tab-always-indent 'complete)            ; more modern completion behavior
     (setq read-file-name-completion-ignore-case t ; ignore case when completing file names
           read-buffer-completion-ignore-case t ; ignore case when completing buffer names
@@ -175,13 +163,12 @@ passed in as an argument."
     (setq eldoc-idle-delay 1.0) ; w/ eldoc-box/an LSP, idle delay is by default too distracting
     (setq display-line-numbers-width-start t) ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
     (setq-default indent-tabs-mode nil) ; prefer spaces instead of tabs
-;;;;; Disabling ugly and largely unhelpful UI features 
-    (menu-bar-mode 1)
+;;;;; Disabling ugly and largely unhelpful UI features
     (tool-bar-mode -1)
     (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
 ;;;;; Enable some modes that give nicer, more modern behavior
     (setq pixel-scroll-precision-interpolate-mice t
-	      pixel-scroll-precision-interpolate-page t)
+          pixel-scroll-precision-interpolate-page t)
     (pixel-scroll-precision-mode 1)   ; smooth scrolling
     (winner-mode 1)                ; better window manipulation
     (savehist-mode 1)              ; remember commands
@@ -189,11 +176,11 @@ passed in as an argument."
     (global-visual-line-mode)     ; wrap lines at end of window
 ;;;;; A basic programmming mode to build off of that adds some expected things
     (add-hook 'prog-mode-hook (lambda ()
-			                      (prettify-symbols-mode 1)
-			                      (display-line-numbers-mode 1)
-			                      (setq display-line-numbers 'relative)
-			                      (hl-line-mode t)
-			                      (electric-pair-mode)))
+                                  (prettify-symbols-mode 1)
+                                  (display-line-numbers-mode 1)
+                                  (setq display-line-numbers 'relative)
+                                  (hl-line-mode t)
+                                  (electric-pair-mode)))
 ;;;;; Performance tuning
     (setq gc-cons-percentage 0.2)
 ;;;;;; Optimize font-locking for greater responsiveness
@@ -201,7 +188,7 @@ passed in as an argument."
           jit-lock-defer-time 0.0
           jit-lock-context-time 0.2
           jit-lock-stealth-load 200)
-;;;;;; Optimize for long lines. 
+;;;;;; Optimize for long lines.
     (setq-default bidi-paragraph-direction 'left-to-right ; assume we're using LtR text unless explicitly told otherwise
                   bidi-inhibit-bpa t) ; turn off bidirectional paren display algorithm, it is expensive
 ;;;;;; Faster minibuffer
@@ -239,13 +226,13 @@ passed in as an argument."
 (use-package icomplete
     :demand t
     :bind (:map icomplete-minibuffer-map
-	            ("RET"    . icomplete-force-complete-and-exit)
-	            ("M-RET"  . icomplete-fido-exit)
-	            ("TAB"    . icomplete-force-complete)
-	            ("DEL"    . icomplete-fido-backward-updir)
-	            ("M-."    . embark-act) ; mostly useful in case you don't have evil mode enabled (if you do, just do {ESC g .})
-	            ("<down>" . icomplete-forward-completions)
-	            ("<up>"   . icomplete-backward-completions))
+                ("RET"    . icomplete-force-complete-and-exit)
+                ("M-RET"  . icomplete-fido-exit)
+                ("TAB"    . icomplete-force-complete)
+                ("DEL"    . icomplete-fido-backward-updir)
+                ("M-."    . embark-act) ; mostly useful in case you don't have evil mode enabled (if you do, just do {ESC g .})
+                ("<down>" . icomplete-forward-completions)
+                ("<up>"   . icomplete-backward-completions))
     :config
     ;; remove arbitrary optimization limits that make icomplete
     ;; feel old-fashioned
@@ -295,10 +282,10 @@ passed in as an argument."
         :after icomplete
         :init
         (setq completion-styles '(orderless flex substring)
-	          orderless-component-separator "-"
+              orderless-component-separator "-"
               orderless-matching-styles '(orderless-literal orderless-regexp)
-	          completion-category-defaults nil
-	          completion-category-overrides '((file (styles partial-completion)))))
+              completion-category-defaults nil
+              completion-category-overrides '((file (styles partial-completion)))))
 
     (use-package consult
         :commands (consult-grep consult-ripgrep consult-man consult-theme)
@@ -309,12 +296,12 @@ passed in as an argument."
         :config
         ;; We also want to use this for in-buffer completion, which icomplete can't do alone
         (setq xref-show-xrefs-function #'consult-xref
-	          xref-show-definitions-function #'consult-xref)
+              xref-show-definitions-function #'consult-xref)
         (setq completion-in-region-function
-	          (lambda (&rest args)
+              (lambda (&rest args)
                   (apply (if fido-mode
                                  #'consult-completion-in-region
-		                     #'completion--in-region)
+                             #'completion--in-region)
                          args))))
 ;;;; Better help messages and popups
     (use-package helpful
@@ -349,13 +336,13 @@ passed in as an argument."
 
     (use-package outline
         :hook ((prog-mode . outline-minor-mode)
-	           (text-mode . outline-minor-mode))
+               (text-mode . outline-minor-mode))
         :config
         (quake-emacs-define-key global-map
             "C-c C-o" (cons "Outline/Folding..." outline-mode-prefix-map))
         (add-hook 'outline-minor-mode-hook (lambda ()
-					                           (outline-show-all))))
-;;;; Better peformance using asynchronous processing with subordinate Emacs processes 
+                                               (outline-show-all))))
+;;;; Better peformance using asynchronous processing with subordinate Emacs processes
     (use-package async
         :commands (async-start async-start-process))
 ;;;; Org-Mode improvements
@@ -367,8 +354,8 @@ passed in as an argument."
     (use-package embark
         :commands (embark-act embark-dwim)
         :bind (:map embark-general-map
-		            ("G" . embark-internet-search)
-		            ("O" . embark-default-action-in-other-window))
+                    ("G" . embark-internet-search)
+                    ("O" . embark-default-action-in-other-window))
         :config
 ;;;;; Use `which-key' to display possible actions instead of a separate buffer
         ;; This is a good idea because:
@@ -437,23 +424,23 @@ targets."
             (interactive))
 
         (cl-defun run-default-action-in-other-window
-	            (&rest rest &key run type &allow-other-keys)
+                (&rest rest &key run type &allow-other-keys)
             (let ((default-action (embark--default-action type)))
-	            (split-window-below) ; or your preferred way to split
-	            (funcall run :action default-action :type type rest)))
+                (split-window-below) ; or your preferred way to split
+                (funcall run :action default-action :type type rest)))
 
         (setf (alist-get 'embark-default-action-in-other-window
-		                 embark-around-action-hooks)
-	          '(run-default-action-in-other-window))
+                         embark-around-action-hooks)
+              '(run-default-action-in-other-window))
 ;;;;;; GNU Hyperbole-style execute textual representation of keyboard macro
         (defun embark-kmacro-target ()
             "Target a textual kmacro in braces."
             (save-excursion
-	            (let ((beg (progn (skip-chars-backward "^{}\n") (point)))
-	                  (end (progn (skip-chars-forward "^{}\n") (point))))
-	                (when (and (eq (char-before beg) ?{) (eq (char-after end) ?}))
-	                    `(kmacro ,(buffer-substring-no-properties beg end)
-		                         . (,(1- beg) . ,(1+ end)))))))
+                (let ((beg (progn (skip-chars-backward "^{}\n") (point)))
+                      (end (progn (skip-chars-forward "^{}\n") (point))))
+                    (when (and (eq (char-before beg) ?{) (eq (char-after end) ?}))
+                        `(kmacro ,(buffer-substring-no-properties beg end)
+                                 . (,(1- beg) . ,(1+ end)))))))
 
         (add-to-list 'embark-target-finders 'embark-kmacro-target)
 
@@ -464,7 +451,7 @@ targets."
         (defun embark-kmacro-name (kmacro name)
             (interactive "sKmacro: \nSName: ")
             (let ((last-kbd-macro (kbd kmacro)))
-	            (kmacro-name-last-macro name)))
+                (kmacro-name-last-macro name)))
 
         (defvar-keymap embark-kmacro-map
             :doc "Actions on kmacros."
@@ -483,32 +470,6 @@ targets."
         (wgrep-enable-key "i")))
 
 ;;;; Custom keybinding macros, to replace `general'
-(defmacro quake-evil-define-key (states keymaps &rest args)
-    "Define the given keys in ARGS in STATES for the given KEYMAPS.
-ARGS is a plist of the form (KEY DEF  KEY DEF). It must have an
-even number of elements. If DEF is a symbol or function value,
-that is what will be called when the key is pressed if the keymap
-is active. If DEF is a `cons' cell, the car is the label that
-will be shown in which-key, and the cadr is either a symbol or a
-function."
-    (declare (indent defun))
-    (if (cl-evenp (length args))
-            `(progn
-                 ,@(cl-loop for (key def) on args by #'cddr
-                            append (cl-loop 
-                                    for keymap in (if (symbolp keymaps) (list keymaps) keymaps)
-                                    collect `(evil-define-key* ',states ,keymap (kbd ,key) ,def))))
-        (error "Expected even number of arguments in ARGS so every key chord has a corresponding definition.")))
-
-(defmacro quake-evil-create-keymap (states &rest args)
-    "Create a new keymap with the given key definitions and return it.
-Uses the same syntax and semantics as `quake-emacs-define-key'."
-    (declare (indent defun))
-    (cl-with-gensyms (keymap)
-        `(let ((,keymap (make-keymap)))
-             (quake-evil-define-key ,states ,keymap ,@args)
-             ,keymap)))
-
 (defmacro quake-emacs-define-key (keymaps &rest args)
     "Define the given keys in ARGS for the given KEYMAPS.
 ARGS is a plist of the form (KEY DEF  KEY DEF). It must have an
@@ -521,7 +482,7 @@ function."
     (if (cl-evenp (length args))
             `(progn
                  ,@(cl-loop for (key def) on args by #'cddr
-                            append (cl-loop 
+                            append (cl-loop
                                     for keymap in (if (symbolp keymaps) (list keymaps) keymaps)
                                     collect `(define-key ,keymap (kbd ,key) ,def))))
         (error "Expected even number of arguments in ARGS so every key chord has a corresponding definition.")))
@@ -536,6 +497,14 @@ Uses the same syntax and semantics as `quake-emacs-define-key'."
              ,keymap)))
 ;;;; Core Keybindings
 (make-obsolete 'optional/devil-layer "an obsolete keybinding layer that required too much maintinence to be practical." "Jun 1st, 2024")
+
+(defun quake-repeatize (keymap)
+    "Add `repeat-mode' support to a KEYMAP."
+    (map-keymap
+     (lambda (_key cmd)
+         (when (symbolp cmd)
+             (put cmd 'repeat-map keymap)))
+     (symbol-value keymap)))
 
 (defun core/keys-layer ()
     "Defines all the custom keybindings for Quake Emacs and pull
@@ -567,7 +536,7 @@ Loads:
   Emacs's built in structural editing commands do, instead of
   having to maintian its own library of queries."
 
-;;;;; God Mode    
+;;;;; God Mode
     (use-package god-mode
         :config
         (defun quake-god-mode-update-cursor-type ()
@@ -598,7 +567,7 @@ Loads:
                ("C-&" . puni-convolute)
                ("C-^" . puni-raise)
                ("C-$" . puni-splice))
-        
+
         :init
         ;; The autoloads of Puni are set up so you can enable `puni-mode` or
         ;; `puni-global-mode` before `puni` is actually loaded. Only after you press
@@ -610,15 +579,11 @@ Loads:
 ;;;;; Repeat Mode
 
     (repeat-mode 1)
-    (defun repeatize (keymap)
-        "Add `repeat-mode' support to a KEYMAP."
-        (map-keymap
-         (lambda (_key cmd)
-             (when (symbolp cmd)
-                 (put cmd 'repeat-map keymap)))
-         (symbol-value keymap)))
-    (repeatize 'ctl-x-4-map)
-    (repeatize 'ctl-x-5-map)
+
+    (quake-repeatize 'ctl-x-4-map)
+    (quake-repeatize 'ctl-x-5-map)
+    (with-eval-after-load 'outline-minor-mode
+        (quake-repeatize 'outline-minor-mode-map))
     (put 'winner-undo 'repeat-map 'window-prefix-map)
     (put 'winner-redo 'repeat-map 'window-prefix-map)
 
@@ -639,7 +604,7 @@ Loads:
                                                   (apply #'whole-line-or-region-wrap-modified-region oldfun (or r '(1))))))
 
 ;;;;; Define useful editing keys
-    
+
     (quake-emacs-define-key global-map
         "C-x C-S-T"  #'transpose-regions
         "M-S-U"      #'upcase-dwim
@@ -658,11 +623,11 @@ Loads:
         "C-="        #'indent-region
         "M-RET"      #'embark-act
         "C-RET"      #'embark-dwim)
-    
+
     (quake-emacs-define-key icomplete-minibuffer-map
         "M-RET"   #'embark-act
         "C-RET"   #'embark-dwim)
-    
+
 ;;;;; Notes
     (quake-emacs-define-key global-map
         "C-c n" (cons "Notes"
@@ -791,9 +756,7 @@ Loads:
         (dolist (face (custom-group-members 'treemacs-faces nil))
             (set-face-attribute (car face) nil :inherit 'variable-pitch :height 120)))
 
-    (use-package treemacs-evil
-        :after (treemacs evil)
-        :ensure t)
+
 ;;;;; Treesit and Eglot (LSP) configuration
     (customize-set-variable 'treesit-font-lock-level 4)
 
@@ -809,7 +772,7 @@ Loads:
         ;; basically every langauge. The only other thing needed
         ;; would be to implement generalized slurp/barf for tree
         ;; sitter text objects. See [[file://~/.emacs.d/init.el::493]]
-        ;; 
+        ;;
         ;; (define-derived-mode elisp-ts-mode emacs-lisp-mode "ELisp[ts]"
         ;;     "Tree-sitter major mode for editing Emacs Lisp."
         ;;     :group 'rust
@@ -838,7 +801,7 @@ Loads:
                                       (interactive)
                                       (unless (ignore-errors
                                                   (command-execute #'eglot-ensure))
-                                          (message "Info: no LSP found for this file.")))) 
+                                          (message "Info: no LSP found for this file."))))
         :config
         (add-hook 'eglot-managed-mode-hook
                   (lambda () (add-hook 'before-save-hook 'eglot-format-buffer nil t)))
@@ -865,12 +828,12 @@ Loads:
     (use-package corfu
         :after (orderless)
         :hook ((prog-mode . corfu-mode)
-	           (comint-mode . corfu-mode)
+               (comint-mode . corfu-mode)
                (eshell-mode . corfu-mode)
                (latex-mode . corfu-mode)
                (org-mode . corfu-mode)
                (markdown-mode . corfu-mode)
-	           (minibuffer-setup . corfu-enable-in-minibuffer))
+               (minibuffer-setup . corfu-enable-in-minibuffer))
         ;; Optional customizations
         :custom
         (corfu-cycle t)                ;; Enable cycling for `corfu-next/previous'
@@ -887,14 +850,14 @@ Loads:
             (require 'corfu-popupinfo)
             (set-face-attribute 'corfu-popupinfo nil :inherit 'variable-pitch)
             (corfu-popupinfo-mode))
-        (add-hook 'corfu-mode-hook 'corfu-popupinfo-start)) 
+        (add-hook 'corfu-mode-hook 'corfu-popupinfo-start))
 
 ;;;;; Project- and language-aware autoformatting
     ;; Global autoformatting
     (use-package apheleia
         :config
         (setf (alist-get 'prettier apheleia-formatters)
-	          '("prettier" file))
+              '("prettier" file))
         (add-to-list 'apheleia-mode-alist '(typescript-ts-mode . prettier))
         (add-to-list 'apheleia-mode-alist '(js-ts-mode . prettier))
         :hook (prog-mode . apheleia-mode))
@@ -923,13 +886,15 @@ Loads:
   - `flymake-proselint', to help you improve your prose
   - `latex-preview-pane', so if you're writing LaTeX, you can see
   what it will produce"
-;;;;; Set up org mode and evil-org
+;;;;; Set up org mode
     (use-package org
         :commands (org-mode)
         :config
         (setq org-directory quake-org-home-directory)
         (setq org-default-notes-file (concat quake-org-home-directory "notes.org"))
         (add-to-list 'org-agenda-files quake-org-home-directory)
+
+        (quake-repeatize 'org-mode-map)
 
         (set-face-attribute 'org-level-1 nil :height 2.0)
         (set-face-attribute 'org-level-2 nil :height 1.7)
@@ -938,12 +903,12 @@ Loads:
         (set-face-attribute 'org-level-5 nil :height 1.0)
 
         (setq org-ellipsis "  " ;; folding symbol
-	          org-startup-indented t
-	          org-image-actual-width (list 300)      ; no one wants gigantic images inline
-              org-pretty-entities t                  ; part of the benefit of lightweight markup is seeing these 
-	          org-agenda-block-separator ""
-	          org-fontify-done-headline t
-	          org-fontify-quote-and-verse-blocks t)
+              org-startup-indented t
+              org-image-actual-width (list 300)      ; no one wants gigantic images inline
+              org-pretty-entities t                  ; part of the benefit of lightweight markup is seeing these
+              org-agenda-block-separator ""
+              org-fontify-done-headline t
+              org-fontify-quote-and-verse-blocks t)
 
         (setq org-capture-templates
               `(("t" "Todo" entry (file+headline ,(file-name-concat quake-org-home-directory "todo.org") "Tasks")
@@ -951,15 +916,13 @@ Loads:
                 ("j" "Journal" entry (file+datetree ,(file-name-concat quake-org-home-directory "journal.org"))
                  "* %?\nEntered on %U\n  %i\n  %a"))))
 
-    (use-package evil-org
-        :after org
-        :hook (org-mode . evil-org-mode))
+
 ;;;;; Typesetting packages (Latex, pandoc)
     (use-package pandoc-mode
         :hook ((markdown-mode . pandoc-mode)
-	           (org-mode . pandoc-mode)
-	           (latex-mode . pandoc-mode)
-	           (doc-view-mode . pandoc-mode)))
+               (org-mode . pandoc-mode)
+               (latex-mode . pandoc-mode)
+               (doc-view-mode . pandoc-mode)))
 
     (use-package latex-preview-pane
         :commands (latex-preview-pane-mode latex-preview-pane-enable))
@@ -1034,7 +997,7 @@ faces, and the flymake `proselint' backend is enabled."
         ;; link function instead of just fucking with core denote
         ;; sanity-checking functions. See:
         ;; https://github.com/protesilaos/denote/issues/364
-        ;; 
+        ;;
         ;; FIXME 2: this *does not* buttonize Denote links in
         ;; non-markup-language buffers automatically, except for
         ;; right after you insert that link. This is fine for now
@@ -1046,9 +1009,9 @@ The FILE, FILE-TYPE, DESCRIPTION, and ID-ONLY have the same meaning as
 in `denote-link'."
             (interactive
              (let* ((file (denote-file-prompt nil "Link to FILE"))
-	                (file-type (denote-filetype-heuristics buffer-file-name))
-	                (description (when (file-exists-p file)
-			                         (denote--link-get-description file))))
+                    (file-type (denote-filetype-heuristics buffer-file-name))
+                    (description (when (file-exists-p file)
+                                     (denote--link-get-description file))))
                  (list file file-type description current-prefix-arg)))
             (unless (file-exists-p file)
                 (user-error "The linked file does not exists"))
@@ -1056,7 +1019,7 @@ in `denote-link'."
                 (denote--delete-active-region-content)
                 (insert (denote-format-link file description file-type id-only))
                 (unless (derived-mode-p 'org-mode)
-	                (make-button beg (point) 'type 'denote-link-button))))
+                    (make-button beg (point) 'type 'denote-link-button))))
 
         ;; Integrate Denote with org-capture
         (with-eval-after-load 'org-capture
@@ -1068,7 +1031,7 @@ in `denote-link'."
                            :immediate-finish nil
                            :kill-buffer t
                            :jump-to-captured t)))
-        
+
         ;; Declare directories with ".dir-locals.el" as a project so
         ;; we can use project.el to manage non-version controlled
         ;; projects, such as [Denote
@@ -1080,11 +1043,11 @@ in `denote-link'."
             (interactive (list (read-directory-name "Silo directory: ")))
             (unless (not (make-directory dir t))
                 (with-temp-file (file-name-concat dir ".dir-locals.el")
-	                (insert (format (concat 
-			                         ";;; Directory Local Variables            -*- no-byte-compile: t -*-"
-			                         ";;; For more information see (info \"(emacs) Directory Variables\")"
-			                         "((nil . ((denote-directory . \"%s\"))))")
-			                        (expand-file-name dir)))))
+                    (insert (format (concat
+                                     ";;; Directory Local Variables            -*- no-byte-compile: t -*-"
+                                     ";;; For more information see (info \"(emacs) Directory Variables\")"
+                                     "((nil . ((denote-directory . \"%s\"))))")
+                                    (expand-file-name dir)))))
             (add-to-list 'project--list `(,(expand-file-name dir)))
             (project--write-project-list)))
 
@@ -1104,8 +1067,6 @@ in `denote-link'."
   Loads:
   - `doom-themes', for an unparalleled collection of excellent
   themes, so you never have to go searching for a theme again
-  - `mood-line', for an incredibly fast and lightweight emacs modeline
-  that offers just the features you need for a great experience
   - `enlight', because a launchpad is always welcome
   - `eldoc-box', because documentation needs to look nice and appear
   next to your cursor so you don't have to move your eyes
@@ -1116,41 +1077,54 @@ in `denote-link'."
         :config
         ;; Global settings (defaults)
         (setq doom-themes-enable-bold t
-	          doom-themes-enable-italic t))
+              doom-themes-enable-italic t))
 
-    (advice-add 'load-theme :after (lambda (&rest args) (quake/set-aesthetics nil)))
-    (add-hook 'after-make-frame-functions 'quake/set-aesthetics)
     (load-theme quake-color-theme t)
 
-    ;; A super-fast modeline that also won't make me wish I didn't have eyes at least
-    (use-package mood-line
-        :after (doom-themes)
-        :custom
-        (mood-line-glyph-alist mood-line-glyphs-unicode)
-        (mood-line-segment-modal-evil-state-alist 
-         '((normal . ("Ⓝ" . font-lock-variable-name-face))
-           (insert . ("Ⓘ" . font-lock-string-face))
-           (visual . ("Ⓥ" . font-lock-keyword-face))
-           (replace . ("Ⓡ" . font-lock-type-face))
-           (motion . ("Ⓜ" . font-lock-constant-face))
-           (operator . ("Ⓞ" . font-lock-function-name-face))
-           (god . ("Ⓖ" . font-lock-function-name-face))
-           (emacs . ("Ⓔ" . font-lock-builtin-face))) )
-        (mood-line-format
-         (mood-line-defformat
-          :left
-          (((mood-line-segment-modal) . "\t")
-           ((or (mood-line-segment-buffer-status) " ") . " ")
-           ((mood-line-segment-buffer-name) . "\t")
-           ((mood-line-segment-cursor-position) . " ")
-           (mood-line-segment-scroll))
-          :right
-          (((mood-line-segment-vc) . "\t")
-           ((mood-line-segment-major-mode) . "\t")
-           ((mood-line-segment-checker) . "\t"))))
+    ;; Make things roomier and more minimal/austere
+    (use-package spacious-padding
         :config
-        (mood-line-mode))
+        (setq spacious-padding-widths `( :internal-border-width 20
+                                         :header-line-width 4
+                                         :mode-line-width 6
+                                         :tab-width 4
+                                         :right-divider-width 30
+                                         :scroll-bar-width 8
+                                         :fringe-width 8))
+        (setq spacious-padding-subtle-mode-line
+              '(:mode-line-active variable-pitch :mode-line-inactive variable-pitch))
+        (advice-add 'spacious-padding-set-face-box-padding
+                    :filter-return
+                    (lambda (res)
+                        (append '(:inherit variable-pitch :weight normal) res)))
+        (spacious-padding-mode 1))
 
+    ;; Keep as much information as possible from the vanilla
+    ;; modeline, but make it a bit cleaner/more comprehensible
+    ;; write a function to do the spacing
+    (setq-default mode-line-format
+                  '("%e"
+                    (:eval
+                     (cond
+                      ((boundp 'evil-mode-line-tag) evil-mode-line-tag)
+                      ((and (fboundp 'god-mode) god-local-mode) "<G>")
+                      ((and (not god-local-mode)) (propertize "<I>" 'face
+                                                              '(:foreground ,(face-background 'region))))
+                      (t "")))
+                    "    "
+                    mode-line-front-space
+                    (:eval (if (buffer-modified-p) "● " "   "))
+                    mode-line-buffer-identification
+                    " %o "
+                    vc-mode
+                    " "
+                    (:eval (system-name))
+                    "    "
+                    mode-line-end-spaces
+                    "    "
+                    mode-line-modes))
+
+    ;; A lightweight dashboard
     (use-package enlight
         :custom
         (enlight-content
@@ -1162,19 +1136,20 @@ in `denote-link'."
           (propertize  (format "Started in %s\n" (emacs-init-time)) 'face '(:inherit font-lock-comment-face))
           (enlight-menu
            '(("Org Mode"
-	          ("Org-Agenda (current day)" (org-agenda nil "a") "a")
-	          ("Org-Agenda (TODOs)" (org-agenda nil "t") "o")
+              ("Org-Agenda (current day)" (org-agenda nil "a") "a")
+              ("Org-Agenda (TODOs)" (org-agenda nil "t") "o")
               ("" (consult-notes) "n"))
              ("Files"
               ("Recent Files" (consult-recent-file) "r")
               ("Writing" (read-file-name "Writing: " "~/Sync/Private/") "c")
               ("Documents" (read-file-name "Document: " "~/Documents/") "d"))
              ("Other"
-	          ("Projects" project-switch-project "p")))))))
+              ("Projects" project-switch-project "p")))))))
 
     (use-package eldoc-box
         :config
-        ;; (set-face-attribute 'eldoc-box-body nil :inherit 'variable-pitch)
+        (setq eldoc-box-lighter " ElDoc-Box")
+        (set-face-attribute 'eldoc-box-body nil :inherit 'variable-pitch :weight 'normal)
         (set-face-foreground 'border (face-background 'mode-line))
         :hook (eldoc-mode . eldoc-box-hover-at-point-mode))
 
@@ -1232,18 +1207,18 @@ in `denote-link'."
         (ligature-set-ligatures 'eww-mode '("ff" "fi" "ffi"))
         ;; Enable all Cascadia Code ligatures in programming modes
         (ligature-set-ligatures 'prog-mode '("|||>" "<|||" "<==>" "<!--" "####" "~~>" "***" "||=" "||>"
-					                         ":::" "::=" "=:=" "===" "==>" "=!=" "=>>" "=<<" "=/=" "!=="
-					                         "!!." ">=>" ">>=" ">>>" ">>-" ">->" "->>" "-->" "======" "-<<"
-					                         "<~~" "<~>" "<*>" "<||" "<|>" "<$>" "<==" "<=>" "<=<" "<->"
-					                         "<--" "<-<" "<<=" "<<-" "<<<" "<+>" "</>" "###" "#_(" "..<"
-					                         "..." "+++" "/==" "///" "_|_" "www" "&&" "^=" "~~" "~@" "~="
-					                         "~>" "~-" "**" "*>" "*/" "||" "|}" "|]" "|=" "|>" "|-" "{|"
-					                         "[|" "]#" "::" ":=" ":>" ":<" "$>" "==" "=>" "!=" "!!" ">:"
-					                         ">=" ">>" ">-" "-~" "-|" "->" "--" "-<" "<~" "<*" "<|" "<:"
-					                         "<$" "<=" "<>" "<-" "<<" "<+" "</" "#{" "#[" "#:" "#=" "#!"
-					                         "##" "#(" "#?" "#_" "%%" ".=" ".-" ".." ".?" "+>" "++" "?:"
-					                         "?=" "?." "??" ";;" "/*" "/=" "/>" "//" "__" "~~" "(*" "*)"
-					                         "\\\\" "://"))
+                                             ":::" "::=" "=:=" "===" "==>" "=!=" "=>>" "=<<" "=/=" "!=="
+                                             "!!." ">=>" ">>=" ">>>" ">>-" ">->" "->>" "-->" "======" "-<<"
+                                             "<~~" "<~>" "<*>" "<||" "<|>" "<$>" "<==" "<=>" "<=<" "<->"
+                                             "<--" "<-<" "<<=" "<<-" "<<<" "<+>" "</>" "###" "#_(" "..<"
+                                             "..." "+++" "/==" "///" "_|_" "www" "&&" "^=" "~~" "~@" "~="
+                                             "~>" "~-" "**" "*>" "*/" "||" "|}" "|]" "|=" "|>" "|-" "{|"
+                                             "[|" "]#" "::" ":=" ":>" ":<" "$>" "==" "=>" "!=" "!!" ">:"
+                                             ">=" ">>" ">-" "-~" "-|" "->" "--" "-<" "<~" "<*" "<|" "<:"
+                                             "<$" "<=" "<>" "<-" "<<" "<+" "</" "#{" "#[" "#:" "#=" "#!"
+                                             "##" "#(" "#?" "#_" "%%" ".=" ".-" ".." ".?" "+>" "++" "?:"
+                                             "?=" "?." "??" ";;" "/*" "/=" "/>" "//" "__" "~~" "(*" "*)"
+                                             "\\\\" "://"))
         :hook (prog-mode . ligature-mode)))
 
 ;;; ======Appendix: Togglable Shell======
@@ -1262,20 +1237,20 @@ in `denote-link'."
                                            (window-height . 10)))))
                 (unless quake--existing-shell
                     (setq quake--existing-shell (funcall quake-term-preferred-command
-					                                     (when (eq quake-term-preferred-command 'term)
-					                                         (getenv "SHELL")))))
+                                                         (when (eq quake-term-preferred-command 'term)
+                                                             (getenv "SHELL")))))
                 (display-buffer quake--existing-shell)
                 (select-window (get-buffer-window quake--existing-shell))))))
 
 (defun scratch-window-toggle ()
     (interactive)
     (let* ((scratch (get-scratch-buffer-create))
-	       (existing-window (get-buffer-window scratch)))
+           (existing-window (get-buffer-window scratch)))
         (if existing-window
-	            (delete-window existing-window)
+                (delete-window existing-window)
             (progn
-	            (display-buffer-at-bottom scratch '((window-height . 25)))
-	            (other-window 1)))))
+                (display-buffer-at-bottom scratch '((window-height . 25)))
+                (other-window 1)))))
 
 ;;; ======Load Layers======
 ;; no garbage collection during startup — we can amortize it later
@@ -1286,5 +1261,4 @@ in `denote-link'."
     (message "Finished enabling layers %s in %.2f seconds" layer (float-time (time-since start-time))))
 
 ;; Fix the aesthetics
-(quake/set-aesthetics nil)
 (put 'erase-buffer 'disabled nil)
