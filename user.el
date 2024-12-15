@@ -15,8 +15,7 @@
 (setq quake-enabled-layers
       (list
        #'core/usability-layer
-       #'core/editor-layer
-       #'optional/god-layer ;; or #'optional/devil-layer
+       #'core/keys-layer
        #'task/coding-layer
        #'task/writing-layer
        #'task/notes-layer
