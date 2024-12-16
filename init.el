@@ -320,7 +320,26 @@ passed in as an argument."
         (which-key-idle-secondary-delay nil)
         (which-key-sort-order #'which-key-key-order-alpha)
         :config
-        (which-key-enable-god-mode-support))
+        (which-key-enable-god-mode-support)
+
+        ;; Integrate which key with repeat-mode:
+
+        ;; Disable the built-in repeat-mode hinting
+        (custom-set-variables repeat-echo-function #'ignore)
+
+        ;; Spawn or hide a which-key popup
+        (advice-add 'repeat-post-hook :after
+                    (defun repeat-help--which-key-popup ()
+                        (if-let ((cmd (or this-command real-this-command))
+                                 (keymap (or repeat-map
+                                             (repeat--command-property 'repeat-map))))
+
+                                (run-at-time
+                                 0 nil
+                                 (lambda ()
+                                     (which-key--create-buffer-and-show
+                                      nil (symbol-value keymap))))
+                            (which-key--hide-popup)))))
 ;;;; Better Emacs Lisp editing experience
 
     (use-package elisp-def
@@ -340,8 +359,7 @@ passed in as an argument."
         :config
         (quake-emacs-define-key global-map
             "C-c C-o" (cons "Outline/Folding..." outline-mode-prefix-map))
-        (add-hook 'outline-minor-mode-hook (lambda ()
-                                               (outline-show-all))))
+        (add-hook 'outline-minor-mode-hook (lambda () (outline-show-all))))
 ;;;; Better peformance using asynchronous processing with subordinate Emacs processes
     (use-package async
         :commands (async-start async-start-process))
@@ -463,6 +481,8 @@ targets."
 ;;;;; Embark-Consult integration package
     (use-package embark-consult
         :hook (embark-collect-mode . consult-preview-at-point-mode))
+
+;;;;; Writable Grep is a necessity
     (use-package wgrep
         :defer t
         :custom
@@ -1102,27 +1122,33 @@ in `denote-link'."
     ;; Keep as much information as possible from the vanilla
     ;; modeline, but make it a bit cleaner/more comprehensible
     ;; write a function to do the spacing
+
     (setq-default mode-line-format
-                  '("%e"
+                  `("%e"
                     (:eval
                      (cond
                       ((boundp 'evil-mode-line-tag) evil-mode-line-tag)
                       ((and (fboundp 'god-mode) god-local-mode) "<G>")
-                      ((and (not god-local-mode)) (propertize "<I>" 'face
-                                                              '(:foreground ,(face-background 'region))))
+                      ((and (not god-local-mode))
+                       (propertize "<I>" 'face
+                                   '(:foreground ,(face-background 'region))))
                       (t "")))
                     "    "
                     mode-line-front-space
                     (:eval (if (buffer-modified-p) "● " "   "))
                     mode-line-buffer-identification
-                    " %o "
-                    vc-mode
-                    " "
+                    " %o    "
                     (:eval (system-name))
+                    "    "
+                    vc-mode
                     "    "
                     mode-line-end-spaces
                     "    "
-                    mode-line-modes))
+                    mode-line-modes,@quake-left-mode-line
+                    (:eval (propertize " "
+                                       'display
+                                       `(space :align-to (- (+ right right-fringe right-margin) 20))))
+                    global-mode-string))
 
     ;; A lightweight dashboard
     (use-package enlight
