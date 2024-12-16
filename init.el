@@ -1144,7 +1144,7 @@ in `denote-link'."
                     "    "
                     mode-line-end-spaces
                     "    "
-                    mode-line-modes,@quake-left-mode-line
+                    mode-line-modes
                     (:eval (propertize " "
                                        'display
                                        `(space :align-to (- (+ right right-fringe right-margin) 20))))
