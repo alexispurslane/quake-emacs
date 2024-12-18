@@ -50,16 +50,38 @@
 
 ;;; Code:
 
-(setq gc-cons-threshold-original gc-cons-threshold)
-(setq gc-cons-threshold most-positive-fixnum)
-(run-with-timer 5 0 (lambda ()
-                        (setq gc-cons-threshold gc-cons-threshold-original)
-                        (message "Restored GC cons threshold")))
 ;;; ======Prelude======
+;;;; Garbage Collector Optimization
+;; Until scratch/igc gets merged and Emacs gets a multithreaded
+;; generational GC, GC pauses when the user is trying to interact
+;; will be an issue. Quake 1.0 solved this by:
+;;
+;; 1. setting `gc-cons-percentage' to 20% during normal usage,
+;; which was high enough to eliminate most GC pauses during
+;; normal usage
+;;
+;; 2. turning the GC off during startup and then turning it back
+;; on five seconds after startup
+;;
+;; 3. turning GC off when the minibuffer is open and then back on
+;; when it closes
+;;
+;; However, all of these ad-hoc solutions are basically unified
+;; under one concept: not doing GC when Lisp is actively running,
+;; instead putting it off till some presumably more idle time
+;; when responsiveness is less important. Thus, a strategy that
+;; unifies all these ideas into a single system, and also times
+;; when those "catch-up" GCs happen more intelligently, is
+;; probably better. That's GCMH. See: [[https://akrl.sdf.org/]]
+(use-package gcmh
+    :custom
+    (gcmh-idle-delay 'auto)
+    :config
+    (gcmh-mode 1))
+
 (require 'cl-lib)
 (require 'rx)
 (require 'package)
-(autoload 'optional/evil-layer "~/.emacs.d/evil-layer.el")
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
 (setq use-package-always-ensure t
@@ -219,7 +241,6 @@ your user.el with every single update to Quake."
     (windmove-mode 1)              ; so you can move to windows directionally like in Vim, instead of only having other-window
 
 ;;;;; Performance tuning
-    (setq gc-cons-percentage 0.2) ; Wait until elisp conses take up 20% of the existing heap before GCing and growing the heap. GCs less often. This number is pulled from [[https://www.youtube.com/watch?v=YA1RJxH4xfQ][this talk by Ihor Radchenko]]
 ;;;;;; Optimize font-locking for greater responsiveness
     (setq jit-lock-stealth-time 0.2
           jit-lock-defer-time 0.0
@@ -228,15 +249,6 @@ your user.el with every single update to Quake."
 ;;;;;; Optimize for long lines.
     (setq-default bidi-paragraph-direction 'left-to-right ; assume we're using LtR text unless explicitly told otherwise
                   bidi-inhibit-bpa t) ; turn off bidirectional paren display algorithm, it is expensive
-;;;;;; Faster minibuffer
-    (defun setup-fast-minibuffer ()
-        (setq gc-cons-threshold most-positive-fixnum)) ; disable GC when minibuffer is open
-    (defun close-fast-minibuffer ()
-        (setq gc-cons-threshold (* 8 1024 1024))) ; restore it to an optimized amount when it's closed again
-
-    (add-hook 'minibuffer-setup-hook 'setup-fast-minibuffer)
-    (add-hook 'minibuffer-exit-hook 'close-fast-minibuffer)
-
 ;;;; Fonts
     (set-display-table-slot
      standard-display-table
@@ -549,8 +561,6 @@ Uses the same syntax and semantics as `quake-emacs-define-key'."
              (quake-emacs-define-key ,keymap ,@args)
              ,keymap)))
 ;;;; Core Keybindings
-(make-obsolete 'optional/devil-layer "an obsolete keybinding layer that required too much maintinence to be practical." "Jun 1st, 2024")
-
 (defun quake-repeatize (keymap)
     "Add `repeat-mode' support to a KEYMAP."
     (map-keymap
@@ -844,6 +854,7 @@ External Packages:
                                                   (command-execute #'eglot-ensure))
                                           (message "Info: no LSP found for this file."))))
         :config
+        (advice-add 'jsonrpc--log-event :override #'ignore) ; Eglot pretty-prints JSON to its log by default, which can cause slowdown
         (add-hook 'eglot-managed-mode-hook
                   (lambda () (add-hook 'before-save-hook 'eglot-format-buffer nil t)))
         (setq eglot-autoshutdown t
@@ -1264,7 +1275,7 @@ spice things up, and we want integration *everywhere*
                                              "\\\\" "://"))
         :hook (prog-mode . ligature-mode)))
 
-;;; ======Appendix: Togglable Shell======
+;;; ======Appendix======
 (defvar quake--existing-shell nil)
 
 (defun shell-toggle ()
@@ -1294,6 +1305,8 @@ spice things up, and we want integration *everywhere*
             (progn
                 (display-buffer-at-bottom scratch '((window-height . 25)))
                 (other-window 1)))))
+
+(autoload 'optional/evil-layer "~/.emacs.d/evil-layer.el")
 
 ;;; ======Load Layers======
 ;; no garbage collection during startup — we can amortize it later
