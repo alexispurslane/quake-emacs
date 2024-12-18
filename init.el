@@ -93,20 +93,19 @@ fixes the problem." 'face 'bold))
 ;;; ======User-Modifiable Variables======
 (defcustom quake-org-home-directory
     "~/org/"
-    "The directory that your org capture templates, Denote notes, and
+    "The directory that your org capture templates and
 org-agenda files will be placed in by default. Always ends in a slash."
     :type 'string
     :group 'quake)
 
 (defcustom quake-enabled-layers
     (list
-     #'core/usability-layer
-     #'core/keys-layer
-     #'task/coding-layer
-     #'task/writing-layer
-     #'task/notes-layer
-     #'core/aesthetic-layer
-     #'optional/bling-layer)
+     'core/usability-layer
+     'core/keys-layer
+     'task/coding-layer
+     'task/writing-layer
+     'core/aesthetic-layer
+     'optional/bling-layer)
     "The function symbols for the layers that Quake Emacs
 should enable on startup.
 
@@ -127,11 +126,47 @@ If you pass in term, your environment shell will be
 passed in as an argument."
     :group 'quake)
 
+
+(defun quake--insert-into-list (list el n)
+    "Insert into list LIST an element EL at index N.
+
+If N is 0, EL is inserted before the first element.
+
+The resulting list is returned.  As the list contents is mutated
+in-place, the old list reference does not remain valid."
+    (let* ((padded-list (cons nil list))
+           (c (nthcdr n padded-list)))
+        (setcdr c (cons el (cdr c)))
+        (cdr padded-list)))
+
+(cl-defmacro quake-layers (&key (enable (list)) (disable (list)))
+    "Remove DISABLE layers from, and add ENABLE layers to the end of,
+`quake-enabled-layers'. DISABLE is a list of symbols, ENABLE is a
+list of symbols or a list of conses specifying a symbol and the
+index at which to insert it.
+
+A Warning from the Ancients: Use this instead of directly
+modifying `quake-enabled-layers' unless you're willing to update
+your user.el with every single update to Quake."
+    `(progn
+         ,@(mapcar (lambda (layer) `(delete ',layer quake-enabled-layers))
+                   disable)
+         ,@(mapcar (lambda (layer)
+                       (cond
+                        ((and (consp layer)
+                              (symbolp (car layer))
+                              (numberp (cdr layer))
+                              (fboundp (car layer)))
+                         `(quake--insert-into-list quake-enabled-layers ',(car layer) ,(cdr layer)))
+                        ((and (symbolp layer) (fboundp layer))
+                         `(add-to-list 'quake-enabled-layers ',layer t))))
+                   enable)))
+
 ;;; ======Load User Script======
 ;; we load the user script at the beginning so that some of their
 ;; config can run *before* layer initialization happens, and
 ;; their custom layers can run during and after, thus producing a
-;; nice clean
+;; nice clean [sic]?
 
 (when (file-exists-p "~/.quake.d/user.el")
     (load "~/.quake.d/user.el"))
@@ -150,39 +185,41 @@ passed in as an argument."
           vc-follow-symlinks t                    ; we'll always want to follow symlinks
           warning-minimum-level :emergency        ; don't completely shit the bed on errors
           display-line-numbers 'relative          ; whether you use evil or not, these are useful
+          enable-recursive-minibuffers t          ; allow you to have multiple minibuffers open
+          search-nonincremental-instead nil         ; don't degrade to nonincremental search if the user tries to exit out of isearch, nobody fucking wants that
           custom-file "~/.emacs.d/custom.el")     ; dump all the shit from custom somewhere else
     (setq-default fill-column 65)                 ; this will be used in reading modes, so set it to something nice
-    (global-auto-revert-mode t)
-    (add-hook 'before-save-hook 'whitespace-cleanup)
-    (setq tab-always-indent 'complete)            ; more modern completion behavior
-    (setq read-file-name-completion-ignore-case t ; ignore case when completing file names
-          read-buffer-completion-ignore-case t ; ignore case when completing buffer names
-          completion-ignore-case t) ; fucking ignore case in general!
-    (setopt use-short-answers t) ; so you don't have to type out "yes" or "no" and hit enter
-    (setopt initial-buffer-choice #'enlight)
-    (setq eldoc-idle-delay 1.0) ; w/ eldoc-box/an LSP, idle delay is by default too distracting
-    (setq display-line-numbers-width-start t) ; when you open a file, set the width of the linum gutter to be large enough the whole file's line numbers
-    (setq-default indent-tabs-mode nil) ; prefer spaces instead of tabs
+    (global-auto-revert-mode t)                      ; automatically update files when they change
+    (add-hook 'before-save-hook 'whitespace-cleanup) ; remove trailling whitespace
+    (setq tab-always-indent 'complete)               ; more modern completion behavior
+    (setq read-file-name-completion-ignore-case t    ; ignore case when completing file names
+          read-buffer-completion-ignore-case t       ; ignore case when completing buffer names
+          completion-ignore-case t)                  ; fucking ignore case in general!
+    (setopt use-short-answers t)                     ; so you don't have to type out "yes" or "no" and hit enter
+    (setq eldoc-idle-delay 1.0)                      ; w/ eldoc-box/an LSP, idle delay is by default too distracting
+    (setq display-line-numbers-width-start t)        ; when you open a file, set the width of the linum gutter to be large enough for the whole file's line numbers
+    (setq-default indent-tabs-mode nil)              ; prefer spaces instead of tabs
 ;;;;; Disabling ugly and largely unhelpful UI features
-    (tool-bar-mode -1)
-    (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1))
+    (tool-bar-mode -1) ; the menu bar is quite useful, but the tool bar is painfully ugly and adds little
+    (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1)) ; if we're running graphically, remove scroll bar
+
 ;;;;; Enable some modes that give nicer, more modern behavior
+
+    (minibuffer-depth-indicate-mode 1)
     (setq pixel-scroll-precision-interpolate-mice t
           pixel-scroll-precision-interpolate-page t)
-    (pixel-scroll-precision-mode 1)   ; smooth scrolling
-    (winner-mode 1)                ; better window manipulation
-    (savehist-mode 1)              ; remember commands
-    (column-number-mode) ; keep track of column number for the useful modeline readout
-    (global-visual-line-mode)     ; wrap lines at end of window
-;;;;; A basic programmming mode to build off of that adds some expected things
-    (add-hook 'prog-mode-hook (lambda ()
-                                  (prettify-symbols-mode 1)
-                                  (display-line-numbers-mode 1)
-                                  (setq display-line-numbers 'relative)
-                                  (hl-line-mode t)
-                                  (electric-pair-mode)))
+    (pixel-scroll-precision-mode 1)                  ; smooth scrolling
+    (savehist-mode 1)                                ; remember commands
+    (column-number-mode)                             ; keep track of column number for the useful modeline readout
+    (global-visual-line-mode)                        ; wrap lines at end of window
+
+;;;;; Enable better window management
+
+    (winner-mode 1)                ; so you can undo modifications to your window layout
+    (windmove-mode 1)              ; so you can move to windows directionally like in Vim, instead of only having other-window
+
 ;;;;; Performance tuning
-    (setq gc-cons-percentage 0.2)
+    (setq gc-cons-percentage 0.2) ; Wait until elisp conses take up 20% of the existing heap before GCing and growing the heap. GCs less often. This number is pulled from [[https://www.youtube.com/watch?v=YA1RJxH4xfQ][this talk by Ihor Radchenko]]
 ;;;;;; Optimize font-locking for greater responsiveness
     (setq jit-lock-stealth-time 0.2
           jit-lock-defer-time 0.0
@@ -193,63 +230,19 @@ passed in as an argument."
                   bidi-inhibit-bpa t) ; turn off bidirectional paren display algorithm, it is expensive
 ;;;;;; Faster minibuffer
     (defun setup-fast-minibuffer ()
-        (setq gc-cons-threshold most-positive-fixnum))
+        (setq gc-cons-threshold most-positive-fixnum)) ; disable GC when minibuffer is open
     (defun close-fast-minibuffer ()
-        (setq gc-cons-threshold (* 8 1024 1024)))
+        (setq gc-cons-threshold (* 8 1024 1024))) ; restore it to an optimized amount when it's closed again
 
     (add-hook 'minibuffer-setup-hook 'setup-fast-minibuffer)
     (add-hook 'minibuffer-exit-hook 'close-fast-minibuffer)
+
 ;;;; Fonts
     (set-display-table-slot
      standard-display-table
      'selective-display
      (let ((face-offset (* (face-id 'shadow) (lsh 1 22))))
          (vconcat (mapcar (lambda (c) (+ face-offset c)) " ")))))
-;;;; Customizing the built in tab-bar
-(use-package tab-bar
-    :commands (tab-bar-new-tab tab-bar-mode)
-    :init
-    (setq tab-bar-button-relief 0)
-    :config
-    (add-hook 'tab-bar-mode-hook
-              (lambda ()
-                  (set-face-attribute 'tab-bar nil :inherit 'variable-pitch)
-                  (set-face-attribute 'tab-bar-tab nil :box `(:line-width 5 :color ,(face-background 'tab-bar-tab) :style nil))
-                  (set-face-attribute 'tab-bar-tab-inactive nil
-                                      :box `(:line-width 5 :color ,(face-background 'tab-bar-tab-inactive) :style nil))))
-    (setq tab-bar-auto-width t
-          tab-bar-auto-width-max '(200 20)
-          tab-bar-auto-width-min '(200 20))
-    (setq tab-bar-new-tab-choice "*enlight*")
-    (setq tab-bar-show t))
-;;;; Vertico-style IComplete
-(use-package icomplete
-    :demand t
-    :bind (:map icomplete-minibuffer-map
-                ("RET"    . icomplete-force-complete-and-exit)
-                ("M-RET"  . icomplete-fido-exit)
-                ("TAB"    . icomplete-force-complete)
-                ("DEL"    . icomplete-fido-backward-updir)
-                ("M-."    . embark-act) ; mostly useful in case you don't have evil mode enabled (if you do, just do {ESC g .})
-                ("<down>" . icomplete-forward-completions)
-                ("<up>"   . icomplete-backward-completions))
-    :config
-    ;; remove arbitrary optimization limits that make icomplete
-    ;; feel old-fashioned
-    (setq icomplete-delay-completions-threshold 0)
-    (setq icomplete-max-delay-chars 0)
-    (setq icomplete-compute-delay 0)
-    (setq icomplete-show-matches-on-no-input t)
-    (setq icomplete-hide-common-prefix nil)
-    (setq icomplete-prospects-height 15)
-    (setq icomplete-with-completion-tables t)
-    (icomplete-vertical-mode 1))
-;;;; Recentf
-(use-package recentf
-    :custom
-    (recentf-auto-cleanup 'never)
-    :config
-    (recentf-mode))
 ;;; ======Basic Packages======
 (defun core/usability-layer ()
     "Loads the core packages needed to make Emacs more usable in the
@@ -271,7 +264,40 @@ passed in as an argument."
   the experience of configuring your editor much nicer.
   - `embark' to offer a powerful Hyperbole-like experience with
     better integration."
-
+;;;; Recentf
+    (use-package recentf
+        :custom
+        (recentf-auto-cleanup 'never) ; automatic cleanup checks for dead files, which was causing it to try to visit files in recentf that were over TRAMP, which caused massive inexplicable slowdowns
+        :config
+        (recentf-mode))
+;;;; Vertico-style minibuffer completion UI using icomplete
+    (use-package icomplete
+        :demand t
+        :bind (:map icomplete-minibuffer-map
+                    ("RET"    . icomplete-force-complete-and-exit)
+                    ("TAB"    . icomplete-force-complete)
+                    ("DEL"    . icomplete-fido-backward-updir)
+                    ("<down>" . icomplete-forward-completions)
+                    ("<up>"   . icomplete-backward-completions))
+        :custom
+        ;; remove arbitrary optimization limits that make icomplete
+        ;; feel old-fashioned
+        (icomplete-delay-completions-threshold 0)
+        (icomplete-max-delay-chars 0)
+        (icomplete-compute-delay 0)
+        (icomplete-show-matches-on-no-input t)
+        (icomplete-hide-common-prefix nil)
+        (icomplete-prospects-height 15)
+        (icomplete-with-completion-tables t)
+        :config
+        (icomplete-vertical-mode 1))
+;;;; A basic programmming mode to build off of that adds some expected things
+    (add-hook 'prog-mode-hook (defun progify-mode ()
+                                  (prettify-symbols-mode 1)
+                                  (display-line-numbers-mode 1)
+                                  (setq display-line-numbers 'relative)
+                                  (hl-line-mode t)
+                                  (electric-pair-mode 1)))
 ;;;; Minibuffer completion and searching improvement packages
     (use-package marginalia
         :after icomplete
@@ -322,12 +348,24 @@ passed in as an argument."
         :config
         (which-key-enable-god-mode-support)
 
-        ;; Integrate which key with repeat-mode:
-
-        ;; Disable the built-in repeat-mode hinting
-        (custom-set-variables repeat-echo-function #'ignore)
-
-        ;; Spawn or hide a which-key popup
+        ;; show which key when you're in isearch mode always,
+        ;; since those keybindings are obscure
+        (add-hook 'isearch-mode-hook (defun quake--isearch-which-key-popup ()
+                                         (run-at-time
+                                          0 nil
+                                          (lambda ()
+                                              (which-key--create-buffer-and-show
+                                               nil (symbol-value 'isearch-mode-map)))))))
+    (use-package repeat
+        :after (which-key)
+        :config
+        (repeat-mode 1) ; so we don't have to re-enter long prefixes
+        (quake-repeatize 'ctl-x-4-map) ; the other-window prefix map is useful when repeated
+        (quake-repeatize 'ctl-x-5-map) ; the frame management prefix map also
+        (with-eval-after-load 'outline-minor-mode
+            (quake-repeatize 'outline-minor-mode-map)) ; also the outline map (useful in org mode navigation)
+        (quake-repeatize 'window-prefix-map) ; and of course the regular window management map
+        ;; use which key to show repeat map
         (advice-add 'repeat-post-hook :after
                     (defun repeat-help--which-key-popup ()
                         (if-let ((cmd (or this-command real-this-command))
@@ -339,7 +377,8 @@ passed in as an argument."
                                  (lambda ()
                                      (which-key--create-buffer-and-show
                                       nil (symbol-value keymap))))
-                            (which-key--hide-popup)))))
+                            (which-key--hide-popup))))
+        (custom-set-variables repeat-echo-function #'ignore))
 ;;;; Better Emacs Lisp editing experience
 
     (use-package elisp-def
@@ -360,6 +399,13 @@ passed in as an argument."
         (quake-emacs-define-key global-map
             "C-c C-o" (cons "Outline/Folding..." outline-mode-prefix-map))
         (add-hook 'outline-minor-mode-hook (lambda () (outline-show-all))))
+;;;; Dired improvements
+    (setq dired-listing-switches "-alFh")
+    (use-package dired-subtree ; (this is already brought in by dired-sidebar later, so imo it doesn't count as an extra dep)
+        :after dired
+        :config
+        (bind-key "<tab>" #'dired-subtree-toggle dired-mode-map)
+        (bind-key "<backtab>" #'dired-subtree-cycle dired-mode-map))
 ;;;; Better peformance using asynchronous processing with subordinate Emacs processes
     (use-package async
         :commands (async-start async-start-process))
@@ -436,20 +482,6 @@ targets."
             (interactive "sSearch Term: ")
             (browse-url
              (format "https://duckduckgo.com/search?q=%s" term)))
-;;;;;; Run default action in another Emacs window
-        (defun embark-default-action-in-other-window ()
-            "Run the default embark action in another window."
-            (interactive))
-
-        (cl-defun run-default-action-in-other-window
-                (&rest rest &key run type &allow-other-keys)
-            (let ((default-action (embark--default-action type)))
-                (split-window-below) ; or your preferred way to split
-                (funcall run :action default-action :type type rest)))
-
-        (setf (alist-get 'embark-default-action-in-other-window
-                         embark-around-action-hooks)
-              '(run-default-action-in-other-window))
 ;;;;;; GNU Hyperbole-style execute textual representation of keyboard macro
         (defun embark-kmacro-target ()
             "Target a textual kmacro in braces."
@@ -464,6 +496,7 @@ targets."
 
         (defun embark-kmacro-run (arg kmacro)
             (interactive "p\nsKmacro: ")
+            (message kmacro)
             (kmacro-call-macro arg t nil (kbd kmacro)))
 
         (defun embark-kmacro-name (kmacro name)
@@ -530,7 +563,7 @@ Uses the same syntax and semantics as `quake-emacs-define-key'."
     "Defines all the custom keybindings for Quake Emacs and pull
 in god mode, since both evil and non-evil users willprobably want it.
 
-Loads:
+External Packages:
 
 - `god-mode' - God mode provides a mode where you can run all
   normal Emacs commands without modifier keys. A useful way to
@@ -555,6 +588,15 @@ Loads:
   it can automatically take advantage of tree sitter, because
   Emacs's built in structural editing commands do, instead of
   having to maintian its own library of queries."
+
+;;;;; Window Management
+    (quake-emacs-define-key window-prefix-map
+        "b"    #'windmove-left
+        "n"    #'windmove-down
+        "p"    #'windmove-up
+        "f"    #'windmove-right
+        "u"    #'winner-undo
+        "r"    #'winner-redo)
 
 ;;;;; God Mode
     (use-package god-mode
@@ -596,21 +638,6 @@ Loads:
         (add-hook 'term-mode-hook #'puni-disable-puni-mode)
         (add-hook 'eshell-mode-hook #'puni-disable-puni-mode))
 
-;;;;; Repeat Mode
-
-    (repeat-mode 1)
-
-    (quake-repeatize 'ctl-x-4-map)
-    (quake-repeatize 'ctl-x-5-map)
-    (with-eval-after-load 'outline-minor-mode
-        (quake-repeatize 'outline-minor-mode-map))
-    (put 'winner-undo 'repeat-map 'window-prefix-map)
-    (put 'winner-redo 'repeat-map 'window-prefix-map)
-
-;;;;; Winner
-
-    (winner-mode 1)
-
 ;;;;; Whole Line or Region
 
     (use-package whole-line-or-region
@@ -622,7 +649,6 @@ Loads:
         ;; `whole-line-or-region'
         (advice-add 'puni-kill-region :around (lambda (oldfun &rest r)
                                                   (apply #'whole-line-or-region-wrap-modified-region oldfun (or r '(1))))))
-
 ;;;;; Define useful editing keys
 
     (quake-emacs-define-key global-map
@@ -648,25 +674,6 @@ Loads:
         "M-RET"   #'embark-act
         "C-RET"   #'embark-dwim)
 
-;;;;; Notes
-    (quake-emacs-define-key global-map
-        "C-c n" (cons "Notes"
-                      (quake-emacs-create-keymap
-                          "s"     'denote-silo
-                          "c"     'org-capture
-                          "l"     'org-store-link
-                          "n"     'consult-notes
-                          "i"     'denote-link-global
-                          "S-I"   'denote-link-after-creating
-                          "r"     'denote-rename-file
-                          "k"     'denote-keywords-add
-                          "S-K"   'denote-keywords-remove
-                          "b"     'denote-backlinks
-                          "S-B"   'denote-find-backlink
-                          "S-R"   'denote-region)))
-    (quake-emacs-define-key global-map
-        "C-x w u"     'winner-undo
-        "C-x w r"     'winner-redo)
 ;;;;; Yasnippet
     (quake-emacs-define-key global-map
         "C-c &"    (cons "Code Snippets..."
@@ -676,6 +683,13 @@ Loads:
                              "v"   'yas-visit-snippet-file)))
 ;;;;; General Quake-recommended keybindings
     (quake-emacs-define-key global-map
+;;;;;; Org Notes
+        "C-c a" #'org-agenda
+        "C-c c" #'org-capture
+        "C-c l"  #'org-store-link
+        "C-c L"  #'org-insert-link-global
+        "C-c n"  #'quake-org-new-note-file
+        "C-c A"  #'consult-org-agenda
         "C-c p"   (cons "Profile..."
                         (quake-emacs-create-keymap
                             "t" 'consult-theme
@@ -691,14 +705,12 @@ Loads:
                           (quake-emacs-create-keymap
                               "w"   'eww
                               "a"   'org-agenda
-                              "="   'calc
                               "s"   (cons "Open new shell"
                                           (lambda () (interactive)
                                               (let ((new-shell-frame (make-frame)))
                                                   (select-frame new-shell-frame)
                                                   (funcall quake-term-preferred-command 'new))))
-                              "-"   'dired
-                              "T"   'treemacs
+                              "T"   'dired-sidebar-toggle-sidebar
                               "t"   'toggle-frame-tab-bar
                               "m"   'gnus-other-frame
                               "d"   'word-processing-mode
@@ -737,13 +749,15 @@ Loads:
     "All the basic components needed for a Visual Studio Code-style
   IDE-lite experience in Emacs... but better.
 
-  Loads:
+  External Packages:
   - `magit', the powerful Git user interface that lets you do
   anything from trivial to complex git commands with just a few
   mnemonic keypresses, all with helpful command palettes to guide
   you on your way, and `diff-hl' so you can see what's changed in-editor
-  - `treemacs' to get a high-level overview of your project
-    without leaving whatever you're doing
+  - `dired-sidebar', to provide a project sidebar that builds on
+  the powerful file manager already built into Emacs, instead of
+  reinventing the wheel by creating its own file management
+  system.
   - `treesit-auto', to automatically install and use the tree-sitter mode
   for any recognized language, so you have IDE-class syntax
   highlighting for nearly anything, out of the box.
@@ -770,12 +784,19 @@ Loads:
         :hook ((prog-mode . diff-hl-mode)
                (dired-mode . diff-hl-dired-mode)))
 
-    (use-package treemacs
-        :commands (treemacs)
+    (use-package dired-sidebar
+        :commands (dired-sidebar-toggle-sidebar)
+        :custom
+        (dired-sidebar-should-follow-file t)
+        (dired-sidebar-use-custom-font t)
+        :init
+        (add-hook 'dired-sidebar-mode-hook
+                  (lambda ()
+                      (unless (file-remote-p default-directory)
+                          (auto-revert-mode))))
+        (set-face-attribute 'dired-sidebar-face nil :inherit 'variable-pitch)
         :config
-        (dolist (face (custom-group-members 'treemacs-faces nil))
-            (set-face-attribute (car face) nil :inherit 'variable-pitch :height 120)))
-
+        (setq dired-sidebar-theme 'nerd-icons))
 
 ;;;;; Treesit and Eglot (LSP) configuration
     (customize-set-variable 'treesit-font-lock-level 4)
@@ -894,25 +915,72 @@ Loads:
         :config
         (add-to-list 'completion-at-point-functions #'yasnippet-capf)))
 ;;;; Writing layer
-(defun task/writing-layer ()
-    "If you're like me and you use Emacs to write blog posts and/or
-  fiction, a good focus mode is priceless.
+(defun quake-org-add-note (file)
+    (interactive "FNote file: ")
+    (add-to-list 'consult-notes-org-headings-files file)
+    (add-to-list 'org-agenda-text-search-extra-files file))
 
-  Loads:
+(defun quake-org-add-note-directory (dir)
+    (interactive "DNotes directory: ")
+    (mapcar #'quake-add-note (directory-files dir)))
+
+(defun quake-org-new-note-file (file)
+    (interactive (list (read-file-name "Note file name: " quake-org-home-directory)))
+    (with-temp-file file
+        (insert ""))
+    (quake-org-add-note file))
+(defun task/writing-layer ()
+    "Adds a focus mode with prose linting, pandoc, and a latex preview
+pane, as well as prose-appropriate line wrapping. Also configures
+org mode for vanilla-org zettelkesten note-taking based on
+[[https://github.com/egh/org-mode-zettelkasten][this guide]].
+
+  External Packages:
   - `pandoc-mode' one mode to rule them all for managing
     conversions and compilations of all your files!
   - `visual-fill-column' for dealing with those line-paragraphs
   - `darkroom', the focus mode of your dreams
   - `flymake-proselint', to help you improve your prose
   - `latex-preview-pane', so if you're writing LaTeX, you can see
-  what it will produce"
+  what it will produce."
 ;;;;; Set up org mode
     (use-package org
-        :commands (org-mode)
+        :commands (org-mode consult-org-agenda quake-org-new-note-file org-agenda org-insert-link-global)
+        :custom
+        ;; TODO: if I can figure out a good cache invalidation scheme, (org-refile-use-cache t)
+        (org-complete-tags-always-offer-all-agenda-tags t)
+        (org-id-link-to-org-use-id t)
+        (org-id-extra-files 'org-agenda-text-search-extra-files)
+        (org-refile-use-outline-path t)
+        (org-outline-path-complete-in-steps nil)
+        (org-refile-targets '((nil :maxlevel . 9)
+                              (org-agenda-files :maxlevel . 5)))
         :config
+        (defun org-id-complete-link ()
+            "Create an id: link using completion."
+            (concat "id:" (org-id-get-with-outline-path-completion org-refile-targets)))
+
+        (org-link-set-parameters "id" :complete 'org-id-complete-link)
+
+        (defun quake-org-backlinks ()
+            "Search for backlinks to current entry."
+            (interactive)
+            (let ((link (condition-case nil
+                                (org-id-store-link)
+                            (error "Unable to create a link to here"))))
+                (org-occur-in-agenda-files (regexp-quote link))))
+
+        (defun quake-org-add-ids-to-headlines-in-file ()
+            "Add ID properties to all headlines in the current file which
+do not already have one."
+            (interactive)
+            (org-map-entries 'org-id-get-create))
+
         (setq org-directory quake-org-home-directory)
-        (setq org-default-notes-file (concat quake-org-home-directory "notes.org"))
         (add-to-list 'org-agenda-files quake-org-home-directory)
+
+        (org-id-update-id-locations)
+        (add-hook 'org-capture-prepare-finalize-hook 'org-id-get-create)
 
         (quake-repeatize 'org-mode-map)
 
@@ -921,6 +989,9 @@ Loads:
         (set-face-attribute 'org-level-3 nil :height 1.4)
         (set-face-attribute 'org-level-4 nil :height 1.1)
         (set-face-attribute 'org-level-5 nil :height 1.0)
+        (set-face-attribute 'org-block nil :inherit 'fixed-pitch)
+        (set-face-attribute 'org-code nil :inherit 'fixed-pitch)
+        (set-face-attribute 'org-verbatim nil :inherit 'fixed-pitch)
 
         (setq org-ellipsis "  " ;; folding symbol
               org-startup-indented t
@@ -930,12 +1001,24 @@ Loads:
               org-fontify-done-headline t
               org-fontify-quote-and-verse-blocks t)
 
+        (defun quake-org-prompt-note-file ()
+            (interactive)
+            (find-file
+             (completing-read-default "Note file: "
+                                      (let ((files (directory-files-recursively quake-org-home-directory ".*.org")))
+                                          (lambda (str pred flag)
+                                              (pcase flag
+                                                  ('metadata `(metadata (category . file)))
+                                                  (_ (all-completions str files pred)))))))
+            (goto-char (point-min))
+            (org-end-of-subtree))
         (setq org-capture-templates
-              `(("t" "Todo" entry (file+headline ,(file-name-concat quake-org-home-directory "todo.org") "Tasks")
+              `(("t" "Todo" entry (function quake-org-prompt-note-file)
                  "* TODO %?\n  %i\n  %a")
-                ("j" "Journal" entry (file+datetree ,(file-name-concat quake-org-home-directory "journal.org"))
+                ("n" "Note" entry (function quake-org-prompt-note-file)
+                 "* %?\n  %i\n  ")
+                ("j" "Journal" entry (function quake-org-prompt-note-file)
                  "* %?\nEntered on %U\n  %i\n  %a"))))
-
 
 ;;;;; Typesetting packages (Latex, pandoc)
     (use-package pandoc-mode
@@ -990,101 +1073,12 @@ faces, and the flymake `proselint' backend is enabled."
                 (flyspell-mode 0)
                 (prettify-symbols-mode 1)))))
 
-;;;; Zettelkasten note-taking layer
-(defun task/notes-layer ()
-    "For those who take notes in Emacs without being tied down to any
-  one markup language or program.
-
-  - `denote', for a simple, fast but feature-complete zettelkesten
-  note-taking solution that optionally integrates well with org
-  mode, that is more general than org-roam and uses only
-  plain-text files.
-  - `consult-notes' to have a metadata-rich, integrated way to find
-  your notes."
-    (use-package denote
-        :commands (denote consult-notes denote-link-global denote-link-after-creating denote-region denote-silo)
-        :custom
-        (denote-known-keywords '())
-        (denote-infer-keywords t)
-        (denote-prompts-with-history-as-completion t)
-        (denote-prompts '(title keywords))
-        (denote-backlinks-show-context t)
-        :preface
-        (setq denote-directory quake-org-home-directory)
-
-        ;; NOTE: I initially had a much simpler implementation, but
-        ;; Prot suggested this was safer, since I'm defining my own
-        ;; link function instead of just fucking with core denote
-        ;; sanity-checking functions. See:
-        ;; https://github.com/protesilaos/denote/issues/364
-        ;;
-        ;; FIXME 2: this *does not* buttonize Denote links in
-        ;; non-markup-language buffers automatically, except for
-        ;; right after you insert that link. This is fine for now
-        ;; though, because you can use `embark' on org-mode links
-        ;; whether or not they are buttonized.
-        (defun denote-link-global (file file-type description &optional id-only)
-            "Like the `denote-link', but works in any buffer.
-The FILE, FILE-TYPE, DESCRIPTION, and ID-ONLY have the same meaning as
-in `denote-link'."
-            (interactive
-             (let* ((file (denote-file-prompt nil "Link to FILE"))
-                    (file-type (denote-filetype-heuristics buffer-file-name))
-                    (description (when (file-exists-p file)
-                                     (denote--link-get-description file))))
-                 (list file file-type description current-prefix-arg)))
-            (unless (file-exists-p file)
-                (user-error "The linked file does not exists"))
-            (let ((beg (point)))
-                (denote--delete-active-region-content)
-                (insert (denote-format-link file description file-type id-only))
-                (unless (derived-mode-p 'org-mode)
-                    (make-button beg (point) 'type 'denote-link-button))))
-
-        ;; Integrate Denote with org-capture
-        (with-eval-after-load 'org-capture
-            (add-to-list 'org-capture-templates
-                         '("n" "New note (with Denote)" plain
-                           (file denote-last-path)
-                           #'denote-org-capture
-                           :no-save t
-                           :immediate-finish nil
-                           :kill-buffer t
-                           :jump-to-captured t)))
-
-        ;; Declare directories with ".dir-locals.el" as a project so
-        ;; we can use project.el to manage non-version controlled
-        ;; projects, such as [Denote
-        ;; silos](https://protesilaos.com/emacs/denote#h:15719799-a5ff-4e9a-9f10-4ca03ef8f6c5)
-        (setq project-vc-extra-root-markers '(".dir-locals.el"))
-
-        (defun denote-silo (dir)
-            "Create a new directory DIR to function as a `denote' silo and add it to the project list."
-            (interactive (list (read-directory-name "Silo directory: ")))
-            (unless (not (make-directory dir t))
-                (with-temp-file (file-name-concat dir ".dir-locals.el")
-                    (insert (format (concat
-                                     ";;; Directory Local Variables            -*- no-byte-compile: t -*-"
-                                     ";;; For more information see (info \"(emacs) Directory Variables\")"
-                                     "((nil . ((denote-directory . \"%s\"))))")
-                                    (expand-file-name dir)))))
-            (add-to-list 'project--list `(,(expand-file-name dir)))
-            (project--write-project-list)))
-
-    (use-package consult-notes
-        :after (denote)
-        :config
-        (consult-notes-denote-mode 1)
-        ;; search only for text files in denote dir
-        (setq consult-notes-denote-files-function (function denote-directory-text-only-files))))
-
-
 ;;; ======Aesthetic Packages======
 ;;;; Core Aesthetic Packages
 (defun core/aesthetic-layer ()
     "If you're going to be staring at your editor all day, it might as well look nice.
 
-  Loads:
+  External Packages:
   - `doom-themes', for an unparalleled collection of excellent
   themes, so you never have to go searching for a theme again
   - `enlight', because a launchpad is always welcome
@@ -1151,26 +1145,24 @@ in `denote-link'."
                     global-mode-string))
 
     ;; A lightweight dashboard
-    (use-package enlight
-        :custom
-        (enlight-content
-         (concat
-          "    "
-          (propertize "QUAKE EMACS" 'display (create-image "~/.emacs.d/banner-quake.png"))
-          "\n"
-          "\n"
-          (propertize  (format "Started in %s\n" (emacs-init-time)) 'face '(:inherit font-lock-comment-face))
-          (enlight-menu
-           '(("Org Mode"
-              ("Org-Agenda (current day)" (org-agenda nil "a") "a")
-              ("Org-Agenda (TODOs)" (org-agenda nil "t") "o")
-              ("" (consult-notes) "n"))
-             ("Files"
-              ("Recent Files" (consult-recent-file) "r")
-              ("Writing" (read-file-name "Writing: " "~/Sync/Private/") "c")
-              ("Documents" (read-file-name "Document: " "~/Documents/") "d"))
-             ("Other"
-              ("Projects" project-switch-project "p")))))))
+    (setq initial-scratch-message
+          (apply #'concat (mapcar (lambda (string)
+                                      (concat (propertize string 'display `(space :align-to (- center  ,(/ (string-width string) 2)))) string))
+                                  (list
+                                   (propertize "----QUAKE EMACS----" 'display (create-image "~/.emacs.d/banner-quake.png")) "\n\n"
+                                   (propertize (format "Started in %s" (emacs-init-time "%.2f seconds")) 'face `(:inherit font-lock-comment-face)) "\n\n"
+                                   (concat "To open a file press " (propertize "{C-x C-f}" 'face 'bold)) "\n"
+                                   (concat "To open a project press " (propertize "{C-x p p}" 'face 'bold)) "\n"
+                                   (concat "To open a recent file press " (propertize "{C-x C-r}" 'face 'bold)) "\n"
+                                   (concat "To close Emacs press " (propertize "{C-x C-c}" 'face 'bold)) "\n"
+                                   "\n"
+                                   "You can also enter lisp forms and evaluate them here." "\n\n" " "))))
+    (add-hook 'post-self-insert-hook (defun scratch-buffer-enable-lisp ()
+                                         (when (and (not (eq major-mode 'emacs-lisp-mode))
+                                                    (string= (buffer-name (current-buffer))
+                                                             "*scratch*"))
+                                             (emacs-lisp-mode))))
+    (setq initial-major-mode 'fundamental-mode)
 
     (use-package eldoc-box
         :config
@@ -1194,18 +1186,38 @@ in `denote-link'."
 ;;;; Optional Aesthetic Packages
 (defun optional/bling-layer ()
     "If you want your editor to wow the hipsters, or you just like
-  looking at the fancy pretty colors, you need some bling.
+looking at the fancy pretty colors, you need some bling.
 
-  Loads:
-  - `hl-todo', so you never miss those TODOs and FIXMEs
-  - `nerd-icons', `nerd-icons-completion', and `nerd-icons-corfu',
-  because there's really nothing better than a nice set of icons to
-  spice things up, and we want integration *everywhere*
-  - `ligature', because ligatures are cool"
+External Packages:
+- `hl-todo', so you never miss those TODOs and FIXMEs
+- `nerd-icons', `nerd-icons-completion', and `nerd-icons-corfu',
+because there's really nothing better than a nice set of icons to
+spice things up, and we want integration *everywhere*
+- `ligature', because ligatures are cool"
+;;;;; Tab Bar
+    (use-package tab-bar
+        :commands (tab-bar-new-tab tab-bar-mode)
+        :init
+        (setq tab-bar-button-relief 0)
+        :config
+        (add-hook 'tab-bar-mode-hook
+                  (lambda ()
+                      (set-face-attribute 'tab-bar nil :inherit 'variable-pitch)
+                      (set-face-attribute 'tab-bar-tab nil :box `(:line-width 5 :color ,(face-background 'tab-bar-tab) :style nil))
+                      (set-face-attribute 'tab-bar-tab-inactive nil
+                                          :box `(:line-width 5 :color ,(face-background 'tab-bar-tab-inactive) :style nil))))
+        (setq tab-bar-auto-width t
+              tab-bar-auto-width-max '(200 20)
+              tab-bar-auto-width-min '(200 20))
+        (setq tab-bar-new-tab-choice "*enlight*")
+        (setq tab-bar-show t))
+
+;;;;; Highlight TODOs, FIXMEs, etc
     (use-package hl-todo
         :commands (hl-todo-mode)
         :init (add-hook 'prog-mode-hook #'hl-todo-mode))
 
+;;;;; Icons
     ;; Icons are nice to have! Nerd icons is faster and better
     ;; integrated (so less icon duplication between packages) with the
     ;; packages I'm using than all-the-icons
@@ -1225,6 +1237,11 @@ in `denote-link'."
         :after (corfu nerd-icons)
         :config (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
 
+    ;; Integrate them with dired
+    (use-package nerd-icons-dired
+        :commands (nerd-icons-dired-mode)
+        :hook (dired-mode-hook . nerd-icons-dired-mode))
+;;;;; Ligatures
     ;; This assumes you've installed the package via MELPA.
     (use-package ligature
         :config
@@ -1283,7 +1300,10 @@ in `denote-link'."
 ;; Enable layers
 (dolist (layer quake-enabled-layers)
     (setq start-time (current-time))
-    (funcall layer)
+    (condition-case-unless-debug err
+            (funcall layer)
+        (error
+         (display-warning (format "Error occured in layer %S: %s" layer (error-message-string err)))))
     (message "Finished enabling layers %s in %.2f seconds" layer (float-time (time-since start-time))))
 
 ;; Fix the aesthetics
