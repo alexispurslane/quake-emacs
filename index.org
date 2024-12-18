@@ -183,13 +183,9 @@ And, Quake Emacs wouldn't be able to live up to its name unless it had a classic
 [[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/quake-term.gif]]
 
 *** Writing
-For those of you who prefer to write your prose in Emacs, I've also created an excellent writing mode, which switches to [[https://github.com/iaolo/iA-Fonts/tree/master][a variable pitch font]] of your choice, enables a [[https://github.com/joaotavora/darkroom][distraction-free writing mode]], and enables [[https://github.com/joostkremers/visual-fill-column][visual fill column mode]] wrapped at 65 characters so that lines behave pleasingly like in a WYSIWYG editor:
+For those of you who prefer to write your prose in Emacs, I've also created an excellent writing mode, which switches to [[https://github.com/iaolo/iA-Fonts/tree/master][a variable pitch font]] of your choice, enables a [[https://github.com/joaotavora/darkroom][distraction-free writing mode]], and enables [[https://github.com/joostkremers/visual-fill-column][visual fill column mode]] wrapped at 65 characters so that lines behave pleasingly like in a WYSIWYG editor, and sets up flymake to run [[https://github.com/amperser/proselint][proselint]] for you:
 
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/proselint-enabled-writing-mode.gif]]
-
-Writing mode also enables a flymake [[https://github.com/amperser/proselint][proselint]] backend to help you improve your prose:
-
-[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/proselint-up-close.gif]]
+[[https://raw.githubusercontent.com/alexispurslane/quake-emacs/image-data/proselint-enabled-writing-mode.png]]
 
 To enable all of that, just use =SPC o d=!
 
