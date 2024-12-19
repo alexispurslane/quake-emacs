@@ -96,13 +96,13 @@ then Quake Emacs is for you.
 
 ** Table of Contents                                               :TOC_3_org:
   - [[Key Features][Key Features]]
-  - [[Justification][Justification]]
+  - [[How To Install][How To Install]]
   - [[Showcase][Showcase]]
     - [[Simple Config][Simple Config]]
     - [[Code Editing][Code Editing]]
     - [[Writing][Writing]]
     - [[Note-taking][Note-taking]]
-  - [[How To Install][How To Install]]
+  - [[Justification][Justification]]
   - [[Supported Languages][Supported Languages]]
     - [[Language Server][Language Server]]
     - [[Tree Sitter Grammar][Tree Sitter Grammar]]
@@ -130,16 +130,27 @@ then Quake Emacs is for you.
 
 - 💻 *Self-updating*: Although Quake Emacs tries to avoid custom code and tooling, it also wants to avoid you having to deal with separate CLI programs outside of Emacs even more. In the interest of that, Quake Emacs is able to detect if there are new updates available for your editor asynchronously on startup and update itself if you ask it to (and only then) using git under the hood.
 
-** Justification
+** How To Install
 
-With the introduction of various modern Emacs features [[https://lambdaland.org/posts/2024-12-14_emacs_catchup/][in the last few years,]] and the emergence of a new generation of Emacs packages focused on integrating with vanilla Emacs, Emacs distributions as we have known them are less and less relevant:
+Convinced?
 
-- =use-package= means the large suites of macros layered on top of =package.el= (and sometimes external CLI commands) provided by configuration frameworks are no longer necessary: vanilla Emacs, by itself, is now capable of readable, clearly organized, declarative, self-installing package management, that is in fact far simpler than the alternatives provided by e.g. DOOM Emacs and far better documented and widely used (a community standard).
-- =eglot= and =treesit.el= mean you no longer need to install external packages for excellent Language Server and Tree Sitter support (that in fact integrates better with built in Emacs concepts like =xref= and =forward-sexp= than the external alternatives) which in turn means that the language "layers" provided by large Emacs distributions are on their way out -- no longer do you need to install and deeply configure five or six packages to support a language inside Emacs, it's either no packages (if the -ts mode is available in core Emacs) or one package for IDE-lite level support!
-- With the inclusion of =icomplete-vertical= and Prot's discovery of how to turn off all the delay timers in =icomplete=, live vertical fuzzy completion is available by default in core Emacs, no need for Ido, Ivy, Helm, or even Vertico.
-- With the integration of Tree Sitter queries into the syntax table in Emacs =-ts= modes (thanks to =treesit= being added in core), Emacs's [[https://dawranliou.com/blog/structural-editing-in-vanilla-emacs/][built in structural editing commands]] can now operate on Tree Sitter concrete syntax trees, thus obviating the need for TS-specific packages like [[https://github.com/mickeynp/combobulate][Combobulate]] and [[https://github.com/ethan-leba/tree-edit][tree-edit]] which have to write and maintain queries for every language they want to support and stop working as soon as you use a language that doesn't have tree sitter yet. Instead, Quake Emacs relies on the built in Emacs structural editing commands and [[https://github.com/AmaiKinono/puni][puni]], which builds more advanced structural editing on top of them, allowing Quake Emacs to achieve language agnostic support for structural editing operations. These operations can gracefully degrade their functionality from Lisp, to Tree Sitter, to syntax tables and regular expressions, to just brackets/parens/etc, allowing the confident integration of structural editing into everyday text editing.
-- With new features in =org-mode=, large and complex packages like [[https://www.orgroam.com/][=org-roam=]] or [[https://protesilaos.com/emacs/denote][Denote]] for ZK note taking aren't strictly necessary anymore. Likewise, through the combination of Embark and =org-mode=, Emacs can achieve a significant fraction of the implicit hypertext and information organization power of [[https://www.gnu.org/software/hyperbole/][GNU Hyperbole]] with greater integration with the standard Emacs behavior and interface, and with other packages, and improved documentation.
-- Thanks to =orderless=, =marginalia=, and =corfu=, a rich interface infused with useful metadata, fuzzy searching, and auto-completion (even in the minibuffer) is achievable without any specific integration code.
+1. First, install the Quake Emacs project directly to your Emacs configuration directory, so Quake can take over your Emacs installation:
+
+   #+begin_src sh
+   git clone --depth=1 -b main https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
+   #+end_src
+
+2. Then copy the example =user.el= provided with Quake to your Quake Emacs configuration directory at =~/.quake.d/user.el=:
+
+   #+begin_src sh
+   mkdir -p ~/.quake.d/ && cp ~/.emacs.d/user.el ~/.quake.d/
+   #+end_src
+
+   To update, just =git pull= to the latest tag. I recommend you check the release notes for the tag for any tips, known issues to avoid, etc.
+
+3. Once the directories are set up, simply launch Emacs and it should begin downloading and installing the packages that make up Quake Emacs, as well as configuring them. Installation is idempotent, and the install process can take some time, so feel free to close Emacs anytime you need to — it will pick up where it left off next time!
+
+4. Once Quake Emacs has installed and configured all its packages, the next step will be making sure it supports the languages you want to work in, which leads us to the next section...
 
 ** Showcase
 
@@ -219,27 +230,16 @@ This seems like a reasonably complete selection of features for a ZK system to m
 3. You can decide how you want to organize your notes: maybe you want each atomic note in its own file. Maybe you want to treat files as "vaults" of ZK notes, where each atomic note is a top level heading in that file. Maybe you want to create trees of atomic notes in each file. Do whatever you want! With the way Quake has =org-mode= configured, the tools should be convenient and intuitive no matter what you do.
 
 
-** How To Install
+** Justification
 
-Convinced?
+With the introduction of various modern Emacs features [[https://lambdaland.org/posts/2024-12-14_emacs_catchup/][in the last few years,]] and the emergence of a new generation of Emacs packages focused on integrating with vanilla Emacs, Emacs distributions as we have known them are less and less relevant:
 
-1. First, install the Quake Emacs project directly to your Emacs configuration directory, so Quake can take over your Emacs installation:
-
-   #+begin_src sh
-   git clone --depth=1 -b main https://github.com/alexispurslane/quake-emacs.git ~/.emacs.d
-   #+end_src
-
-2. Then copy the example =user.el= provided with Quake to your Quake Emacs configuration directory at =~/.quake.d/user.el=:
-
-   #+begin_src sh
-   mkdir -p ~/.quake.d/ && cp ~/.emacs.d/user.el ~/.quake.d/
-   #+end_src
-
-   To update, just =git pull= to the latest tag. I recommend you check the release notes for the tag for any tips, known issues to avoid, etc.
-
-3. Once the directories are set up, simply launch Emacs and it should begin downloading and installing the packages that make up Quake Emacs, as well as configuring them. Installation is idempotent, and the install process can take some time, so feel free to close Emacs anytime you need to — it will pick up where it left off next time!
-
-4. Once Quake Emacs has installed and configured all its packages, the next step will be making sure it supports the languages you want to work in, which leads us to the next section...
+- =use-package= means the large suites of macros layered on top of =package.el= (and sometimes external CLI commands) provided by configuration frameworks are no longer necessary: vanilla Emacs, by itself, is now capable of readable, clearly organized, declarative, self-installing package management, that is in fact far simpler than the alternatives provided by e.g. DOOM Emacs and far better documented and widely used (a community standard).
+- =eglot= and =treesit.el= mean you no longer need to install external packages for excellent Language Server and Tree Sitter support (that in fact integrates better with built in Emacs concepts like =xref= and =forward-sexp= than the external alternatives) which in turn means that the language "layers" provided by large Emacs distributions are on their way out -- no longer do you need to install and deeply configure five or six packages to support a language inside Emacs, it's either no packages (if the -ts mode is available in core Emacs) or one package for IDE-lite level support!
+- With the inclusion of =icomplete-vertical= and Prot's discovery of how to turn off all the delay timers in =icomplete=, live vertical fuzzy completion is available by default in core Emacs, no need for Ido, Ivy, Helm, or even Vertico.
+- With the integration of Tree Sitter queries into the syntax table in Emacs =-ts= modes (thanks to =treesit= being added in core), Emacs's [[https://dawranliou.com/blog/structural-editing-in-vanilla-emacs/][built in structural editing commands]] can now operate on Tree Sitter concrete syntax trees, thus obviating the need for TS-specific packages like [[https://github.com/mickeynp/combobulate][Combobulate]] and [[https://github.com/ethan-leba/tree-edit][tree-edit]] which have to write and maintain queries for every language they want to support and stop working as soon as you use a language that doesn't have tree sitter yet. Instead, Quake Emacs relies on the built in Emacs structural editing commands and [[https://github.com/AmaiKinono/puni][puni]], which builds more advanced structural editing on top of them, allowing Quake Emacs to achieve language agnostic support for structural editing operations. These operations can gracefully degrade their functionality from Lisp, to Tree Sitter, to syntax tables and regular expressions, to just brackets/parens/etc, allowing the confident integration of structural editing into everyday text editing.
+- With new features in =org-mode=, large and complex packages like [[https://www.orgroam.com/][=org-roam=]] or [[https://protesilaos.com/emacs/denote][Denote]] for ZK note taking aren't strictly necessary anymore. Likewise, through the combination of Embark and =org-mode=, Emacs can achieve a significant fraction of the implicit hypertext and information organization power of [[https://www.gnu.org/software/hyperbole/][GNU Hyperbole]] with greater integration with the standard Emacs behavior and interface, and with other packages, and improved documentation.
+- Thanks to =orderless=, =marginalia=, and =corfu=, a rich interface infused with useful metadata, fuzzy searching, and auto-completion (even in the minibuffer) is achievable without any specific integration code.
 
 ** Supported Languages
 
