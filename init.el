@@ -51,33 +51,6 @@
 ;;; Code:
 
 ;;; ======Prelude======
-;;;; Garbage Collector Optimization
-;; Until scratch/igc gets merged and Emacs gets a multithreaded
-;; generational GC, GC pauses when the user is trying to interact
-;; will be an issue. Quake 1.0 solved this by:
-;;
-;; 1. setting `gc-cons-percentage' to 20% during normal usage,
-;; which was high enough to eliminate most GC pauses during
-;; normal usage
-;;
-;; 2. turning the GC off during startup and then turning it back
-;; on five seconds after startup
-;;
-;; 3. turning GC off when the minibuffer is open and then back on
-;; when it closes
-;;
-;; However, all of these ad-hoc solutions are basically unified
-;; under one concept: not doing GC when Lisp is actively running,
-;; instead putting it off till some presumably more idle time
-;; when responsiveness is less important. Thus, a strategy that
-;; unifies all these ideas into a single system, and also times
-;; when those "catch-up" GCs happen more intelligently, is
-;; probably better. That's GCMH. See: [[https://akrl.sdf.org/]]
-(use-package gcmh
-    :custom
-    (gcmh-idle-delay 'auto)
-    :config
-    (gcmh-mode 1))
 
 (require 'cl-lib)
 (require 'rx)
@@ -111,6 +84,43 @@ fixes the problem." 'face 'bold))
 (defgroup quake nil
     "A customization group for the Quake Emacs distribution."
     :prefix "quake")
+
+;;;; Garbage Collector Optimization
+;; Until scratch/igc gets merged and Emacs gets a multithreaded
+;; generational GC, GC pauses when the user is trying to interact
+;; will be an issue. Quake 1.0 solved this by:
+;;
+;; 1. setting `gc-cons-percentage' to 20% during normal usage,
+;; which was high enough to eliminate most GC pauses during
+;; normal usage
+;;
+;; 2. turning the GC off during startup and then turning it back
+;; on five seconds after startup
+;;
+;; 3. turning GC off when the minibuffer is open and then back on
+;; when it closes
+;;
+;; However, all of these ad-hoc solutions are basically unified
+;; under one concept: not doing GC when Lisp is actively running,
+;; instead putting it off till some presumably more idle time
+;; when responsiveness is less important. Thus, a strategy that
+;; unifies all these ideas into a single system, and also times
+;; when those "catch-up" GCs happen more intelligently, is
+;; probably better. That's GCMH. See: [[https://akrl.sdf.org/]]
+;;
+;; Note: The lead Emacs maintainer, Eli Zaretski,
+;; [[https://old.reddit.com/r/emacs/comments/bg85qm/garbage_collector_magic_hack/][has
+;; some concerns]] with this approach, but they seem to be based
+;; on concerns about the memory pressure Emacs using possibly up
+;; to 1GB of memory might cause to the system, which doesn't seem
+;; like a big issue on modern systems to me, and a
+;; misunderstanding of what GCMH is trying to achieve and how it
+;; goes about it.
+(use-package gcmh
+    :custom
+    (gcmh-idle-delay 'auto)
+    :config
+    (gcmh-mode 1))
 
 ;;; ======User-Modifiable Variables======
 (defcustom quake-org-home-directory
@@ -390,7 +400,7 @@ your user.el with every single update to Quake."
                                      (which-key--create-buffer-and-show
                                       nil (symbol-value keymap))))
                             (which-key--hide-popup))))
-        (custom-set-variables repeat-echo-function #'ignore))
+        (custom-set-variables 'repeat-echo-function #'ignore))
 ;;;; Better Emacs Lisp editing experience
 
     (use-package elisp-def
@@ -804,9 +814,9 @@ External Packages:
                   (lambda ()
                       (unless (file-remote-p default-directory)
                           (auto-revert-mode))))
-        (set-face-attribute 'dired-sidebar-face nil :inherit 'variable-pitch)
         :config
-        (setq dired-sidebar-theme 'nerd-icons))
+        (setq dired-sidebar-theme 'nerd-icons)
+        (set-face-attribute 'dired-sidebar-face nil :inherit 'variable-pitch))
 
 ;;;;; Treesit and Eglot (LSP) configuration
     (customize-set-variable 'treesit-font-lock-level 4)
@@ -1086,6 +1096,58 @@ faces, and the flymake `proselint' backend is enabled."
 
 ;;; ======Aesthetic Packages======
 ;;;; Core Aesthetic Packages
+(defun get-lines (string)
+    (thread-last string
+                 string-lines
+                 (mapcar #'string-trim)
+                 (cl-remove-if (lambda (x) (string-empty-p x)))))
+(defun quake-check-for-updates ()
+    (interactive)
+    (let* ((default-directory "~/.emacs.d/")
+           (buffer (generate-new-buffer "*git version check*"))
+           (process (start-process-shell-command
+                     "*git version check*"
+                     buffer
+                     ;; we merge these into one command using
+                     ;; shell because I hate callback hell and we
+                     ;; don't have promises in elisp yet :)
+                     "git --no-pager tag -l --no-color; echo \"---\"; git --no-pager ls-remote --tags origin")))
+        (set-process-sentinel
+         process
+         (lambda (proc event)
+             (with-current-buffer buffer
+                 (pcase (process-status proc)
+                     ('exit
+                      (when-let* ((halves (mapcar #'get-lines (string-split (buffer-string) "---")))
+                                  (current-version (caar halves))
+                                  (remote-version-line (caadr halves))
+                                  (remote-version (save-match-data
+                                                      (string-match
+                                                       (rx (group "v" num "." num "." num (optional "-alpha." num)))
+                                                       remote-version-line)
+                                                      (match-string 1))))
+                          (if (not (string= remote-version current-version))
+                                  (message "There is an update available for Quake Emacs: %s"
+                                           (propertize (format "%s -> %s" current-version remote-version)
+                                                       'face `(:foreground "orange")))
+                              (message "%s" (propertize "Quake Emacs is up to date"
+                                                        'face `(:foreground "green"))))
+                          (kill-buffer buffer)))))))))
+(defun quake-update ()
+    (let ((default-directory "~/.emacs.d/")
+          (process (start-process "*quake update process*"
+                                  (get-buffer-create "*quake update process*")
+                                  "git"
+                                  "pull")))
+        (set-process-sentinel
+         process
+         (lambda (proc event)
+             (pcase event
+                 ('exit (if (> (process-exit-status proc) 0)
+                                (message "%s" (propertize "There was an error updating Quake Emacs. See *quake update process* for more details" 'face `(:foreground "red")))
+                            (message "%s%s"
+                                     (propertize "Quake Emacs has successfully been updated, please restart with " 'face `(:foreground "green"))
+                                     (key-description (vector "C-c" "p" "r"))))))))))
 (defun core/aesthetic-layer ()
     "If you're going to be staring at your editor all day, it might as well look nice.
 
@@ -1309,7 +1371,6 @@ spice things up, and we want integration *everywhere*
 (autoload 'optional/evil-layer "~/.emacs.d/evil-layer.el")
 
 ;;; ======Load Layers======
-;; no garbage collection during startup — we can amortize it later
 ;; Enable layers
 (dolist (layer quake-enabled-layers)
     (setq start-time (current-time))
@@ -1318,6 +1379,4 @@ spice things up, and we want integration *everywhere*
         (error
          (display-warning (format "Error occured in layer %S: %s" layer (error-message-string err)))))
     (message "Finished enabling layers %s in %.2f seconds" layer (float-time (time-since start-time))))
-
-;; Fix the aesthetics
-(put 'erase-buffer 'disabled nil)
+(quake-check-for-updates)
