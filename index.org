@@ -126,7 +126,7 @@ then Quake Emacs is for you.
 
 - 🌐 *Modern yet vanilla-first*: Despite having the modern UI/UX people have come to expect from an editor, Quake Emacs prioritizes [[https://b.tuxes.uk/avoiding-emacs-bankruptcy.html][using Emacs's built-in capabilities plus packages that integrate well with them]] as much as feasibly possible. If a feature can be achieved through something in vanilla Emacs, that is always prioritized; if it can't, packages that build as much as possible on built in features are prioritized. Nevertheless, Quake holds a modern UI/UX experience as a very high priority -- extra packages /will/ be added when necessary to achieve that.
 
-- 😇 *Uses god-mode*: Although Quake Emacs provides an extensive and well-integrated optional layer for =evil-mode= users, core Quake Emacs instead focuses on [[https://github.com/emacsorphanage/god-mode][=god-mode=]] for those who want to dabble in blessedly key-modifier free modal editing, since =god-mode= is more in line with the philosophy of strategically using small packages to build on and enhance built in functionality, instead of replacing it entirely. For more information, please see [[Keybindings]].
+- 😇 *Uses god-mode*: Although Quake Emacs provides an extensive and well-integrated [[id:76ef0558-0b20-4b04-97ee-8e262d11580a][optional layer]] for =evil-mode= users, core Quake Emacs instead focuses on [[https://github.com/emacsorphanage/god-mode][=god-mode=]] for those who want the power of blessedly key-modifier free modal editing within the holy domain of Emacs since =god-mode= is more in line with our philosophy of strategically using small packages to build on and enhance built in functionality, instead of replacing it entirely. For more information, please see [[Keybindings]].
 
 - 💻 *Self-updating*: Although Quake Emacs tries to avoid custom code and tooling, it also wants to avoid you having to deal with separate CLI programs outside of Emacs even more. In the interest of that, Quake Emacs is able to detect if there are new updates available for your editor asynchronously on startup and update itself if you ask it to (and only then) using git under the hood.
 
@@ -330,6 +330,9 @@ This matrix shows the list of languages that Quake Emacs has *built-in* support 
 If you want support for another language, one place to start is [[https://github.com/search?q=-ts-mode+emacs&type=repositories][the list of =-ts-mode=s available for Emacs on GitHub]].
 
 ** Personal Configuration and Extra Layers
+:PROPERTIES:
+:ID:       76ef0558-0b20-4b04-97ee-8e262d11580a
+:END:
 
 When writing custom configuration in your =user.el=, it is recommended that you separate your configuration out into logical groups according to general purpose, with each group contained within a function (and preferably with everything within those functions/groups bundled neatly into =use-package= declarations). This is precisely what Quake Emacs does — we call these logical units "layers", after the fashion of Doom Emacs and Spacemacs, although they're just regular functions, no boilerplate necessary — and it has a few benefits:
 
