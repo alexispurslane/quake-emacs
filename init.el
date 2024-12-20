@@ -107,18 +107,10 @@ fixes the problem." 'face 'bold))
 ;; unifies all these ideas into a single system, and also times
 ;; when those "catch-up" GCs happen more intelligently, is
 ;; probably better. That's GCMH. See: [[https://akrl.sdf.org/]]
-;;
-;; Note: The lead Emacs maintainer, Eli Zaretski,
-;; [[https://old.reddit.com/r/emacs/comments/bg85qm/garbage_collector_magic_hack/][has
-;; some concerns]] with this approach, but they seem to be based
-;; on concerns about the memory pressure Emacs using possibly up
-;; to 1GB of memory might cause to the system, which doesn't seem
-;; like a big issue on modern systems to me, and a
-;; misunderstanding of what GCMH is trying to achieve and how it
-;; goes about it.
 (use-package gcmh
     :custom
-    (gcmh-idle-delay 'auto)
+    (gcmh-idle-delay 'auto) ; this means that it will take longer to activate a GC if GCs are taking longer and happening at non-idle times. However, with the default `gcmh-auto-idle-delay-factor' it'll still happen very often usually, <1s probably, unlike the 15s of the normal setting.
+    (gcmh-high-cons-threshold (* 200 1000 1000)) ; this fixes [[https://gitlab.com/koral/gcmh/-/issues/6]] and addresses Eli Zaretski (lead Emacs maintainer)'s [[https://old.reddit.com/r/emacs/comments/bg85qm/garbage_collector_magic_hack/][concerns]] about large packages/files/jobs creating a huge amount of memory without it ever being collected thanks to GCMH that then hangs Emacs when idle time arrives
     :config
     (gcmh-mode 1))
 
@@ -1379,4 +1371,4 @@ spice things up, and we want integration *everywhere*
         (error
          (display-warning (format "Error occured in layer %S: %s" layer (error-message-string err)))))
     (message "Finished enabling layers %s in %.2f seconds" layer (float-time (time-since start-time))))
-(quake-check-for-updates)
+(add-hook 'after-init-hook #'quake-check-for-updates)
