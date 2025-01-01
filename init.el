@@ -52,14 +52,19 @@
 
 ;;; ======Prelude======
 
+(profiler-start 'cpu)
 (require 'cl-lib)
 (require 'rx)
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 (require 'use-package-ensure)
 (setq use-package-always-ensure t
-      package-enable-at-startup nil
-      use-package-compute-statistics t)
+      package-quickstart t
+      package--init-file-ensured t
+      package-enable-at-startup nil)
+(defvar quake--file-name-handler-alist file-name-handler-alist)
+(setq file-name-handler-alist nil)
+(add-hook 'emacs-startup-hook (lambda () (setq file-name-handler-alist quake--file-name-handler-alist)))
 
 ;; Print a little message to the user that we're loading packages if this is a fresh install
 
@@ -112,7 +117,8 @@ fixes the problem." 'face 'bold))
     (gcmh-idle-delay 'auto) ; this means that it will take longer to activate a GC if GCs are taking longer and happening at non-idle times. However, with the default `gcmh-auto-idle-delay-factor' it'll still happen very often usually, <1s probably, unlike the 15s of the normal setting.
     (gcmh-high-cons-threshold (* 200 1000 1000)) ; this fixes [[https://gitlab.com/koral/gcmh/-/issues/6]] and addresses Eli Zaretski (lead Emacs maintainer)'s [[https://old.reddit.com/r/emacs/comments/bg85qm/garbage_collector_magic_hack/][concerns]] about large packages/files/jobs creating a huge amount of memory without it ever being collected thanks to GCMH that then hangs Emacs when idle time arrives
     :config
-    (gcmh-mode 1))
+    (when (version< emacs-version "31.0.50") ; scratch/igc should land in 31, so don't use GCMH, we won't need it anymore
+        (gcmh-mode 1)))
 
 ;;; ======User-Modifiable Variables======
 (defcustom quake-org-home-directory
@@ -151,7 +157,8 @@ passed in as an argument."
     :group 'quake)
 
 
-(defun quake--insert-into-list (list el n)
+(defun quake--insert-into-list (list el n
+                                     )
     "Insert into list LIST an element EL at index N.
 
 If N is 0, EL is inserted before the first element.
@@ -199,6 +206,7 @@ your user.el with every single update to Quake."
 (use-package emacs
     :init
 ;;;; Setting up Emacs to behave in a more familiar and pleasing way
+    (setq auth-sources '("~/.authinfo.gpg"))      ; don't store my passwords and keys in plaintext, please
     (setq inhibit-startup-message t               ; we're going to have our own dashboard
           visible-bell t                          ; nobody likes being beeped at
           backup-by-copying t                     ; backing up a file by moving it is insane
@@ -212,6 +220,7 @@ your user.el with every single update to Quake."
           enable-recursive-minibuffers t          ; allow you to have multiple minibuffers open
           search-nonincremental-instead nil         ; don't degrade to nonincremental search if the user tries to exit out of isearch, nobody fucking wants that
           custom-file "~/.emacs.d/custom.el")     ; dump all the shit from custom somewhere else
+    (setq split-width-threshold 0 split-height-threshold nil) ; always split vertically, because most people's displays have more horizontal width than vertical width
     (setq-default fill-column 65)                 ; this will be used in reading modes, so set it to something nice
     (global-auto-revert-mode t)                      ; automatically update files when they change
     (add-hook 'before-save-hook 'whitespace-cleanup) ; remove trailling whitespace
@@ -225,8 +234,6 @@ your user.el with every single update to Quake."
     (setq-default indent-tabs-mode nil)              ; prefer spaces instead of tabs
 ;;;;; Disabling ugly and largely unhelpful UI features
     (tool-bar-mode -1) ; the menu bar is quite useful, but the tool bar is painfully ugly and adds little
-    (when (fboundp 'scroll-bar-mode) (scroll-bar-mode -1)) ; if we're running graphically, remove scroll bar
-
 ;;;;; Enable some modes that give nicer, more modern behavior
 
     (minibuffer-depth-indicate-mode 1)
@@ -238,11 +245,12 @@ your user.el with every single update to Quake."
     (global-visual-line-mode)                        ; wrap lines at end of window
 
 ;;;;; Enable better window management
-
     (winner-mode 1)                ; so you can undo modifications to your window layout
     (windmove-mode 1)              ; so you can move to windows directionally like in Vim, instead of only having other-window
-
 ;;;;; Performance tuning
+;;;;;; Optimizations copied from DOOM
+    (setq frame-inhibit-implied-resize t)
+    (setq initial-major-mode 'fundamental-mode)
 ;;;;;; Optimize font-locking for greater responsiveness
     (setq jit-lock-stealth-time 0.2
           jit-lock-defer-time 0.0
@@ -263,10 +271,10 @@ your user.el with every single update to Quake."
   modern day.
 
   Loads:
-  - `theme-anchor' for buffer-local themes, which are nice if
-  you're going to be using emacs a lot
+  - `recentf' so you can open recent files quickly,
   - `which-key' to show what keys can be pressed next at each stage of a
-  key combination
+  key combination,
+  - `repeat-mode', so that Emacs prefix key chords are much less onerous,
   - `helpful' to give slower, but better, documentation for Emacs Lisp
   - `icomplete' with careful configuration (thanks to Prot!) to
     make it work just as nicely as Vertico
@@ -277,22 +285,38 @@ your user.el with every single update to Quake."
   - `elisp-def', `elisp-demos', and `highlight-defined' to make
   the experience of configuring your editor much nicer.
   - `embark' to offer a powerful Hyperbole-like experience with
-    better integration."
+    better integration.
+  - `wgrep', so that you get the power of writable grep buffers,
+- `emacs-async' by jwiegley, so that sending mail, opening
+    org-agendas, running dired commands, and more can be done
+    asynchronously if you need to."
+
+;;;; More DWIM-y C-x o behavior, to avoid the long keybindings for window movement
+    (advice-add 'other-window :before
+                (defun quake--other-window-split-if-single (&rest _)
+                    "Split the frame if there is a single window."
+                    (when (one-window-p)
+                        (split-window-sensibly))))
+
 ;;;; Recentf
     (use-package recentf
+        :commands (recentf-mode)
         :custom
         (recentf-auto-cleanup 'never) ; automatic cleanup checks for dead files, which was causing it to try to visit files in recentf that were over TRAMP, which caused massive inexplicable slowdowns
-        :config
-        (recentf-mode))
+        :init (add-hook 'pre-command-hook (lambda () (recentf-mode 1))))
 ;;;; Vertico-style minibuffer completion UI using icomplete
     (use-package icomplete
-        :demand t
+        :commands (icomplete-vertical-mode)
+        :init (add-hook 'pre-command-hook (lambda () (icomplete-vertical-mode 1)))
         :bind (:map icomplete-minibuffer-map
                     ("RET"    . icomplete-force-complete-and-exit)
                     ("TAB"    . icomplete-force-complete)
                     ("DEL"    . icomplete-fido-backward-updir)
                     ("<down>" . icomplete-forward-completions)
-                    ("<up>"   . icomplete-backward-completions))
+                    ("<up>"   . icomplete-backward-completions)
+                    ("M-RET"  . embark-act)
+                    ("C-RET"  . embark-dwim)
+                    ("C-j"    . icomplete-fido-exit))
         :custom
         ;; remove arbitrary optimization limits that make icomplete
         ;; feel old-fashioned
@@ -302,16 +326,14 @@ your user.el with every single update to Quake."
         (icomplete-show-matches-on-no-input t)
         (icomplete-hide-common-prefix nil)
         (icomplete-prospects-height 15)
-        (icomplete-with-completion-tables t)
-        :config
-        (icomplete-vertical-mode 1))
+        (icomplete-with-completion-tables t))
 ;;;; A basic programmming mode to build off of that adds some expected things
+    (electric-pair-mode 1)
     (add-hook 'prog-mode-hook (defun progify-mode ()
                                   (prettify-symbols-mode 1)
                                   (display-line-numbers-mode 1)
                                   (setq display-line-numbers 'relative)
-                                  (hl-line-mode t)
-                                  (electric-pair-mode 1)))
+                                  (hl-line-mode t)))
 ;;;; Minibuffer completion and searching improvement packages
     (use-package marginalia
         :after icomplete
@@ -347,29 +369,16 @@ your user.el with every single update to Quake."
     (use-package helpful
         :commands (helpful-key helpful-callable helpful-command helpful-variable))
 
-    (use-package theme-anchor
-        :defer t
-        :commands (theme-anchor-buffer-local))
-
     (use-package which-key
-        :init (which-key-mode)
-        :bind (("C-?" . which-key-show-top-level))
-        :diminish which-key-mode
+        :commands (which-key-mode)
+        :init (add-hook 'pre-command-hook (lambda () (which-key-mode 1)))
         :custom
         (which-key-idle-delay 0.1)
         (which-key-idle-secondary-delay nil)
         (which-key-sort-order #'which-key-key-order-alpha)
         :config
-        (which-key-enable-god-mode-support)
+        (which-key-enable-god-mode-support))
 
-        ;; show which key when you're in isearch mode always,
-        ;; since those keybindings are obscure
-        (add-hook 'isearch-mode-hook (defun quake--isearch-which-key-popup ()
-                                         (run-at-time
-                                          0 nil
-                                          (lambda ()
-                                              (which-key--create-buffer-and-show
-                                               nil (symbol-value 'isearch-mode-map)))))))
     (use-package repeat
         :after (which-key)
         :config
@@ -396,6 +405,7 @@ your user.el with every single update to Quake."
 ;;;; Better Emacs Lisp editing experience
 
     (use-package elisp-def
+        :commands (elisp-def-mode)
         :hook (emacs-lisp-mode . elisp-def-mode))
 
     (use-package elisp-demos
@@ -404,9 +414,11 @@ your user.el with every single update to Quake."
         (advice-add 'helpful-update :after #'elisp-demos-advice-helpful-update))
 
     (use-package highlight-defined
+        :commands (highlight-defined-mode)
         :hook (emacs-lisp-mode . highlight-defined-mode))
 
     (use-package outline
+        :commands (outline-minor-mode)
         :hook ((prog-mode . outline-minor-mode)
                (text-mode . outline-minor-mode))
         :config
@@ -422,13 +434,62 @@ your user.el with every single update to Quake."
         (bind-key "<backtab>" #'dired-subtree-cycle dired-mode-map))
 ;;;; Better peformance using asynchronous processing with subordinate Emacs processes
     (use-package async
-        :commands (async-start async-start-process))
-;;;; Org-Mode improvements
-    (use-package htmlize
-        :after (org-mode))
-    (use-package toc-org
-        :hook (org-mode . toc-org-mode))
-;;;; Embark
+        :demand t
+        :hook (dired-mode . dired-async-mode)
+        :config
+        (add-hook 'message-mode-hook (lambda () (require 'smtpmail-async)))
+        (defun map-text-properties (props)
+            "Transform a plist of text properties in PROPS into text
+properties."
+            (let ((plist (caddr props)))
+                (while plist
+                    (put-text-property (1+ (nth 0 props))
+                                       (1+ (nth 1 props))
+                                       (car plist)
+                                       (let ((value (cadr plist)))
+                                           (cond ((and (consp value)
+                                                       (stringp (car value)))
+                                                  (with-temp-buffer
+                                                      (insert (car value))
+                                                      (map-text-properties (cdr value))
+                                                      (buffer-string)))
+                                                 ((and (consp value) (memq 'marker value))
+                                                  (let ((marker (set-marker
+                                                                 (make-marker)
+                                                                 (cl-loop for i in value
+                                                                          thereis (and (numberp i) i))
+                                                                 (get-buffer (mapconcat 'symbol-name (last value) "")))))
+                                                      (set-marker-insertion-type marker t)
+                                                      marker))
+                                                 (t value))))
+                    (setq plist (cddr plist)))
+                (when props
+                    (map-text-properties (nthcdr 3 props)))))
+        (defun async-org-agenda-list (prefix-argument)
+            "Run `org-agenda' asynchronously.
+
+Open the resulting *Org Agenda* buffer when complete."
+            (interactive "P")
+
+            (let ((command-and-restriction (org-agenda-get-restriction-and-command prefix-argument)))
+                (async-start
+                 ;; What to do in the child process
+                 (eval
+                  `(lambda ()
+                       (require 'org-agenda)
+                       (setq org-agenda-files ',org-agenda-files)
+                       (org-agenda ,prefix-argument ,(car command-and-restriction) ,(cdr command-and-restriction))
+                       (buffer-string)))
+
+                 ;; What to do when it finishes
+                 (lambda (result)
+                     (require 'org-agenda)
+                     (switch-to-buffer-other-window "*Org Agenda ASYNC*")
+                     (erase-buffer)
+                     (insert (car result))
+                     (map-text-properties (cdr result))
+                     (org-agenda-mode))))))
+    ;;;; Embark
     (use-package embark
         :commands (embark-act embark-dwim)
         :bind (:map embark-general-map
@@ -524,6 +585,8 @@ targets."
             "RET" #'embark-kmacro-run
             "n" #'embark-kmacro-name)
 
+        (define-key embark-general-map "a" 'flymake-vale-add-vocab)
+        (define-key embark-general-map "r" 'flymake-vale-remove-vocab)
         (add-to-list 'embark-keymap-alist '(kmacro . embark-kmacro-map)))
 ;;;;; Embark-Consult integration package
     (use-package embark-consult
@@ -586,10 +649,6 @@ External Packages:
   incorporates treesit.el support and behaves in a slightly more
   simple and predictable way
 
-- `whole-line-or-region' - Save you keystrokes and mental load by
-  making all region commands automatically operate on lines when
-  no region is active.
-
 - `puni' - Puni provides Smartparens-style structural editing
   based on Emacs's already exising structural editing commands,
   instead of reinventing the wheel, meaning that it can take
@@ -601,6 +660,14 @@ External Packages:
   Emacs's built in structural editing commands do, instead of
   having to maintian its own library of queries."
 
+;;;; Embark Should Always Work
+    (quake-emacs-define-key override-global-map
+        "M-RET" (lambda ()
+                    (interactive)
+                    (if (and (eq major-mode 'org-mode) (looking-at-p "^\\|$"))
+                            (org-meta-return)
+                        (embark-act)))
+        "C-<return>" #'embark-dwim)
 ;;;;; Window Management
     (quake-emacs-define-key window-prefix-map
         "b"    #'windmove-left
@@ -609,7 +676,6 @@ External Packages:
         "f"    #'windmove-right
         "u"    #'winner-undo
         "r"    #'winner-redo)
-
 ;;;;; God Mode
     (use-package god-mode
         :config
@@ -632,7 +698,6 @@ External Packages:
 ;;;;; Structural editing with Puni Mode
     ;; Use puni-mode globally and disable it for term-mode.
     (use-package puni
-        :defer t
         :bind (("C-)" . puni-slurp-forward)
                ("C-}" . puni-barf-forward)
                ("C-(" . puni-slurp-backward)
@@ -641,28 +706,11 @@ External Packages:
                ("C-&" . puni-convolute)
                ("C-^" . puni-raise)
                ("C-$" . puni-splice))
+        :hook ((text-mode . puni-mode)
+               (prog-mode . puni-mode)))
 
-        :init
-        ;; The autoloads of Puni are set up so you can enable `puni-mode` or
-        ;; `puni-global-mode` before `puni` is actually loaded. Only after you press
-        ;; any key that calls Puni commands, it's loaded.
-        (puni-global-mode)
-        (add-hook 'term-mode-hook #'puni-disable-puni-mode)
-        (add-hook 'eshell-mode-hook #'puni-disable-puni-mode))
-
-;;;;; Whole Line or Region
-
-    (use-package whole-line-or-region
-        :after (puni)
-        :config
-        (whole-line-or-region-global-mode)
-        ;; Puni overrides some of the region commands, so we need
-        ;; to advise those new commands to work with
-        ;; `whole-line-or-region'
-        (advice-add 'puni-kill-region :around (lambda (oldfun &rest r)
-                                                  (apply #'whole-line-or-region-wrap-modified-region oldfun (or r '(1))))))
 ;;;;; Define useful editing keys
-
+    (setq next-error-function 'flymake-goto-next-error)
     (quake-emacs-define-key global-map
         "C-x C-S-T"  #'transpose-regions
         "M-S-U"      #'upcase-dwim
@@ -678,13 +726,7 @@ External Packages:
         "C-'"        #'puni-expand-region
         "C-\""       #'puni-contract-region
         "C-x @"      #'rectangle-mark-mode
-        "C-="        #'indent-region
-        "M-RET"      #'embark-act
-        "C-RET"      #'embark-dwim)
-
-    (quake-emacs-define-key icomplete-minibuffer-map
-        "M-RET"   #'embark-act
-        "C-RET"   #'embark-dwim)
+        "C-="        #'indent-region)
 
 ;;;;; Yasnippet
     (quake-emacs-define-key global-map
@@ -697,6 +739,7 @@ External Packages:
     (quake-emacs-define-key global-map
 ;;;;;; Org Notes
         "C-c a" #'org-agenda
+        "C-c P" #'org-publish
         "C-c c" #'org-capture
         "C-c l"  #'org-store-link
         "C-c L"  #'org-insert-link-global
@@ -729,24 +772,22 @@ External Packages:
                               "S"   'scratch-window-toggle))
 ;;;;;; Top-level keybindings for convenience
         "C-~" 'shell-toggle
-        "C-:" 'pp-eval-expression
-        "C-;" 'execute-extended-command
+        "C-c C-j" 'eval-print-last-sexp
 ;;;;;; Buffer manipulation
         "C-x S-K" 'kill-current-buffer
         "C-x B"   'ibuffer
 ;;;;;; Project.el
         "C-x p E" 'flymake-show-project-diagnostics
 ;;;;;; Eglot
-        "C-c l"   (cons "LSP Server..."
+        "C-c e"   (cons "LSP Server..."
                         (quake-emacs-create-keymap
                             "E" 'flymake-show-buffer-diagnostics
-                            "e" 'consult-flymake
-                            "s" 'eglot
+                            "f" 'consult-flymake
+                            "e" 'eglot
                             "a" 'eglot-code-actions
                             "r" 'eglot-rename
                             "h" 'eldoc
-                            "f" 'eglot-format
-                            "F" 'eglot-format-buffer
+                            "f" 'eglot-format-buffer
                             "R" 'eglot-reconnect))
 
 ;;;;;; Helpful
@@ -817,46 +858,16 @@ External Packages:
         :custom
         (treesit-auto-install 'prompt)
         :config
-        ;; TODO: If we could get tree-sitter support for
-        ;; emacs-lisp working out of the box (automatically
-        ;; installed), then we could do away with
-        ;; `evil-cleverparens' entirely, and just have a
-        ;; consistent, generalized way of manipulating the AST of
-        ;; basically every langauge. The only other thing needed
-        ;; would be to implement generalized slurp/barf for tree
-        ;; sitter text objects. See [[file://~/.emacs.d/init.el::493]]
-        ;;
-        ;; (define-derived-mode elisp-ts-mode emacs-lisp-mode "ELisp[ts]"
-        ;;     "Tree-sitter major mode for editing Emacs Lisp."
-        ;;     :group 'rust
-        ;;     (when (treesit-ready-p 'elisp)
-        ;;         (treesit-parser-create 'elisp)
-        ;;         (treesit-major-mode-setup)))
-        ;; (setq elisp-tsauto-config
-        ;;       (make-treesit-auto-recipe
-        ;;        :lang 'elisp
-        ;;        :ts-mode 'elisp-ts-mode
-        ;;        :remap '(emacs-lisp-mode)
-        ;;        :url "https://github.com/Wilfred/tree-sitter-elisp"
-        ;;        :revision "main"
-        ;;        :source-dir "src"
-        ;;        :ext "\\.el\\'"))
-
-        ;; (add-to-list 'treesit-auto-recipe-list elisp-tsauto-config)
-        ;; (add-to-list 'treesit-auto-langs 'elisp)
         (treesit-auto-add-to-auto-mode-alist 'all)
         (global-treesit-auto-mode))
 
     (use-package eglot
         :commands (eglot eglot-ensure)
-        :preface
-        (add-hook 'prog-mode-hook (lambda ()
-                                      (interactive)
-                                      (unless (ignore-errors
-                                                  (command-execute #'eglot-ensure))
-                                          (message "Info: no LSP found for this file."))))
+        :init
+        (unless debug-on-error
+            (fset #'jsonrpc--log-event #'ignore)
+            (setq eglot-events-buffer-size 0))
         :config
-        (advice-add 'jsonrpc--log-event :override #'ignore) ; Eglot pretty-prints JSON to its log by default, which can cause slowdown
         (add-hook 'eglot-managed-mode-hook
                   (lambda () (add-hook 'before-save-hook 'eglot-format-buffer nil t)))
         (setq eglot-autoshutdown t
@@ -942,6 +953,35 @@ External Packages:
     (with-temp-file file
         (insert ""))
     (quake-org-add-note file))
+(defun quake--org-mode-pretty ()
+    (org-indent-mode 1)
+    (setq *previous-line-spacing* line-spacing)
+    (setq line-spacing 0.1)
+    (setq-local visual-fill-column-width 65)
+    (column-number-mode -1)
+    (buffer-face-mode 1)
+    (ligature-mode -1)
+    (flymake-vale-load)
+    (flymake-mode 1)
+    (prettify-symbols-mode -1))
+(defun flymake-vale-add-vocab ()
+    (interactive)
+    (let ((word (thing-at-point 'word))
+          (bounds (bounds-of-thing-at-point 'word)))
+        (with-temp-buffer
+            (newline)
+            (insert word)
+            (write-region (point-min) (point-max) "~/.config/vale/styles/config/vocabularies/wordlist/accept.txt" t))
+        (flymake-after-change-function (car bounds) (cdr bounds) (- (cdr bounds) (car bounds)))))
+(defun flymake-vale-remove-vocab ()
+    (interactive)
+    (let ((word (thing-at-point 'word))
+          (bounds (bounds-of-thing-at-point 'word)))
+        (with-temp-buffer
+            (newline)
+            (insert word)
+            (write-region (point-min) (point-max) "~/.config/vale/styles/config/vocabularies/wordlist/reject.txt" t))
+        (flymake-after-change-function (car bounds) (cdr bounds) (- (cdr bounds) (car bounds)))))
 (defun task/writing-layer ()
     "Adds a focus mode with prose linting, pandoc, and a latex preview
 pane, as well as prose-appropriate line wrapping. Also configures
@@ -949,18 +989,48 @@ org mode for vanilla-org zettelkesten note-taking based on
 [[https://github.com/egh/org-mode-zettelkasten][this guide]].
 
   External Packages:
+  - `htmlize', to convert org buffers into html buffers for e.g.
+    sending mail,
+  - `flymake-vale', so that you can get fast, accurate,
+    markup-aware prose linting and fast(er than `flyspell-mode')
+    spell checking in all your text, latex, org mode, markdown,
+    and email buffers (to correct misspelt words, use ispell,
+    since vale doesn't offer that),
+  - `org-toc', for generating tables of contents inside an org
+    buffer instead of during export,
   - `pandoc-mode' one mode to rule them all for managing
     conversions and compilations of all your files!
   - `visual-fill-column' for dealing with those line-paragraphs
-  - `darkroom', the focus mode of your dreams
-  - `flymake-proselint', to help you improve your prose
   - `latex-preview-pane', so if you're writing LaTeX, you can see
-  what it will produce."
+    what it will produce.
+  - `wucuo-mode' so that flyspell only runs within the currently
+    visible region of a file, significantly speeding up what is
+    otherwise an extremely slow process which is notorious for
+    locking Emacs up"
 ;;;;; Set up org mode
+    (add-to-list 'ispell-skip-region-alist '(":\\(PROPERTIES\\|LOGBOOK\\):" . ":END:"))
+    (add-to-list 'ispell-skip-region-alist '("#\\+BEGIN_SRC" . "#\\+END_SRC"))
+    (unless (fboundp 'flymake-vale-load)
+        ;; Suggested Vale config:
+        ;;
+        ;; StylesPath = /var/home/<username>/.config/vale/styles
+        ;;
+        ;; MinAlertLevel = suggestion
+        ;;
+        ;; Packages = proselint
+        ;; Vocab = wordlist
+        ;;
+        ;; [*.{md,org}]
+        ;;
+        ;; BasedOnStyles = Vale, proselint
+        (package-vc-install "https://github.com/tpeacock19/flymake-vale"))
     (use-package org
-        :commands (org-mode consult-org-agenda quake-org-new-note-file org-agenda org-insert-link-global)
+        :commands (org-mode consult-org-agenda org-agenda org-insert-link-global org-publish)
         :custom
+        (org-use-speed-commands t)
+        (org-agenda-inhibit-startup t)
         ;; TODO: if I can figure out a good cache invalidation scheme, (org-refile-use-cache t)
+        (org-agenda-window-setup 'other-window)
         (org-complete-tags-always-offer-all-agenda-tags t)
         (org-id-link-to-org-use-id t)
         (org-id-extra-files 'org-agenda-text-search-extra-files)
@@ -968,13 +1038,21 @@ org mode for vanilla-org zettelkesten note-taking based on
         (org-outline-path-complete-in-steps nil)
         (org-refile-targets '((nil :maxlevel . 9)
                               (org-agenda-files :maxlevel . 5)))
+        :hook ((org-mode . quake--org-mode-pretty))
         :config
+        ;; Cooperate with imenu. This should exist by default, dammit!
+        (add-hook 'org-mode-hook (lambda () (imenu-add-to-menubar "Imenu")))
+
+        ;; Zettelkasten configuration
         (defun org-id-complete-link ()
             "Create an id: link using completion."
             (concat "id:" (org-id-get-with-outline-path-completion org-refile-targets)))
 
         (org-link-set-parameters "id" :complete 'org-id-complete-link)
 
+        ;; TODO: Replace this with
+        ;; [[https://github.com/toshism/org-super-links]] when
+        ;; Emacs 30 rolls around and we have use-package :vc
         (defun quake-org-backlinks ()
             "Search for backlinks to current entry."
             (interactive)
@@ -990,21 +1068,25 @@ do not already have one."
             (org-map-entries 'org-id-get-create))
 
         (setq org-directory quake-org-home-directory)
-        (add-to-list 'org-agenda-files quake-org-home-directory)
+        (setq org-agenda-files (cons quake-org-home-directory
+                                     (cl-remove-if-not #'file-directory-p
+                                                       (directory-files-recursively quake-org-home-directory "" t (lambda (dir) (length= (directory-files dir nil "\\.agenda-ignore" t 1) 0)) t))))
 
         (org-id-update-id-locations)
         (add-hook 'org-capture-prepare-finalize-hook 'org-id-get-create)
 
         (quake-repeatize 'org-mode-map)
 
-        (set-face-attribute 'org-level-1 nil :height 2.0)
-        (set-face-attribute 'org-level-2 nil :height 1.7)
-        (set-face-attribute 'org-level-3 nil :height 1.4)
-        (set-face-attribute 'org-level-4 nil :height 1.1)
-        (set-face-attribute 'org-level-5 nil :height 1.0)
-        (set-face-attribute 'org-block nil :inherit 'fixed-pitch)
-        (set-face-attribute 'org-code nil :inherit 'fixed-pitch)
-        (set-face-attribute 'org-verbatim nil :inherit 'fixed-pitch)
+        (custom-set-faces
+         '(org-default ((t (:inherit variable-pitch :height 160))))
+         '(org-level-1 ((t (:height 2.0))))
+         '(org-level-2 ((t (:height 1.7))))
+         '(org-level-3 ((t (:height 1.4))))
+         '(org-level-4 ((t (:height 1.1))))
+         '(org-level-5 ((t (:height 1.0))))
+         '(org-block ((t (:inherit fixed-pitch))))
+         '(org-code ((t (:inherit fixed-pitch))))
+         '(org-verbatim ((t (:inherit fixed-pitch)))))
 
         (setq org-ellipsis "  " ;; folding symbol
               org-startup-indented t
@@ -1032,7 +1114,11 @@ do not already have one."
                  "* %?\n  %i\n  ")
                 ("j" "Journal" entry (function quake-org-prompt-note-file)
                  "* %?\nEntered on %U\n  %i\n  %a"))))
-
+;;;;; Org extras
+    (use-package htmlize
+        :after (org-mode))
+    (use-package toc-org
+        :hook (org-mode . toc-org-mode))
 ;;;;; Typesetting packages (Latex, pandoc)
     (use-package pandoc-mode
         :hook ((markdown-mode . pandoc-mode)
@@ -1044,47 +1130,9 @@ do not already have one."
         :commands (latex-preview-pane-mode latex-preview-pane-enable))
 ;;;;; Fully-fledged word processing minor mode
     (use-package flymake-proselint
-        :hook (word-processing-mode . flymake-proselint-setup))
+        :commands (flymake-proselint-setup))
 
-    (use-package darkroom
-        :commands (darkroom-mode darkroom-tentative-mode))
-
-    (defvar *previous-line-spacing* nil)
-    (define-minor-mode word-processing-mode
-        "Toggle Word Processing mode.
-Interactively with no argument, this command toggles the mode. A
-positive prefix argument enables the mode, any other prefix
-disables it. From Lisp, argument omitted or nil enables the mode,
-`toggle' toggles the state.
-
-When Word Processing mode is enabled, `darkroom-mode' is
-triggered for a distraction-free writing experience. In addition,
-column numbers, ligatures, prettified symbols, and fringes are
-disabled, `buffer-face-mode' is enabled to set the current buffer
-face to iA Writer Quattro V or your choice of writing-specific
-faces, and the flymake `proselint' backend is enabled."
-        :init-value nil
-        :lighter " Word Processing"
-        (if word-processing-mode
-                (progn
-                    (setq *previous-line-spacing* line-spacing)
-                    (setq line-spacing 0.1)
-                    (column-number-mode -1)
-                    (ligature-mode -1)
-                    (darkroom-mode 1)
-                    (buffer-face-mode 1)
-                    (flymake-mode 1)
-                    (flyspell-mode 1)
-                    (prettify-symbols-mode -1))
-            (progn
-                (setq line-spacing *previous-line-spacing*)
-                (column-number-mode 1)
-                (ligature-mode 1)
-                (darkroom-mode 0)
-                (buffer-face-mode 0)
-                (flymake-mode 0)
-                (flyspell-mode 0)
-                (prettify-symbols-mode 1)))))
+    (defvar *previous-line-spacing* nil))
 
 ;;; ======Aesthetic Packages======
 ;;;; Core Aesthetic Packages
@@ -1149,19 +1197,29 @@ faces, and the flymake `proselint' backend is enabled."
   - `enlight', because a launchpad is always welcome
   - `eldoc-box', because documentation needs to look nice and appear
   next to your cursor so you don't have to move your eyes
-  - `breadcrumb', so you don't get lost"
+  - `breadcrumb', so you don't get lost
+  - `visual-fill-column', so that text is centered in buffers and
+    pleasingly visually wrapped to a reasonable size. Makes
+    writing and even code-editing nicer."
+;;;;; Fill Columns and Center
+    (use-package visual-fill-column
+        :config
+        (setq-default visual-fill-column-center-text t)
+        (setq-default visual-fill-column-width 120)
+        (global-visual-fill-column-mode))
+;;;;; Themes
     ;; Although this is big and relatively slow (one of the slowest
     ;; things I include) doom's themes are just too good to pass up
     (use-package doom-themes
         :config
         ;; Global settings (defaults)
         (setq doom-themes-enable-bold t
-              doom-themes-enable-italic t))
-
-    (load-theme quake-color-theme t)
+              doom-themes-enable-italic t)
+        (load-theme quake-color-theme t))
 
     ;; Make things roomier and more minimal/austere
     (use-package spacious-padding
+        :after (doom-themes)
         :config
         (setq spacious-padding-widths `( :internal-border-width 20
                                          :header-line-width 4
@@ -1227,11 +1285,9 @@ faces, and the flymake `proselint' backend is enabled."
                                                     (string= (buffer-name (current-buffer))
                                                              "*scratch*"))
                                              (emacs-lisp-mode))))
-    (setq initial-major-mode 'fundamental-mode)
 
     (use-package eldoc-box
         :config
-        (setq eldoc-box-lighter " ElDoc-Box")
         (set-face-attribute 'eldoc-box-body nil :inherit 'variable-pitch :weight 'normal)
         (set-face-foreground 'border (face-background 'mode-line))
         :hook (eldoc-mode . eldoc-box-hover-at-point-mode))
@@ -1280,7 +1336,7 @@ spice things up, and we want integration *everywhere*
 ;;;;; Highlight TODOs, FIXMEs, etc
     (use-package hl-todo
         :commands (hl-todo-mode)
-        :init (add-hook 'prog-mode-hook #'hl-todo-mode))
+        :hook (prog-mode-hook . hl-todo-mode))
 
 ;;;;; Icons
     ;; Icons are nice to have! Nerd icons is faster and better
@@ -1369,6 +1425,7 @@ spice things up, and we want integration *everywhere*
     (condition-case-unless-debug err
             (funcall layer)
         (error
-         (display-warning (format "Error occured in layer %S: %s" layer (error-message-string err)))))
+         (display-warning :error (format "Error occured in layer %S: %s" layer (error-message-string err)))))
     (message "Finished enabling layers %s in %.2f seconds" layer (float-time (time-since start-time))))
-(add-hook 'after-init-hook #'quake-check-for-updates)
+(add-hook 'emacs-startup-hook #'quake-check-for-updates)
+(profiler-stop)
