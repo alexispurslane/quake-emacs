@@ -1,6 +1,7 @@
 *
 !init.el
 !user.el
+!evil-layer.el
 !index.html
 !README.org
 !index.org
