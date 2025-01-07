@@ -12,14 +12,16 @@
 
 ;;; Code:
 
-(setq quake-enabled-layers
-      (list
-       #'core/usability-layer
-       #'core/keys-layer
-       #'task/coding-layer
-       #'task/writing-layer
-       #'task/notes-layer
-       #'core/aesthetic-layer
-       #'optional/bling-layer
-       ))
-
+;; DO NOT directly modify `quake-enabled-layers' unless you are
+;; willing to manually update it every time Quake Emacs is
+;; updated. Instead use `quake-layers' to remove built in layers
+;; and add them. Here's a possible example:
+;;
+;; (quake-layers
+;;  :enable ((user/prometheus-layer . 2)
+;;           user/eshell-layer
+;;           user/communication-layer
+;;           user/containers-layer
+;;           user/ebooks-layer
+;;           user/syncthing-layer)
+;;  :disable (optional/bling-layer))
