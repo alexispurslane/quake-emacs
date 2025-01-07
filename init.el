@@ -327,13 +327,6 @@ your user.el with every single update to Quake."
         (icomplete-hide-common-prefix nil)
         (icomplete-prospects-height 15)
         (icomplete-with-completion-tables t))
-;;;; A basic programmming mode to build off of that adds some expected things
-    (electric-pair-mode 1)
-    (add-hook 'prog-mode-hook (defun progify-mode ()
-                                  (prettify-symbols-mode 1)
-                                  (display-line-numbers-mode 1)
-                                  (setq display-line-numbers 'relative)
-                                  (hl-line-mode t)))
 ;;;; Minibuffer completion and searching improvement packages
     (use-package marginalia
         :after icomplete
@@ -437,58 +430,7 @@ your user.el with every single update to Quake."
         :demand t
         :hook (dired-mode . dired-async-mode)
         :config
-        (add-hook 'message-mode-hook (lambda () (require 'smtpmail-async)))
-        (defun map-text-properties (props)
-            "Transform a plist of text properties in PROPS into text
-properties."
-            (let ((plist (caddr props)))
-                (while plist
-                    (put-text-property (1+ (nth 0 props))
-                                       (1+ (nth 1 props))
-                                       (car plist)
-                                       (let ((value (cadr plist)))
-                                           (cond ((and (consp value)
-                                                       (stringp (car value)))
-                                                  (with-temp-buffer
-                                                      (insert (car value))
-                                                      (map-text-properties (cdr value))
-                                                      (buffer-string)))
-                                                 ((and (consp value) (memq 'marker value))
-                                                  (let ((marker (set-marker
-                                                                 (make-marker)
-                                                                 (cl-loop for i in value
-                                                                          thereis (and (numberp i) i))
-                                                                 (get-buffer (mapconcat 'symbol-name (last value) "")))))
-                                                      (set-marker-insertion-type marker t)
-                                                      marker))
-                                                 (t value))))
-                    (setq plist (cddr plist)))
-                (when props
-                    (map-text-properties (nthcdr 3 props)))))
-        (defun async-org-agenda-list (prefix-argument)
-            "Run `org-agenda' asynchronously.
-
-Open the resulting *Org Agenda* buffer when complete."
-            (interactive "P")
-
-            (let ((command-and-restriction (org-agenda-get-restriction-and-command prefix-argument)))
-                (async-start
-                 ;; What to do in the child process
-                 (eval
-                  `(lambda ()
-                       (require 'org-agenda)
-                       (setq org-agenda-files ',org-agenda-files)
-                       (org-agenda ,prefix-argument ,(car command-and-restriction) ,(cdr command-and-restriction))
-                       (buffer-string)))
-
-                 ;; What to do when it finishes
-                 (lambda (result)
-                     (require 'org-agenda)
-                     (switch-to-buffer-other-window "*Org Agenda ASYNC*")
-                     (erase-buffer)
-                     (insert (car result))
-                     (map-text-properties (cdr result))
-                     (org-agenda-mode))))))
+        (add-hook 'message-mode-hook (lambda () (require 'smtpmail-async))))
     ;;;; Embark
     (use-package embark
         :commands (embark-act embark-dwim)
@@ -634,6 +576,17 @@ Uses the same syntax and semantics as `quake-emacs-define-key'."
              (put cmd 'repeat-map keymap)))
      (symbol-value keymap)))
 
+(defun ispell-autocorrect-word ()
+    "Replace the misspelled word under point with ispell's best-guess
+alternative. Useful for fixing simple typos. Uses
+`flyspell-auto-correct-word' if flyspell-mode is active."
+    (interactive)
+    (if flyspell-mode
+            (flyspell-auto-correct-word)
+        (cl-letf (((symbol-function 'ispell-command-loop)
+                   (lambda (miss guess word start end) (car miss))))
+            (ispell-word))))
+
 (defun core/keys-layer ()
     "Defines all the custom keybindings for Quake Emacs and pull
 in god mode, since both evil and non-evil users willprobably want it.
@@ -682,7 +635,7 @@ External Packages:
         (defun quake-god-mode-update-cursor-type ()
             (setq cursor-type (if (or god-local-mode buffer-read-only) 'box 'bar)))
 
-        (add-hook 'post-command-hook #'quake-god-mode-update-cursor-type)
+        (add-hook 'post-command-hook 'quake-god-mode-update-cursor-type)
         (defun quake-god-mode-toggle-on-overwrite ()
             "Toggle god-mode on overwrite-mode."
             (if (bound-and-true-p overwrite-mode)
@@ -710,23 +663,23 @@ External Packages:
                (prog-mode . puni-mode)))
 
 ;;;;; Define useful editing keys
-    (setq next-error-function 'flymake-goto-next-error)
     (quake-emacs-define-key global-map
-        "C-x C-S-T"  #'transpose-regions
-        "M-S-U"      #'upcase-dwim
-        "C-S-U"      #'upcase-char
-        "C-S-R"      #'overwrite-mode
-        "M-F"        #'forward-to-word
-        "M-B"        #'backward-to-word
-        "M-A"        #'align-regexp
-        "M-S"        #'sort-lines
-        "M-R"        #'reverse-region
-        "M-j"        #'join-line
-        "C-."        #'repeat
-        "C-'"        #'puni-expand-region
-        "C-\""       #'puni-contract-region
-        "C-x @"      #'rectangle-mark-mode
-        "C-="        #'indent-region)
+        "C-x C-S-T"  'transpose-regions
+        "C-M-i"      'ispell-autocorrect-word
+        "M-S-U"      'upcase-dwim
+        "C-S-U"      'upcase-char
+        "C-S-R"      'overwrite-mode
+        "M-F"        'forward-to-word
+        "M-B"        'backward-to-word
+        "M-A"        'align-regexp
+        "M-S"        'sort-lines
+        "M-R"        'reverse-region
+        "M-j"        'join-line
+        "C-."        'repeat
+        "C-'"        'puni-expand-region
+        "C-\""       'puni-contract-region
+        "C-x @"      'rectangle-mark-mode
+        "C-="        'indent-region)
 
 ;;;;; Yasnippet
     (quake-emacs-define-key global-map
@@ -738,13 +691,13 @@ External Packages:
 ;;;;; General Quake-recommended keybindings
     (quake-emacs-define-key global-map
 ;;;;;; Org Notes
-        "C-c a" #'org-agenda
-        "C-c P" #'org-publish
-        "C-c c" #'org-capture
-        "C-c l"  #'org-store-link
-        "C-c L"  #'org-insert-link-global
-        "C-c n"  #'quake-org-new-note-file
-        "C-c A"  #'consult-org-agenda
+        "C-c a"                 'org-agenda
+        "C-c P"                 'org-publish
+        "C-c c"                 'org-capture
+        "C-c l"                 'org-store-link
+        "C-c L"                 'org-insert-link-global
+        "C-c n"                 'quake-org-new-note-file
+        "C-c A"                 'consult-org-agenda
         "C-c p"   (cons "Profile..."
                         (quake-emacs-create-keymap
                             "t" 'consult-theme
@@ -755,29 +708,15 @@ External Packages:
                             "r" 'restart-emacs
                             "l" (cons "Reload user config"
                                       (lambda () (interactive) (load-file "~/.emacs.d/init.el")))))
-;;;;;; Opening things
-        "C-c o"     (cons "Open..."
-                          (quake-emacs-create-keymap
-                              "w"   'eww
-                              "a"   'org-agenda
-                              "s"   (cons "Open new shell"
-                                          (lambda () (interactive)
-                                              (let ((new-shell-frame (make-frame)))
-                                                  (select-frame new-shell-frame)
-                                                  (funcall quake-term-preferred-command 'new))))
-                              "T"   'dired-sidebar-toggle-sidebar
-                              "t"   'toggle-frame-tab-bar
-                              "m"   'gnus-other-frame
-                              "d"   'word-processing-mode
-                              "S"   'scratch-window-toggle))
+        "C-c w"                 'eww
 ;;;;;; Top-level keybindings for convenience
-        "C-~" 'shell-toggle
-        "C-c C-j" 'eval-print-last-sexp
+        "C-~"                   'shell-toggle
+        "C-c C-j"               'eval-print-last-sexp
 ;;;;;; Buffer manipulation
-        "C-x S-K" 'kill-current-buffer
-        "C-x B"   'ibuffer
+        "C-x S-K"               'kill-current-buffer
+        "C-x B"                 'ibuffer
 ;;;;;; Project.el
-        "C-x p E" 'flymake-show-project-diagnostics
+        "C-x p E"               'flymake-show-project-diagnostics
 ;;;;;; Eglot
         "C-c e"   (cons "LSP Server..."
                         (quake-emacs-create-keymap
@@ -791,10 +730,10 @@ External Packages:
                             "R" 'eglot-reconnect))
 
 ;;;;;; Helpful
-        "C-h v" 'helpful-variable
-        "C-h f" 'helpful-callable
-        "C-h k" 'helpful-key
-        "C-h x" 'helpful-command))
+        "C-h v"                 'helpful-variable
+        "C-h f"                 'helpful-callable
+        "C-h k"                 'helpful-key
+        "C-h x"                 'helpful-command))
 
 ;;; ======Task Specific Layers======
 ;;;; Coding layer
@@ -820,7 +759,17 @@ External Packages:
   formatting not matching a project's again.
   - `yasnippet' and `yasnippet-corfu', so you don't have to type all
   that rote boilerplate"
-
+;;;;; A basic programming mode using built in things
+    (electric-pair-mode 1)
+    (add-hook 'prog-mode-hook (defun progify-mode ()
+                                  (prettify-symbols-mode 1)
+                                  (display-line-numbers-mode 1)
+                                  (setq display-line-numbers 'relative)
+                                  (hl-line-mode t)
+                                  (eglot-ensure)
+                                  (flymake-mode)))
+    (add-hook 'flymake-mode-hook (lambda ()
+                                     (setq next-error-function 'flymake-goto-next-error)))
 ;;;;; Version-control and project management
     ;; Emacs' entire selling point right here!
     (use-package magit
@@ -940,20 +889,25 @@ External Packages:
         (add-to-list 'completion-at-point-functions #'yasnippet-capf)))
 ;;;; Writing layer
 (defun quake-org-add-note (file)
+    "Adds an org file to your agenda text search and consult note files."
     (interactive "FNote file: ")
     (add-to-list 'consult-notes-org-headings-files file)
     (add-to-list 'org-agenda-text-search-extra-files file))
 
 (defun quake-org-add-note-directory (dir)
+    "Adds a whole directory of notes using `quake-org-add-note'."
     (interactive "DNotes directory: ")
     (mapcar #'quake-add-note (directory-files dir)))
 
 (defun quake-org-new-note-file (file)
+    "Creates a new note file in your `quake-org-home-directory'"
     (interactive (list (read-file-name "Note file name: " quake-org-home-directory)))
     (with-temp-file file
         (insert ""))
     (quake-org-add-note file))
+
 (defun quake--org-mode-pretty ()
+    "Enables a large amount of prettification for `org-mode' files."
     (org-indent-mode 1)
     (setq *previous-line-spacing* line-spacing)
     (setq line-spacing 0.1)
@@ -964,6 +918,7 @@ External Packages:
     (flymake-vale-load)
     (flymake-mode 1)
     (prettify-symbols-mode -1))
+
 (defun flymake-vale-add-vocab ()
     (interactive)
     (let ((word (thing-at-point 'word))
@@ -1038,10 +993,21 @@ org mode for vanilla-org zettelkesten note-taking based on
         (org-outline-path-complete-in-steps nil)
         (org-refile-targets '((nil :maxlevel . 9)
                               (org-agenda-files :maxlevel . 5)))
-        :hook ((org-mode . quake--org-mode-pretty))
         :config
-        ;; Cooperate with imenu. This should exist by default, dammit!
-        (add-hook 'org-mode-hook (lambda () (imenu-add-to-menubar "Imenu")))
+        (defun quake-org-add-ids-to-headlines-in-file ()
+            "Add ID properties to all headlines in the current file which
+do not already have one."
+            (interactive)
+            (org-map-entries 'org-id-get-create))
+
+        (add-hook 'org-mode-hook (defun quake--org-mode-hooks ()
+                                     ;; Cooperate with imenu. This should exist by default, dammit!
+                                     (imenu-add-to-menubar "Imenu")
+                                     ;; Prettify
+                                     (quake--org-mode-pretty)
+                                     ;; Add IDs to everything after save.
+                                     (add-hook 'before-save-hook 'quake-org-add-ids-to-headlines-in-file)))
+
 
         ;; Zettelkasten configuration
         (defun org-id-complete-link ()
@@ -1061,18 +1027,12 @@ org mode for vanilla-org zettelkesten note-taking based on
                             (error "Unable to create a link to here"))))
                 (org-occur-in-agenda-files (regexp-quote link))))
 
-        (defun quake-org-add-ids-to-headlines-in-file ()
-            "Add ID properties to all headlines in the current file which
-do not already have one."
-            (interactive)
-            (org-map-entries 'org-id-get-create))
-
         (setq org-directory quake-org-home-directory)
         (setq org-agenda-files (cons quake-org-home-directory
                                      (cl-remove-if-not #'file-directory-p
                                                        (directory-files-recursively quake-org-home-directory "" t (lambda (dir) (length= (directory-files dir nil "\\.agenda-ignore" t 1) 0)) t))))
 
-        (org-id-update-id-locations)
+        ;;(org-id-update-id-locations)
         (add-hook 'org-capture-prepare-finalize-hook 'org-id-get-create)
 
         (quake-repeatize 'org-mode-map)
@@ -1114,25 +1074,15 @@ do not already have one."
                  "* %?\n  %i\n  ")
                 ("j" "Journal" entry (function quake-org-prompt-note-file)
                  "* %?\nEntered on %U\n  %i\n  %a"))))
-;;;;; Org extras
     (use-package htmlize
         :after (org-mode))
     (use-package toc-org
         :hook (org-mode . toc-org-mode))
-;;;;; Typesetting packages (Latex, pandoc)
     (use-package pandoc-mode
         :hook ((markdown-mode . pandoc-mode)
                (org-mode . pandoc-mode)
                (latex-mode . pandoc-mode)
-               (doc-view-mode . pandoc-mode)))
-
-    (use-package latex-preview-pane
-        :commands (latex-preview-pane-mode latex-preview-pane-enable))
-;;;;; Fully-fledged word processing minor mode
-    (use-package flymake-proselint
-        :commands (flymake-proselint-setup))
-
-    (defvar *previous-line-spacing* nil))
+               (doc-view-mode . pandoc-mode))))
 
 ;;; ======Aesthetic Packages======
 ;;;; Core Aesthetic Packages
@@ -1194,13 +1144,14 @@ do not already have one."
   External Packages:
   - `doom-themes', for an unparalleled collection of excellent
   themes, so you never have to go searching for a theme again
-  - `enlight', because a launchpad is always welcome
   - `eldoc-box', because documentation needs to look nice and appear
   next to your cursor so you don't have to move your eyes
   - `breadcrumb', so you don't get lost
   - `visual-fill-column', so that text is centered in buffers and
     pleasingly visually wrapped to a reasonable size. Makes
     writing and even code-editing nicer."
+;;;;; Make Info manuals nicer to read
+    (add-hook 'Info-mode-hook 'buffer-face-mode)
 ;;;;; Fill Columns and Center
     (use-package visual-fill-column
         :config
@@ -1336,7 +1287,7 @@ spice things up, and we want integration *everywhere*
 ;;;;; Highlight TODOs, FIXMEs, etc
     (use-package hl-todo
         :commands (hl-todo-mode)
-        :hook (prog-mode-hook . hl-todo-mode))
+        :hook (prog-mode . hl-todo-mode))
 
 ;;;;; Icons
     ;; Icons are nice to have! Nerd icons is faster and better
@@ -1361,7 +1312,7 @@ spice things up, and we want integration *everywhere*
     ;; Integrate them with dired
     (use-package nerd-icons-dired
         :commands (nerd-icons-dired-mode)
-        :hook (dired-mode-hook . nerd-icons-dired-mode))
+        :hook (dired-mode . nerd-icons-dired-mode))
 ;;;;; Ligatures
     ;; This assumes you've installed the package via MELPA.
     (use-package ligature
