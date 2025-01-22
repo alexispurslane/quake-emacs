@@ -108,8 +108,6 @@ qualifiers."
         ;; Make :q close the buffer and window, not quit the entire
         ;; Emacs application (we never leave Emacs!)
         (global-set-key [remap evil-quit] 'kill-buffer-and-window)
-        (quake-evil-define-key (motion normal visual) override-global-map
-                               "<escape>" 'escape-dwim)
 
         ;; Override evil mode's exceptions to defaulting to normal-mode
         (evil-set-initial-state 'enlight-mode 'motion)
