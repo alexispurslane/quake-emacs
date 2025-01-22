@@ -82,8 +82,6 @@ qualifiers."
 
   - `evil', the Emacs editor of choice
   - `evil-collection', to integrate Evil mode with everything else
-  - `evil-cleverparens', to give you proper S-expr editing
-    capabilities, since you'll be doing a lot of that
   - `evil-org-mode', for good org mode keybindings for Evil
   - `treemacs-evil', for good treemacs keybindings for Evil
   - `evil-god-state', to use god mode as an automatic leader key
@@ -184,11 +182,6 @@ qualifiers."
         :config
         (evil-collection-init))
 
-    (use-package evil-cleverparens
-        :after (evil)
-        :hook ((lisp-mode . evil-cleverparens-mode)
-               (emacs-lisp-mode . evil-cleverparens-mode)))
-
     (use-package treemacs-evil
         :after (treemacs evil)
         :ensure t)
@@ -231,7 +224,7 @@ qualifiers."
 
         ;; make "tree sitter expand region" a manipulable text object
         (evil-define-text-object evil-ts-text-obj-expand-region (count &optional beg end type)
-                                 (evil-ts-expand-region))
+            (evil-ts-expand-region))
 
         ;; bind it to "x"
         (define-key evil-outer-text-objects-map "x" 'evil-ts-text-obj-expand-region)
