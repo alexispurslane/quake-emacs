@@ -1206,8 +1206,6 @@ spice things up, and we want integration *everywhere*
         :custom
         (tab-bar-close-button-show nil)
         (tab-bar-new-button-show nil)
-        (tab-bar-auto-width-max '((150) 20))
-        (tab-bar-auto-width-min '((150) 20))
         :init
         (advice-add 'tab-bar-mode :after
                     (lambda (&rest _r)
