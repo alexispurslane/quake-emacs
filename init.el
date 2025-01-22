@@ -65,7 +65,7 @@
 (defvar quake--file-name-handler-alist file-name-handler-alist)
 (setq file-name-handler-alist nil)
 (add-hook 'emacs-startup-hook (lambda () (setq file-name-handler-alist quake--file-name-handler-alist)))
-
+(autoload 'optional/evil-layer "~/.emacs.d/evil-layer.el")
 ;; Print a little message to the user that we're loading packages if this is a fresh install
 
 (when (let ((place (file-name-concat user-emacs-directory "elpa/")))
@@ -214,6 +214,7 @@ your user.el with every single update to Quake."
           auto-save-file-name-transforms `((".*" ,temporary-file-directory t)) ; don't litter dammit
           delete-old-versions t                   ; delete excess backup files
           lisp-body-indent 4                      ; four space tabs
+          pgtk-wait-for-event-timeout nil         ; make pgtk feel a bit faster
           vc-follow-symlinks t                    ; we'll always want to follow symlinks
           warning-minimum-level :emergency        ; don't completely shit the bed on errors
           display-line-numbers 'relative          ; whether you use evil or not, these are useful
@@ -230,6 +231,10 @@ your user.el with every single update to Quake."
           completion-ignore-case t)                  ; fucking ignore case in general!
     (setopt use-short-answers t)                     ; so you don't have to type out "yes" or "no" and hit enter
     (setq eldoc-idle-delay 1.0)                      ; w/ eldoc-box/an LSP, idle delay is by default too distracting
+    (advice-add 'eldoc-display-message-no-interference-p
+                :before-while (lambda () (not (help-at-pt-string)))) ; tell eldoc not to clobber help messages
+    (help-at-pt-set-timer) ; display help messages via keyboard
+    (setq help-at-pt-display-when-idle t)
     (setq display-line-numbers-width-start t)        ; when you open a file, set the width of the linum gutter to be large enough for the whole file's line numbers
     (setq-default indent-tabs-mode nil)              ; prefer spaces instead of tabs
 ;;;;; Disabling ugly and largely unhelpful UI features
@@ -394,7 +399,7 @@ your user.el with every single update to Quake."
                                      (which-key--create-buffer-and-show
                                       nil (symbol-value keymap))))
                             (which-key--hide-popup))))
-        (custom-set-variables 'repeat-echo-function #'ignore))
+        (customize-set-variable 'repeat-echo-function #'ignore))
 ;;;; Better Emacs Lisp editing experience
 
     (use-package elisp-def
@@ -428,9 +433,7 @@ your user.el with every single update to Quake."
 ;;;; Better peformance using asynchronous processing with subordinate Emacs processes
     (use-package async
         :demand t
-        :hook (dired-mode . dired-async-mode)
-        :config
-        (add-hook 'message-mode-hook (lambda () (require 'smtpmail-async))))
+        :hook (dired-mode . dired-async-mode))
     ;;;; Embark
     (use-package embark
         :commands (embark-act embark-dwim)
@@ -644,9 +647,10 @@ External Packages:
 
         (add-hook 'overwrite-mode-hook #'quake-god-mode-toggle-on-overwrite)
 
-        (define-key god-local-mode-map (kbd ".") #'repeat)
-        (define-key god-local-mode-map (kbd "i") #'god-local-mode)
-        (global-set-key (kbd "<escape>") #'(lambda () (interactive) (god-local-mode 1))))
+        (unless (member 'optional/evil-layer quake-enabled-layers)
+            (define-key god-local-mode-map (kbd ".") #'repeat)
+            (define-key god-local-mode-map (kbd "i") #'god-local-mode)
+            (global-set-key (kbd "<escape>") #'(lambda () (interactive) (god-local-mode 1)))))
 
 ;;;;; Structural editing with Puni Mode
     ;; Use puni-mode globally and disable it for term-mode.
@@ -717,6 +721,15 @@ External Packages:
         "C-x B"                 'ibuffer
 ;;;;;; Project.el
         "C-x p E"               'flymake-show-project-diagnostics
+        "C-x p r"               (defun project-rename-symbol (from to)
+                                    "Replace a symbol throughout this project."
+                                    (interactive
+                                     (let ((query-replace-read-from-regexp-default 'find-tag-default-as-regexp))
+                                         (pcase-let ((`(,from ,to)
+                                                      (query-replace-read-args "Query replace (regexp)" t t)))
+                                             (list from to))))
+                                    (project-query-replace-regexp (concat "\\_<" from "\\_>") to))
+        "C-x p %"              'project-query-replace-regexp
 ;;;;;; Eglot
         "C-c e"   (cons "LSP Server..."
                         (quake-emacs-create-keymap
@@ -761,13 +774,13 @@ External Packages:
   that rote boilerplate"
 ;;;;; A basic programming mode using built in things
     (electric-pair-mode 1)
+    (require 'hl-line)
     (add-hook 'prog-mode-hook (defun progify-mode ()
                                   (prettify-symbols-mode 1)
                                   (display-line-numbers-mode 1)
                                   (setq display-line-numbers 'relative)
-                                  (hl-line-mode t)
-                                  (eglot-ensure)
-                                  (flymake-mode)))
+                                  (flymake-mode)
+                                  (hl-line-mode t)))
     (add-hook 'flymake-mode-hook (lambda ()
                                      (setq next-error-function 'flymake-goto-next-error)))
 ;;;;; Version-control and project management
@@ -1003,6 +1016,8 @@ do not already have one."
         (add-hook 'org-mode-hook (defun quake--org-mode-hooks ()
                                      ;; Cooperate with imenu. This should exist by default, dammit!
                                      (imenu-add-to-menubar "Imenu")
+                                     ;; Fix org-ctags bug
+                                     (setq org-open-link-functions nil)
                                      ;; Prettify
                                      (quake--org-mode-pretty)
                                      ;; Add IDs to everything after save.
@@ -1039,6 +1054,7 @@ do not already have one."
 
         (custom-set-faces
          '(org-default ((t (:inherit variable-pitch :height 160))))
+         '(org-table ((t (:height 160 :inherit fixed-pitch))))
          '(org-level-1 ((t (:height 2.0))))
          '(org-level-2 ((t (:height 1.7))))
          '(org-level-3 ((t (:height 1.4))))
@@ -1092,6 +1108,9 @@ do not already have one."
                  (mapcar #'string-trim)
                  (cl-remove-if (lambda (x) (string-empty-p x)))))
 (defun quake-check-for-updates ()
+    "Check for new versions of Quake.
+
+Does so by comparing the local git tag with the remote one."
     (interactive)
     (let* ((default-directory "~/.emacs.d/")
            (buffer (generate-new-buffer "*git version check*"))
@@ -1110,12 +1129,13 @@ do not already have one."
                      ('exit
                       (when-let* ((halves (mapcar #'get-lines (string-split (buffer-string) "---")))
                                   (current-version (caar halves))
-                                  (remote-version-line (caadr halves))
-                                  (remote-version (save-match-data
-                                                      (string-match
-                                                       (rx (group "v" num "." num "." num (optional "-alpha." num)))
-                                                       remote-version-line)
-                                                      (match-string 1))))
+                                  (remote-version-line (car (last (cadr halves))))
+                                  (remote-version (with-temp-buffer
+                                                      (insert remote-version-line)
+                                                      (goto-char 0)
+                                                      (zap-up-to-char 1 ?v)
+                                                      (buffer-string))))
+                          (message remote-version)
                           (if (not (string= remote-version current-version))
                                   (message "There is an update available for Quake Emacs: %s"
                                            (propertize (format "%s -> %s" current-version remote-version)
@@ -1166,7 +1186,35 @@ do not already have one."
         ;; Global settings (defaults)
         (setq doom-themes-enable-bold t
               doom-themes-enable-italic t)
-        (load-theme quake-color-theme t))
+        (load-theme quake-color-theme t)))
+
+
+;;;; Optional Aesthetic Packages
+(defun optional/bling-layer ()
+    "If you want your editor to wow the hipsters, or you just like
+looking at the fancy pretty colors, you need some bling.
+
+External Packages:
+- `hl-todo', so you never miss those TODOs and FIXMEs
+- `nerd-icons', `nerd-icons-completion', and `nerd-icons-corfu',
+because there's really nothing better than a nice set of icons to
+spice things up, and we want integration *everywhere*
+- `ligature', because ligatures are cool"
+;;;;; Tab Bar
+    (use-package tab-bar
+        :commands (tab-bar-new-tab tab-bar-mode)
+        :custom
+        (tab-bar-close-button-show nil)
+        (tab-bar-new-button-show nil)
+        (tab-bar-auto-width-max '((150) 20))
+        (tab-bar-auto-width-min '((150) 20))
+        :init
+        (advice-add 'tab-bar-mode :after
+                    (lambda (&rest _r)
+                        (custom-set-faces
+                         `(tab-bar                    ((t (:background ,(face-attribute 'default :background) :foreground ,(face-attribute 'default :foreground) :height 1.0))))
+                         `(tab-bar-tab                ((t (:background ,(face-attribute 'hl-line :background) :foreground ,(face-attribute 'bold :foreground) :weight bold :height 0.95 :box (:line-width 4 :color ,(face-attribute 'hl-line :background)) :underline (:position -15)))))
+                         `(tab-bar-tab-inactive       ((t (:background ,(face-attribute 'default :background) :foreground ,(face-attribute 'default :foreground) :weight light :height .95 :box nil))))))))
 
     ;; Make things roomier and more minimal/austere
     (use-package spacious-padding
@@ -1241,7 +1289,7 @@ do not already have one."
         :config
         (set-face-attribute 'eldoc-box-body nil :inherit 'variable-pitch :weight 'normal)
         (set-face-foreground 'border (face-background 'mode-line))
-        :hook (eldoc-mode . eldoc-box-hover-at-point-mode))
+        (add-hook 'eldoc-mode-hook 'eldoc-box-hover-at-point-mode))
 
     ;; Pretty markdown formatting for eldoc-box
     (use-package markdown-mode
@@ -1253,36 +1301,7 @@ do not already have one."
         (markdown-fontify-code-blocks-natively t))
 
     (use-package breadcrumb
-        :hook (eglot-managed-mode . breadcrumb-local-mode)))
-
-;;;; Optional Aesthetic Packages
-(defun optional/bling-layer ()
-    "If you want your editor to wow the hipsters, or you just like
-looking at the fancy pretty colors, you need some bling.
-
-External Packages:
-- `hl-todo', so you never miss those TODOs and FIXMEs
-- `nerd-icons', `nerd-icons-completion', and `nerd-icons-corfu',
-because there's really nothing better than a nice set of icons to
-spice things up, and we want integration *everywhere*
-- `ligature', because ligatures are cool"
-;;;;; Tab Bar
-    (use-package tab-bar
-        :commands (tab-bar-new-tab tab-bar-mode)
-        :init
-        (setq tab-bar-button-relief 0)
-        :config
-        (add-hook 'tab-bar-mode-hook
-                  (lambda ()
-                      (set-face-attribute 'tab-bar nil :inherit 'variable-pitch)
-                      (set-face-attribute 'tab-bar-tab nil :box `(:line-width 5 :color ,(face-background 'tab-bar-tab) :style nil))
-                      (set-face-attribute 'tab-bar-tab-inactive nil
-                                          :box `(:line-width 5 :color ,(face-background 'tab-bar-tab-inactive) :style nil))))
-        (setq tab-bar-auto-width t
-              tab-bar-auto-width-max '(200 20)
-              tab-bar-auto-width-min '(200 20))
-        (setq tab-bar-new-tab-choice "*enlight*")
-        (setq tab-bar-show t))
+        :hook (eglot-managed-mode . breadcrumb-local-mode))
 
 ;;;;; Highlight TODOs, FIXMEs, etc
     (use-package hl-todo
@@ -1366,8 +1385,6 @@ spice things up, and we want integration *everywhere*
             (progn
                 (display-buffer-at-bottom scratch '((window-height . 25)))
                 (other-window 1)))))
-
-(autoload 'optional/evil-layer "~/.emacs.d/evil-layer.el")
 
 ;;; ======Load Layers======
 ;; Enable layers
