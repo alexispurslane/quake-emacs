@@ -72,7 +72,26 @@ the second object is either a string or a list containing the
 query to be made for that text object minus the .inner and .outer
 qualifiers."
     :group 'quake)
+(defun quake--evil-escape-dwim ()
+    "Intuitive escape behavior.
 
+Kills, exits, or escapes literally everything with successive
+repetitions."
+    (interactive)
+    (when (and (fboundp 'corfu-quit) completion-in-region-mode) (corfu-quit))
+    (when overwrite-mode                                        (overwrite-mode -1))
+    (cond ((region-active-p)              (deactivate-mark))
+          ((not (evil-normal-state-p))    (evil-normal-state))
+          (god-local-mode                 (god-local-mode -1)
+                                          (evil-normal-state))
+          (isearch-mode                   (isearch-exit))
+          ((eq last-command 'mode-exited) nil)
+          ((> (minibuffer-depth) 0)       (abort-recursive-edit))
+          (current-prefix-arg             nil)
+          ((> (recursion-depth) 0)        (exit-recursive-edit))
+          (buffer-quit-function           (funcall buffer-quit-function))
+          ((string-match "^ \\*" (buffer-name (current-buffer)))
+           (bury-buffer))))
 (defun optional/evil-layer ()
     "'Emacs is a great OS, if only it had a good editor.' With
   the powerful text-object based command language of Vim, and the
@@ -85,46 +104,47 @@ qualifiers."
 ;;;;; Evil mode itself (and associated integrations)
     (use-package evil
         :custom
-        (evil-disable-insert-state-bindings t)
-        (evil-want-integration t)
-        (evil-want-minibuffer t)
-        (evil-want-keybinding nil)
-        (evil-want-C-u-scroll nil)
-        (evil-want-C-d-scroll nil)
-        (evil-want-C-i-jump t)
-        (evil-undo-system 'undo-redo)
-        (evil-kill-on-visual-paste nil) ;; oh thank god
-        (evil-move-beyond-eol t) ;; so that it's easier to evaluate sexprs in normal mode
+        (evil-disable-insert-state-bindings t) ; so that to access Emacs keybindings for any mode your in, you only need to enter insert mode. 
+        (evil-want-integration t) ; some little mods evil mode provides to work better with various built in things
+        (evil-want-minibuffer t) ; enable evil in the minibuffer
+        (evil-want-keybinding nil) ; not sure what this does
+        (evil-want-C-u-scroll nil) ; you want access to C-u so that you can send numeric arguments (usually for repeat counts) to Emacs commands
+        (evil-want-C-d-scroll nil) ; disabling C-d for symmetry
+        (evil-want-C-i-jump t) ; C-i should probably do what Vimmers expect it to do
+        (evil-undo-system 'undo-redo) ; use the built in Emacs undo system (this has different, but imo much superior, behavior)
+        (evil-kill-on-visual-paste nil) ;; oh thank god (don't copy what you just replaced when pasting over something that was selected in visual mode)
+        (evil-move-beyond-eol t) ;; so that it's easier to evaluate sexprs in normal mode, let you go one char past the end of the line
         :config
         (evil-mode 1)
+
+;;;;; Enable evil motion mode for all Emacsy UI buffers
+        
+        ;; we want to do this so that basic motion keys like
+        ;; hjkl, w, b, etc, all work as expected. You can use
+        ;; insert mode, or the backslash key, to send commands
+        ;; through to the Emacs buffer underneath.
         (setq evil-motion-state-modes (append evil-motion-state-modes
                                               evil-emacs-state-modes))
         (setq evil-emacs-state-modes nil)
-        (quake-evil-define-key (motion) org-agenda-mode-map
-                               "RET" org-agenda-switch-to)
 
+        ;; Disable fully toggling off Evil mode though, because
+        ;; we already have emacs keybindings in insert mode, and
+        ;; through the god-mode leader state, and this method of
+        ;; toggling is... really hard to exit and really
+        ;; confusing.
+        (global-unset-key (kbd "C-z"))
+
+        ;; Pass the return and tab characters through motion mode directly for easier interaction with many UIs
+        (delete (assoc 13 evil-motion-state-map) evil-motion-state-map)
+        (delete (assoc 9 evil-motion-state-map) evil-motion-state-map)
+        
         (remove-hook 'post-command-hook 'quake-god-mode-update-cursor-type)
+        (quake-emacs-define-key god-local-mode-map
+            "<escape>" 'quake--evil-escape-dwim)
         (quake-evil-define-key (motion god visual normal insert) override-global-map
-                               "<escape>"      (defun quake--evil-escape-dwim ()
-                                                   "Intuitive escape behavior.
-
-Kills, exits, or escapes literally everything with successive
-repetitions."
-                                                   (interactive)
-                                                   (when (and (fboundp 'corfu-quit) completion-in-region-mode) (corfu-quit))
-                                                   (when overwrite-mode                                        (overwrite-mode -1))
-                                                   (cond ((region-active-p)              (deactivate-mark))
-                                                         ((not (evil-normal-state-p))    (evil-normal-state))
-                                                         (god-local-mode                 (god-local-mode -1))
-                                                         (isearch-mode                   (isearch-exit))
-                                                         ((eq last-command 'mode-exited) nil)
-                                                         ((> (minibuffer-depth) 0)       (abort-recursive-edit))
-                                                         (current-prefix-arg             nil)
-                                                         ((> (recursion-depth) 0)        (exit-recursive-edit))
-                                                         (buffer-quit-function           (funcall buffer-quit-function))
-                                                         ((string-match "^ \\*" (buffer-name (current-buffer)))
-                                                          (bury-buffer)))))
-
+                               "<escape>"      'quake--evil-escape-dwim)
+        (global-set-key (kbd "<escape>") 'motion-selection--escape-dwim)
+        
 ;;;;; Custom evil mode key bindings
         ;; Make :q close the buffer and window, not quit the entire
         ;; Emacs application (we never leave Emacs!)
@@ -133,9 +153,7 @@ repetitions."
         ;; Override evil mode's exceptions to defaulting to normal-mode
         (evil-set-initial-state 'minibuffer-mode 'insert)
 
-;;;;;; Emacs integration
-        (add-hook 'evil-insert-state-entry-hook (lambda () (cua-mode 1)))
-        (add-hook 'evil-normal-state-entry-hook (lambda () (cua-mode -1)))
+
 ;;;;;; Miscillanious useful keybindings for emacs capabilities
         (quake-evil-define-key (god) global-map
                                "C-w"      evil-window-map
@@ -146,10 +164,11 @@ repetitions."
         :config
         (quake-evil-define-key (motion normal visual) override-global-map
                                "SPC"      'evil-execute-in-god-state)
-;;;;; Make which-key for the top level keybindings show up when you enter evil-god-state
+;;;;; Allow you to run leader key commands on selected text
         (add-hook 'evil-local-mode-hook
                   (lambda () (remove-hook 'activate-mark-hook 'evil-visual-activate-hook t)))
-
+        
+;;;;; Make which-key for the top level keybindings show up when you enter evil-god-state
         (add-hook 'evil-god-state-exit-hook
                   (lambda ()
                       (which-key--hide-popup)))
