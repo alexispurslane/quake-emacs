@@ -113,6 +113,8 @@ then Quake Emacs is for you.
     - [[Built-In Language Support Matrix][Built-In Language Support Matrix]]
   - [[Personal Configuration and Extra Layers][Personal Configuration and Extra Layers]]
   - [[Keybindings][Keybindings]]
+    - [[Default keybindings][Default keybindings]]
+    - [[Evil mode][Evil mode]]
   - [[Inspiration and Prior Art][Inspiration and Prior Art]]
     - [[Doom Emacs][Doom Emacs]]
     - [[MinEmacs][MinEmacs]]
@@ -406,6 +408,11 @@ Out of the box, Quake Emacs contains only the layers that you will absolutely ne
 :ID:       6bc7026f-7c2a-4fd5-b675-2cf3307eda3e
 :END:
 
+*** Default keybindings
+:PROPERTIES:
+:ID:       7f624df2-4715-4dec-b81a-f303ae87da4f
+:END:
+
 #+begin_quote
  ⚠️ You can find a guide to reading Emacs keybinding notation [[https://riptutorial.com/emacs/example/19969/key-bindings-notation][here]].
 #+end_quote
@@ -529,7 +536,28 @@ Quake Emacs also defines several additional keybindings beyond the ones that Ema
     - =k= :: =helpful-key=
     - =x= :: =helpful-command=
 
-For those who really can't do away with evil mode, however -- and there are plenty of valid reasons for this, from things like well-entrenched muscle memory, to advanced knowledge you don't want to start over on, to simply preferring it, to thinking it's more efficient; reasonable people can disagree on this! -- Quake Emacs does offer an optional integration layer for evil mode, that comes with =evil=, =evil-collection=, =evil-org=, =evil-smartparens=, Evil tree sitter support, and more. Moreover, unlike the other layers, Quake's evil layer is provided in-tree and is regularly tested to ensure smooth and excellent integration with the rest of the configuration, since I'm aware that many people indeed do prefer Vim keybindings.
+*** Evil mode
+:PROPERTIES:
+:ID:       2de8429f-e43d-43af-847f-d4ccc8963318
+:END:
+
+For those who really can't do away with evil mode, however -- and there are plenty of valid reasons for this, from things like well-entrenched muscle memory, to advanced knowledge you don't want to start over on, to simply preferring it, to thinking it's more efficient; reasonable people can disagree on this! -- Quake Emacs does offer an optional integration layer for evil mode.
+
+The initial version of this included not just =evil= but also =evil-collection=, =evil-treesit-textobj=, =evil-org= in an attempt to provide consistent vim-style keybindings across the entire Emacs interface. The problem is that no matter how hard you try, if you're trying to one by one completely remap the keybindings of every mode in Emacs to conform to vim sensibilities, there will always be annoying lacunae where the keybindings fail, or features lacking. Furthermore, doing this leads to massive incompatibilities with existing documentation on how to use those modes, and evil-collection in fact lacks documentation itself, meaning you have to actually consult the source code to figure out what keys do what, which is simply inconvenient. Moreover, this was often buggy and unreliable -- it was a 300 line configuration file.
+
+However, if you just use raw Evil mode only enabled in editable text buffers, and use key chords for operating the rest of Emacs and the default keybindings in special buffers/Emacs user interfaces, you run into inconsistency in the mode of input (key arpeggios vs key chords) and the keybinding conventions. Additionally, there are some features in vanilla Evil mode that make things more confusing, such as =C-z= for entering Emacs mode, which you can't leave by hitting escape. On top of that, there are things that make it harder to access the underlying Emacs commands, such as clobbering the meaning of =C-u= and using alternative control keys in insert mode. In order to reduce this, what I've decided to do is:
+
+1. Configure Evil mode to reduce confusion and increase access to Emacs:
+   1. =C-z= now does nothing
+   2. =C-u= is not clobbered
+   3. For consistency with the above, =C-d= is no longer clobbered either
+   4. Insert state now allows access to Emacs keybindings except ESC, now serving the same function as Emacs state, but with less confusion. Basically, it's like god mode now -- insert state means you're sending commands directly to Emacs unfiltered, command/normal state means you're sending them through a filter.
+2. Set up =evil-god-state= so that all Emacs control commands are available as Vim-style leader key keybindings behind the spacebar.
+3. Enable Evil motion state -- which is a version of normal state in Evil mode that only binds the basic Vim motion keys and passes everything else through to the underlying mode -- in all interface buffers to provide consistent navigation and motion, which are the place where Vim and Emacs clash the most on conventions in a way that'd likely mess up muscle memory.
+4. Pass tab and return through Evil motion state to make using UIs through it easier.
+5. Allow passing a single character or command through Evil motion or normal mode to Emacs via backslash (this is a default capability).
+
+This is a lot simpler and probably a lot more reliable than the alternatives, and hopefully allows /enough/ consistency to make Evil mode users happy.
 
 ** Inspiration and Prior Art
 :PROPERTIES:
@@ -539,7 +567,7 @@ For those who really can't do away with evil mode, however -- and there are plen
 :PROPERTIES:
 :ID:       52e22a90-b5c2-4a9b-af69-f5089df49951
 :END:
-[[https://github.com/doomemacs/doomemacs][DOOM Emacs]] was my previous daily driver. It is far more complete than Quake, offering complete layers for many languages that don't have good TS and LSP support, layers for all kinds of non-text-editing-related tasks you may also want to do with Emacs, as well as many alternative layers for core components that the user can swap out according to taste, which means that it offers much greater customizability and versatility than Quake does without the uesr ever having to actually learn Emacs Lisp or read manuals. As such, I would still recommend DOOM for beginners. However, this comes with the downside of essentially building its own bag of swappable editor components, assembled into a whole separate editor, on top of Emacs; in many ways, it's a completely different experience.
+[[https://github.com/doomemacs/doomemacs][DOOM Emacs]] was my previous daily driver. It is far more complete than Quake, offering complete layers for many languages that don't have good TS and LSP support, layers for all kinds of non-text-editing-related tasks you may also want to do with Emacs, as well as many alternative layers for core components that the user can swap out according to taste, which means that it offers much greater customizability and versatility than Quake does without the user ever having to actually learn Emacs Lisp or read manuals. As such, I would still recommend DOOM for beginners. However, this comes with the downside of essentially building its own bag of swappable editor components, assembled into a whole separate editor, on top of Emacs; in many ways, it's a completely different experience.
 
 **** Points of similarity:
 :PROPERTIES:

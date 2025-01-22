@@ -99,7 +99,8 @@ repetitions."
 
   Loads:
 
-  - `evil', the Emacs editor of choice"
+  - `evil', the Emacs editor of choice
+  - `evil-god-state', to use `god-mode' as a leader key"
 
 ;;;;; Evil mode itself (and associated integrations)
     (use-package evil
@@ -178,4 +179,4 @@ repetitions."
                                                          nil
                                                          (lambda (x) (and (not (null (car x)))
                                                                           (not (null (cdr x)))))
-                                                         "Top-level bindings")))))
+                                                         "Top-level bindings"))))) 
