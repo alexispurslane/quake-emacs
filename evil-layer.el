@@ -80,6 +80,7 @@ repetitions."
     (interactive)
     (when (and (fboundp 'corfu-quit) completion-in-region-mode) (corfu-quit))
     (when overwrite-mode                                        (overwrite-mode -1))
+    (evil-god-state-bail)
     (cond ((region-active-p)              (deactivate-mark))
           ((not (evil-normal-state-p))    (evil-normal-state))
           (god-local-mode                 (god-local-mode -1)
