@@ -210,8 +210,9 @@ your user.el with every single update to Quake."
     (setq inhibit-startup-message t               ; we're going to have our own dashboard
           visible-bell t                          ; nobody likes being beeped at
           backup-by-copying t                     ; backing up a file by moving it is insane
-          backup-directory-alist `((".*" . ,temporary-file-directory))
-          auto-save-file-name-transforms `((".*" ,temporary-file-directory t)) ; don't litter dammit
+          backup-directory-alist `((".*" . "~/.emacs.d/backups/"))
+          create-lockfiles nil                    ; don't create lockfiles
+          auto-save-file-name-transforms `((".*" "~/.emacs.d/auto-save/" t)) ; don't litter dammit
           delete-old-versions t                   ; delete excess backup files
           lisp-body-indent 4                      ; four space tabs
           pgtk-wait-for-event-timeout nil         ; make pgtk feel a bit faster
@@ -248,6 +249,7 @@ your user.el with every single update to Quake."
     (savehist-mode 1)                                ; remember commands
     (column-number-mode)                             ; keep track of column number for the useful modeline readout
     (global-visual-line-mode)                        ; wrap lines at end of window
+    (add-hook 'text-mode-hook (lambda () (electric-indent-local-mode -1))) ; don't indent my plain text please!!!
 
 ;;;;; Enable better window management
     (winner-mode 1)                ; so you can undo modifications to your window layout
@@ -664,7 +666,8 @@ External Packages:
                ("C-^" . puni-raise)
                ("C-$" . puni-splice))
         :hook ((text-mode . puni-mode)
-               (prog-mode . puni-mode)))
+               (prog-mode . puni-mode)
+               (comint-mode . puni-mode)))
 
 ;;;;; Define useful editing keys
     (quake-emacs-define-key global-map
@@ -995,6 +998,7 @@ org mode for vanilla-org zettelkesten note-taking based on
     (use-package org
         :commands (org-mode consult-org-agenda org-agenda org-insert-link-global org-publish)
         :custom
+        (org-html-prefer-user-labels t)
         (org-use-speed-commands t)
         (org-agenda-inhibit-startup t)
         ;; TODO: if I can figure out a good cache invalidation scheme, (org-refile-use-cache t)
