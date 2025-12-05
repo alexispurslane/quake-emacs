@@ -117,8 +117,7 @@ fixes the problem." 'face 'bold))
     (gcmh-idle-delay 'auto) ; this means that it will take longer to activate a GC if GCs are taking longer and happening at non-idle times. However, with the default `gcmh-auto-idle-delay-factor' it'll still happen very often usually, <1s probably, unlike the 15s of the normal setting.
     (gcmh-high-cons-threshold (* 200 1000 1000)) ; this fixes [[https://gitlab.com/koral/gcmh/-/issues/6]] and addresses Eli Zaretski (lead Emacs maintainer)'s [[https://old.reddit.com/r/emacs/comments/bg85qm/garbage_collector_magic_hack/][concerns]] about large packages/files/jobs creating a huge amount of memory without it ever being collected thanks to GCMH that then hangs Emacs when idle time arrives
     :config
-    (when (version< emacs-version "31.0.50") ; scratch/igc should land in 31, so don't use GCMH, we won't need it anymore
-        (gcmh-mode 1)))
+    (gcmh-mode 1))
 
 ;;; ======User-Modifiable Variables======
 (defcustom quake-org-home-directory
@@ -272,6 +271,23 @@ your user.el with every single update to Quake."
      'selective-display
      (let ((face-offset (* (face-id 'shadow) (lsh 1 22))))
          (vconcat (mapcar (lambda (c) (+ face-offset c)) " ")))))
+;;;; TRAMP
+(with-eval-after-load "tramp"
+    (setq tramp-copy-size-limit (* 1024 1024) ;; 1MB
+          tramp-verbose 2)
+    (setq remote-file-name-inhibit-locks t
+          tramp-use-scp-direct-remote-copying t
+          remote-file-name-inhibit-auto-save-visited t)
+
+    (connection-local-set-profile-variables
+     'remote-direct-async-process
+     '((tramp-direct-async-process . t)))
+
+    (connection-local-set-profiles
+     '(:application tramp :protocol "scp")
+     'remote-direct-async-process)
+
+    (setq magit-tramp-pipe-stty-settings 'pty))
 ;;; ======Basic Packages======
 (defun core/usability-layer ()
     "Loads the core packages needed to make Emacs more usable in the
@@ -279,6 +295,7 @@ your user.el with every single update to Quake."
 
   Loads:
   - `recentf' so you can open recent files quickly,
+  - `avy' for super fast jumping around and actions
   - `which-key' to show what keys can be pressed next at each stage of a
   key combination,
   - `repeat-mode', so that Emacs prefix key chords are much less onerous,
@@ -311,6 +328,13 @@ your user.el with every single update to Quake."
         :custom
         (recentf-auto-cleanup 'never) ; automatic cleanup checks for dead files, which was causing it to try to visit files in recentf that were over TRAMP, which caused massive inexplicable slowdowns
         :init (add-hook 'pre-command-hook (lambda () (recentf-mode 1))))
+
+;;;; Avy (https://karthinks.com/software/avy-can-do-anything/)
+
+    (use-package avy
+        :bind (("C-:" . avy-goto-char)
+               ("C-;" . avy-goto-char-2)))
+    
 ;;;; Vertico-style minibuffer completion UI using icomplete
     (use-package icomplete
         :commands (icomplete-vertical-mode)
@@ -391,9 +415,9 @@ your user.el with every single update to Quake."
         ;; use which key to show repeat map
         (advice-add 'repeat-post-hook :after
                     (defun repeat-help--which-key-popup ()
-                        (if-let ((cmd (or this-command real-this-command))
-                                 (keymap (or repeat-map
-                                             (repeat--command-property 'repeat-map))))
+                        (if-let* ((cmd (or this-command real-this-command))
+                                  (keymap (or repeat-map
+                                              (repeat--command-property 'repeat-map))))
 
                                 (run-at-time
                                  0 nil
@@ -698,7 +722,7 @@ External Packages:
 ;;;;; General Quake-recommended keybindings
     (quake-emacs-define-key global-map
 ;;;;;; Org Notes
-        "C-c a"                 'org-agenda
+        "C-x a"                 'org-agenda
         "C-c P"                 'org-publish
         "C-c c"                 'org-capture
         "C-c l"                 'org-store-link
@@ -823,8 +847,7 @@ External Packages:
         :custom
         (treesit-auto-install 'prompt)
         :config
-        (treesit-auto-add-to-auto-mode-alist 'all)
-        (global-treesit-auto-mode))
+        (treesit-auto-add-to-auto-mode-alist 'all))
 
     (use-package eglot
         :commands (eglot eglot-ensure)
@@ -833,8 +856,8 @@ External Packages:
             (fset #'jsonrpc--log-event #'ignore)
             (setq eglot-events-buffer-size 0))
         :config
-        (add-hook 'eglot-managed-mode-hook
-                  (lambda () (add-hook 'before-save-hook 'eglot-format-buffer nil t)))
+        (add-hook 'eglot-managed-mode-hook (lambda ()
+                                               (add-hook 'before-save-hook 'eglot-format-buffer :local)))
         (setq eglot-autoshutdown t
               eglot-sync-connect nil))
 
@@ -888,8 +911,8 @@ External Packages:
         :config
         (setf (alist-get 'prettier apheleia-formatters)
               '("prettier" file))
-        (add-to-list 'apheleia-mode-alist '(typescript-ts-mode . prettier))
-        (add-to-list 'apheleia-mode-alist '(js-ts-mode . prettier))
+        (add-to-list 'apheleia-mode-alist '(typescript-ts-mode . nil))
+        (add-to-list 'apheleia-mode-alist '(js-ts-mode . nil))
         :hook (prog-mode . apheleia-mode))
 
     (use-package editorconfig :hook (prog-mode . editorconfig-mode))
@@ -998,6 +1021,7 @@ org mode for vanilla-org zettelkesten note-taking based on
     (use-package org
         :commands (org-mode consult-org-agenda org-agenda org-insert-link-global org-publish)
         :custom
+        (org-refile-use-outline-path 'file)
         (org-html-prefer-user-labels t)
         (org-use-speed-commands t)
         (org-agenda-inhibit-startup t)
@@ -1015,7 +1039,8 @@ org mode for vanilla-org zettelkesten note-taking based on
             "Add ID properties to all headlines in the current file which
 do not already have one."
             (interactive)
-            (org-map-entries 'org-id-get-create))
+            (org-map-entries 'org-id-get-create "+LEVEL=1|LEVEL=2")
+            (org-update-statistics-cookies t))
 
         (add-hook 'org-mode-hook (defun quake--org-mode-hooks ()
                                      ;; Cooperate with imenu. This should exist by default, dammit!
@@ -1059,17 +1084,25 @@ do not already have one."
         (custom-set-faces
          '(org-default ((t (:inherit variable-pitch :height 160))))
          '(org-table ((t (:height 160 :inherit fixed-pitch))))
-         '(org-level-1 ((t (:height 2.0))))
-         '(org-level-2 ((t (:height 1.7))))
-         '(org-level-3 ((t (:height 1.4))))
-         '(org-level-4 ((t (:height 1.1))))
+         '(org-level-1 ((t (:weight ultra-bold :inherit fixed-pitch :height 1.3))))
+         '(org-quote ((t (:inherit variable-pitch :height 170))))
+         '(org-level-2 ((t (:height 1.0))))
+         '(org-level-3 ((t (:height 1.0))))
+         '(org-level-4 ((t (:height 1.0))))
          '(org-level-5 ((t (:height 1.0))))
          '(org-block ((t (:inherit fixed-pitch))))
-         '(org-code ((t (:inherit fixed-pitch))))
-         '(org-verbatim ((t (:inherit fixed-pitch)))))
+         '(org-document-title ((t (:height 1.3 :underline t))))
+         '(org-drawer ((t (:inherit org-agenda-dimmed-todo-face))))
+         '(org-code ((t (:inherit fixed-pitch :height 180))))
+         '(org-verbatim ((t (:inherit fixed-pitch :height 160)))))
 
-        (setq org-ellipsis "  " ;; folding symbol
+        (setq org-ellipsis " […]" ;; folding symbol
               org-startup-indented t
+              org-hide-emphasis-markers t
+              org-tags-column 0
+              org-auto-align-tags nil
+              org-fold-catch-invisible-edits 'show
+              org-agenda-tags-column 0
               org-image-actual-width (list 300)      ; no one wants gigantic images inline
               org-pretty-entities t                  ; part of the benefit of lightweight markup is seeing these
               org-agenda-block-separator ""
@@ -1094,15 +1127,22 @@ do not already have one."
                  "* %?\n  %i\n  ")
                 ("j" "Journal" entry (function quake-org-prompt-note-file)
                  "* %?\nEntered on %U\n  %i\n  %a"))))
+    (use-package org-hide-drawers
+        :after (org)
+        :hook
+        (org-mode . org-hide-drawers-mode))
+    (use-package org-modern
+        :after (org)
+        :config
+        (global-org-modern-mode))
     (use-package htmlize
         :after (org-mode))
     (use-package toc-org
         :hook (org-mode . toc-org-mode))
-    (use-package pandoc-mode
-        :hook ((markdown-mode . pandoc-mode)
-               (org-mode . pandoc-mode)
-               (latex-mode . pandoc-mode)
-               (doc-view-mode . pandoc-mode))))
+    (with-eval-after-load "org"
+        (unless (fboundp 'org-modern-indent-mode)
+            (package-vc-install "https://github.com/jdtsmith/org-modern-indent")
+            (add-hook 'org-mode-hook #'org-modern-indent-mode 90))))
 
 ;;; ======Aesthetic Packages======
 ;;;; Core Aesthetic Packages
@@ -1399,3 +1439,6 @@ spice things up, and we want integration *everywhere*
     (message "Finished enabling layers %s in %.2f seconds" layer (float-time (time-since start-time))))
 (add-hook 'emacs-startup-hook #'quake-check-for-updates)
 (profiler-stop)
+(put 'magit-clean 'disabled nil)
+(put 'narrow-to-region 'disabled nil)
+(put 'upcase-region 'disabled nil)
